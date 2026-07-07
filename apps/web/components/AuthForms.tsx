@@ -13,23 +13,28 @@ export function SignupForm() {
     setBusy(true);
     setErr(null);
     const fd = new FormData(e.currentTarget);
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: fd.get("email"),
-        password: fd.get("password"),
-        displayName: fd.get("displayName"),
-      }),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) {
-      setErr(data.error || "Could not create account.");
-      return;
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: fd.get("email"),
+          password: fd.get("password"),
+          displayName: fd.get("displayName"),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErr(data.error || "Could not create account.");
+        return;
+      }
+      router.push("/account?welcome=1");
+      router.refresh();
+    } catch {
+      setErr("Network error — please try again.");
+    } finally {
+      setBusy(false);
     }
-    router.push("/account?welcome=1");
-    router.refresh();
   }
 
   return (
@@ -71,19 +76,24 @@ export function LoginForm() {
     setBusy(true);
     setErr(null);
     const fd = new FormData(e.currentTarget);
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: fd.get("email"), password: fd.get("password") }),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) {
-      setErr(data.error || "Could not sign in.");
-      return;
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: fd.get("email"), password: fd.get("password") }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErr(data.error || "Could not sign in.");
+        return;
+      }
+      router.push("/account");
+      router.refresh();
+    } catch {
+      setErr("Network error — please try again.");
+    } finally {
+      setBusy(false);
     }
-    router.push("/account");
-    router.refresh();
   }
 
   return (
@@ -115,18 +125,25 @@ export function LoginForm() {
 export function ForgotPasswordForm() {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
+    setErr(null);
     const fd = new FormData(e.currentTarget);
-    await fetch("/api/auth/request-password-reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: fd.get("email") }),
-    });
-    setBusy(false);
-    setSent(true);
+    try {
+      await fetch("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: fd.get("email") }),
+      });
+      setSent(true);
+    } catch {
+      setErr("Network error — please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -149,6 +166,7 @@ export function ForgotPasswordForm() {
               <label htmlFor="email">Email</label>
               <input id="email" name="email" type="email" required autoComplete="email" />
             </div>
+            {err && <div className="form-error">{err}</div>}
             <button className="btn btn-primary" type="submit" disabled={busy}>
               {busy ? "Sending…" : "Send reset link"}
             </button>
@@ -177,19 +195,24 @@ export function ResetPasswordForm({ token }: { token: string }) {
       return;
     }
     setBusy(true);
-    const res = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password }),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) {
-      setErr(data.error || "Could not reset password.");
-      return;
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErr(data.error || "Could not reset password.");
+        return;
+      }
+      router.push("/account");
+      router.refresh();
+    } catch {
+      setErr("Network error — please try again.");
+    } finally {
+      setBusy(false);
     }
-    router.push("/account");
-    router.refresh();
   }
 
   return (

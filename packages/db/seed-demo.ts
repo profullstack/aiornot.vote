@@ -98,7 +98,10 @@ async function main() {
   let created = 0;
   for (let i = 0; i < DEMO.length; i++) {
     const item = DEMO[i]!;
-    const slug = `${slugify(item.title)}-${i + 1}`;
+    // Neutral title/slug — must not reveal AI vs real (both use the same style).
+    const primaryTag = (item.tags[0] || "image").replace(/-/g, " ");
+    const neutralTitle = `AI or Not: ${primaryTag.charAt(0).toUpperCase()}${primaryTag.slice(1)}`;
+    const slug = `${slugify(neutralTitle)}-${i + 1}`;
     const exists = await client.execute({
       sql: "SELECT id FROM media WHERE slug = ?",
       args: [slug],
@@ -122,10 +125,8 @@ async function main() {
       args: [
         mediaId,
         slug,
-        item.title,
-        item.provider === "openai"
-          ? "A photorealistic AI-generated image. Can you tell?"
-          : "A real photograph. Or is it?",
+        neutralTitle,
+        "Real photo or AI generation? Cast your vote.",
         mediaUrl,
         thumbUrl,
         item.provider,

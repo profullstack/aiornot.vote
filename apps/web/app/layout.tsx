@@ -9,11 +9,11 @@ import { env } from "@/lib/env";
 export const metadata: Metadata = {
   metadataBase: new URL(env.appUrl),
   title: {
-    default: "AIorNot.vote — Can you tell what's AI?",
+    default: "AIorNot.vote — Crowd-sourced AI image detection",
     template: "%s — AIorNot.vote",
   },
   description:
-    "Guess whether photorealistic images and videos are AI-generated or real. Track your score, climb the leaderboard, and subscribe to every list by RSS.",
+    "Crowd-sourced AI image detection as a service. Verified humans vote whether a photorealistic image is AI-generated or real — get the crowd's verdict on the web, by RSS, or via API.",
   alternates: {
     types: {
       "application/rss+xml": [

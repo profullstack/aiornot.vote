@@ -41,7 +41,7 @@ Request:
 
 | Field | Required | Notes |
 |---|---|---|
-| `image_url` | yes | Public http(s) URL. Private/internal hosts are rejected (SSRF guard). |
+| `image_url` | yes | Public http(s) URL to an **image** (images only for now; video URLs are rejected). Private/internal hosts are rejected (SSRF guard). |
 | `title` | no | Shown on the public page (default: "Is this AI or real?"). |
 | `tags` | no | Up to 8 slugs. |
 | `metadata` | no | Echoed for your records. |

@@ -51,7 +51,7 @@ export default async function ApiDocsPage() {
         <pre style={{ overflowX: "auto", margin: 0, fontSize: 13 }}>{submitExample}</pre>
         <div style={{ marginTop: 10 }}><CopyButton text={submitExample} label="Copy" /></div>
       </div>
-      <p className="muted-sm">Body fields: <code>image_url</code> (required), <code>title</code>, <code>tags[]</code>, <code>metadata</code>. Returns <code>id</code>, <code>url</code>, <code>results_url</code>.</p>
+      <p className="muted-sm">Body fields: <code>image_url</code> (required, <strong>images only for now</strong>), <code>title</code>, <code>tags[]</code>, <code>metadata</code>. Returns <code>id</code>, <code>url</code>, <code>results_url</code>.</p>
 
       <div className="section-head" style={{ marginTop: 24 }}><h2>Get results</h2></div>
       <p className="muted"><code>GET /api/v1/opinions/:id</code> — public, no auth.</p>

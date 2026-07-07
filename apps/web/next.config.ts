@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // @aiornot/db ships raw TS that Next must transpile.
   transpilePackages: ["@aiornot/db", "@aiornot/seed"],
-  serverExternalPackages: ["@libsql/client", "@node-rs/argon2", "libsql"],
+  serverExternalPackages: ["@libsql/client", "@node-rs/argon2", "libsql", "sharp"],
   images: {
     // Seed + Unsplash + R2 hosts. Kept permissive for MVP.
     remotePatterns: [

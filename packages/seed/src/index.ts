@@ -218,8 +218,10 @@ export async function createAiVariant(
   const hash = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const mediaUrl = await storeImage(`ai-variants/${hash}.png`, buf, "image/png");
 
-  const primary = subjectTags[0] || categorySlug;
-  const title = `AI ${primary.replace(/-/g, " ")}`;
+  // Neutral title — must NOT reveal the answer (both AI and real items use the
+  // same "AI or Not: <subject>" style).
+  const primary = (subjectTags[0] || categorySlug).replace(/-/g, " ");
+  const title = `AI or Not: ${primary.charAt(0).toUpperCase()}${primary.slice(1)}`;
   const mediaId = ids.media();
   const slug = await uniqueSlug(client, title);
   await client.execute({

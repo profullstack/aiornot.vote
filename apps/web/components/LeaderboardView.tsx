@@ -3,6 +3,7 @@ import type { LeaderboardRow } from "@/lib/queries";
 import { getMyStanding } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 import { RssBar } from "./RssBar";
+import { LeaderboardTable } from "./LeaderboardTable";
 
 const TABS = [
   { label: "All-time", href: "/leaderboard" },
@@ -70,32 +71,7 @@ export async function LeaderboardView({
       {rows.length === 0 ? (
         <div className="empty">No qualifying players yet. Minimum scored guesses required to appear.</div>
       ) : (
-        <table className="lb-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Correct</th>
-              <th>Scored</th>
-              <th>Accuracy</th>
-              <th>Streak</th>
-              <th>Best</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.userId}>
-                <td className={`lb-rank ${r.rank <= 3 ? "top" : ""}`}>{String(r.rank).padStart(2, "0")}</td>
-                <td className="lb-name">{r.displayName}</td>
-                <td className="lb-correct">{r.correct}</td>
-                <td>{r.scored}</td>
-                <td>{Math.round(r.accuracy * 100)}%</td>
-                <td className="lb-streak">{r.currentStreak}</td>
-                <td className="muted">{r.bestStreak}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <LeaderboardTable rows={rows} />
       )}
     </div>
   );

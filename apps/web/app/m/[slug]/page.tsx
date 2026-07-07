@@ -114,7 +114,7 @@ export default async function MediaDetailPage({
             card={toClientCard(m)}
             canGuess={canParticipate(user)}
             isLoggedIn={!!user}
-            revealContent={provenance}
+            revealContent={m.userGuess ? provenance : undefined}
           />
 
           {user?.isAdmin && (
@@ -141,7 +141,7 @@ export default async function MediaDetailPage({
               copy="Subscribe to a tag feed and get new media as it lands."
             />
           )}
-          <MediaGrid items={related} canGuess={canParticipate(user)} isLoggedIn={!!user} />
+          <MediaGrid cards={related.map(toClientCard)} canGuess={canParticipate(user)} isLoggedIn={!!user} />
         </section>
       )}
     </div>

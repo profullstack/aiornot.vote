@@ -1,23 +1,21 @@
-import type { MediaCard as MediaCardData } from "@/lib/queries";
-import { toClientCard } from "@/lib/serialize";
-import { MediaCard } from "./MediaCard";
+import { MediaCard, type ClientCard } from "./MediaCard";
 
 export function MediaGrid({
-  items,
+  cards,
   canGuess,
   isLoggedIn,
 }: {
-  items: MediaCardData[];
+  cards: ClientCard[];
   canGuess: boolean;
   isLoggedIn: boolean;
 }) {
-  if (items.length === 0) {
+  if (cards.length === 0) {
     return <div className="empty">No media here yet. Check back soon, or subscribe by RSS.</div>;
   }
   return (
     <div className="grid">
-      {items.map((m) => (
-        <MediaCard key={m.id} card={toClientCard(m)} canGuess={canGuess} isLoggedIn={isLoggedIn} />
+      {cards.map((card) => (
+        <MediaCard key={card.id} card={card} canGuess={canGuess} isLoggedIn={isLoggedIn} />
       ))}
     </div>
   );

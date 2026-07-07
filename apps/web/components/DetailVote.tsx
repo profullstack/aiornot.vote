@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ClientCard } from "./MediaCard";
 
 export function DetailVote({
@@ -14,6 +15,7 @@ export function DetailVote({
   isLoggedIn: boolean;
   revealContent?: React.ReactNode;
 }) {
+  const router = useRouter();
   const [guess, setGuess] = useState<"ai" | "not_ai" | null>(card.userGuess);
   const [correct, setCorrect] = useState<boolean | null>(card.userGuessCorrect);
   const [truth, setTruth] = useState<"ai" | "not_ai" | "unknown">(
@@ -43,6 +45,7 @@ export function DetailVote({
       setCorrect(data.isCorrect);
       setTruth(data.revealTruth ? data.truthLabel : "unknown");
       setStats((s) => ({ ...s, ...data.stats }));
+      router.refresh();
     } catch {
       setErr("Network error — try again.");
     } finally {

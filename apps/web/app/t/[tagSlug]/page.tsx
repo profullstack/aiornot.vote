@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTagBySlug, listMedia, PAGE_SIZE } from "@/lib/queries";
+import { toClientCard } from "@/lib/serialize";
 import { getCurrentUser, canParticipate } from "@/lib/session";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
@@ -53,7 +54,7 @@ export default async function TagPage({
       </div>
       {tag.description && <p className="muted">{tag.description}</p>}
       <RssBar feedPath={`/rss/t/${tag.slug}.xml`} title={`Subscribe to #${tag.slug}`} copy="Every tag has a feed. Follow this one in any RSS reader." />
-      <MediaGrid items={items} canGuess={canParticipate(user)} isLoggedIn={!!user} />
+      <MediaGrid cards={items.map(toClientCard)} canGuess={canParticipate(user)} isLoggedIn={!!user} />
       <Pagination page={page} total={total} pageSize={PAGE_SIZE} basePath={`/t/${tag.slug}`} />
       <p className="muted-sm" style={{ marginTop: 16 }}>
         <Link href="/tags">← All tags</Link> · <Link href={`/leaderboard/t/${tag.slug}`}>Leaderboard for #{tag.slug}</Link>

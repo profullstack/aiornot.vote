@@ -3,6 +3,8 @@ import type { ClientCard } from "@/components/MediaCard";
 
 /** Trim a server MediaCard into the serializable shape the client component needs. */
 export function toClientCard(m: MediaCardData): ClientCard {
+  const userGuess = m.userGuess ?? null;
+
   return {
     id: m.id,
     slug: m.slug,
@@ -12,9 +14,9 @@ export function toClientCard(m: MediaCardData): ClientCard {
     thumbnailUrl: m.thumbnailUrl,
     posterUrl: m.posterUrl,
     isFeatured: m.isFeatured,
-    truthLabel: m.truthLabel,
+    truthLabel: userGuess ? m.truthLabel : "unknown",
     tags: m.tags.map((t) => ({ slug: t.slug, name: t.name, isAnswerSpoiler: t.isAnswerSpoiler })),
-    userGuess: m.userGuess ?? null,
+    userGuess,
     userGuessCorrect: m.userGuessCorrect ?? null,
     stats: {
       aiGuesses: m.stats.aiGuesses,

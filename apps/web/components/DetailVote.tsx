@@ -25,6 +25,7 @@ export function DetailVote({
   const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [needsPass, setNeedsPass] = useState(false);
   const revealed = guess != null;
 
   async function cast(g: "ai" | "not_ai") {
@@ -38,6 +39,10 @@ export function DetailVote({
         body: JSON.stringify({ mediaId: card.id, guess: g }),
       });
       const data = await res.json();
+      if (res.status === 402) {
+        setNeedsPass(true);
+        return;
+      }
       if (!res.ok || !data.ok) {
         setErr(data.error || "Could not save your guess.");
         return;
@@ -91,6 +96,12 @@ export function DetailVote({
       )}
 
       {err && <div className="form-error">{err}</div>}
+      {needsPass && (
+        <div className="notice warn" style={{ marginTop: 10 }}>
+          🎮 A one-time <strong>${1}</strong> play pass is required to keep bots out.{" "}
+          <Link href="/membership">Get access →</Link>
+        </div>
+      )}
 
       {revealed && (
         <div className="reveal" style={{ marginTop: 16 }}>

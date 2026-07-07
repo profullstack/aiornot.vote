@@ -17,6 +17,8 @@ export type SessionUser = {
   emailVerified: boolean;
   isAdmin: boolean;
   isMember: boolean;
+  /** May play (vote/guess): bought the $1 play pass OR is a lifetime member. */
+  canPlay: boolean;
 };
 
 function isoInDays(days: number): string {
@@ -74,7 +76,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (!token) return null;
 
   const res = await sqlClient.execute({
-    sql: `SELECT u.id, u.email, u.display_name, u.status, u.role, u.email_verified_at, u.is_lifetime_member
+    sql: `SELECT u.id, u.email, u.display_name, u.status, u.role, u.email_verified_at, u.is_lifetime_member, u.play_pass_at
           FROM sessions s JOIN users u ON u.id = s.user_id
           WHERE s.session_token_hash = ? AND s.expires_at > CURRENT_TIMESTAMP
           LIMIT 1`,
@@ -94,10 +96,16 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     emailVerified: row.email_verified_at != null,
     isAdmin: row.role === "admin" || isAdminEmail(email),
     isMember: Number(row.is_lifetime_member ?? 0) === 1,
+    canPlay: Number(row.is_lifetime_member ?? 0) === 1 || row.play_pass_at != null,
   };
 }
 
 /** Throws-free helper for gating actions that need a verified account. */
 export function canParticipate(user: SessionUser | null): user is SessionUser {
   return !!user && user.emailVerified && user.status === "active";
+}
+
+/** Gating for actions that require a paid play pass (or membership). */
+export function canPlay(user: SessionUser | null): user is SessionUser {
+  return canParticipate(user) && user.canPlay;
 }

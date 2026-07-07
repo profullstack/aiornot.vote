@@ -11,6 +11,7 @@ export const runtime = "nodejs";
 const PURPOSES: Record<string, { amount: () => number; label: string }> = {
   api_access: { amount: () => env.priceApiAccessUsd, label: "AIorNot.vote API access" },
   lifetime_membership: { amount: () => env.priceLifetimeUsd, label: "AIorNot.vote lifetime membership" },
+  play_pass: { amount: () => env.pricePlayPassUsd, label: "AIorNot.vote play pass" },
 };
 
 export async function POST(req: Request) {
@@ -31,6 +32,9 @@ export async function POST(req: Request) {
 
   if (purpose === "lifetime_membership" && user.isMember) {
     return NextResponse.json({ ok: false, error: "You're already a lifetime member." }, { status: 400 });
+  }
+  if (purpose === "play_pass" && user.canPlay) {
+    return NextResponse.json({ ok: false, error: "You already have play access." }, { status: 400 });
   }
 
   const paymentId = newId("pay");

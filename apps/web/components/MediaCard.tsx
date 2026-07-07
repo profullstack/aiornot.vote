@@ -38,6 +38,7 @@ export function MediaCard({
   const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [needsPass, setNeedsPass] = useState(false);
 
   const revealed = guess != null;
   const poster = card.thumbnailUrl || card.posterUrl || card.mediaUrl;
@@ -54,6 +55,10 @@ export function MediaCard({
         body: JSON.stringify({ mediaId: card.id, guess: g }),
       });
       const data = await res.json();
+      if (res.status === 402) {
+        setNeedsPass(true);
+        return;
+      }
       if (!res.ok || !data.ok) {
         setErr(data.error || "Could not save your guess.");
         return;
@@ -123,6 +128,11 @@ export function MediaCard({
         )}
 
         {err && <div className="form-error">{err}</div>}
+        {needsPass && (
+          <div className="notice warn" style={{ marginTop: 8 }}>
+            🎮 A one-time $1 play pass unlocks voting. <Link href="/membership">Get access →</Link>
+          </div>
+        )}
 
         {revealed && (
           <div className="reveal">

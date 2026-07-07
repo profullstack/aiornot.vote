@@ -33,6 +33,7 @@ export function Arena() {
   const [hintText, setHintText] = useState<string | null>(null);
   const [hintBusy, setHintBusy] = useState(false);
   const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
+  const [needsPass, setNeedsPass] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,6 +66,10 @@ export function Arena() {
         body: JSON.stringify({ mediaId: current.id, guess: g }),
       });
       const data = await res.json();
+      if (res.status === 402) {
+        setNeedsPass(true);
+        return;
+      }
       if (!res.ok || !data.ok) return;
       const correct = !!data.isCorrect;
       setReveal({ truth: data.truthLabel, correct, aiPct: data.stats.aiPct, total: data.stats.total });
@@ -169,6 +174,11 @@ export function Arena() {
                   {hintBusy ? "…" : `💡 Use a hint (${hints})`}
                 </button>
               ) : null
+            )}
+            {needsPass && (
+              <div className="notice warn" style={{ textAlign: "center" }}>
+                🎮 A one-time $1 play pass keeps the bots out. <Link href="/membership">Get access →</Link>
+              </div>
             )}
             <div className="vote-row">
               <button className="vote-btn ai" disabled={busy || !!reveal} onClick={() => vote("ai")}>AI</button>

@@ -11,7 +11,7 @@ export function BuyButton({
   priceUsd,
   label,
 }: {
-  purpose: "api_access" | "lifetime_membership";
+  purpose: "api_access" | "lifetime_membership" | "play_pass";
   priceUsd: number;
   label: string;
 }) {

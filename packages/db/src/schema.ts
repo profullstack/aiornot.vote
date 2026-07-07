@@ -24,6 +24,7 @@ export const users = sqliteTable(
     status: text("status").notNull().default("pending_email_verification"),
     role: text("role").notNull().default("user"),
     isLifetimeMember: integer("is_lifetime_member").notNull().default(0),
+    playPassAt: text("play_pass_at"),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
     lastLoginAt: text("last_login_at"),

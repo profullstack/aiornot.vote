@@ -17,6 +17,12 @@ export async function POST(req: Request) {
       { status: 403 },
     );
   }
+  if (!user.canPlay) {
+    return NextResponse.json(
+      { ok: false, error: "A one-time $1 play pass is required to play.", code: "needs_pass" },
+      { status: 402 },
+    );
+  }
 
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||

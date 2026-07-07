@@ -8,15 +8,13 @@ export const maxDuration = 120;
 
 /**
  * Weekly prize draw, triggered by cron. Protect with CRON_SECRET
- * (x-cron-secret header or ?secret=). Idempotent per week.
+ * (x-cron-secret header). Idempotent per week.
  */
 export async function POST(req: Request) {
-  const secret = req.headers.get("x-cron-secret") || new URL(req.url).searchParams.get("secret") || "";
+  const secret = req.headers.get("x-cron-secret") || "";
   if (!env.cronSecret || secret !== env.cronSecret) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   const result = await drawWeeklyPrizes();
   return NextResponse.json({ ok: true, ...result });
 }
-
-export const GET = POST;

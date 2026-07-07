@@ -315,6 +315,13 @@ export const prizes = sqliteTable(
   ],
 );
 
+export const tips = sqliteTable("tips", {
+  id: text("id").primaryKey(),
+  text: text("text").notNull().unique(),
+  isActive: integer("is_active").notNull().default(1),
+  createdAt: text("created_at").notNull().default(now),
+});
+
 export const auditLog = sqliteTable("audit_log", {
   id: text("id").primaryKey(),
   actorId: text("actor_id"),

@@ -245,6 +245,13 @@ a:hover { color: var(--human); }
 .notice.warn { border-color: var(--ai); }
 .empty { text-align: center; color: var(--muted-2); padding: 48px 0; }
 
+/* Tip bar */
+.tip-bar { border-bottom: 1px solid var(--border-1); background: var(--panel-alt); padding: 9px 0; }
+.tip-bar .container { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tip-emoji { font-size: 14px; }
+.tip-label { font-family: var(--unbounded); font-weight: 700; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ai); }
+.tip-text { font-size: 13px; color: var(--muted); }
+
 /* Prize win banner */
 .win-banner {
   background: linear-gradient(90deg, rgba(255,61,138,0.16), rgba(61,255,168,0.12));

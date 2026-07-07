@@ -9,7 +9,8 @@
     "recalc:leaderboards": "tsx jobs/recalc-leaderboards.ts",
     "warm:feeds": "tsx jobs/warm-feeds.ts",
     "seed:pool": "tsx jobs/seed-pool.ts",
-    "draw:prizes": "tsx jobs/draw-prizes.ts"
+    "draw:prizes": "tsx jobs/draw-prizes.ts",
+    "gen:tips": "tsx jobs/gen-tips.ts"
   },
   "dependencies": {
     "@aiornot/db": "workspace:*",

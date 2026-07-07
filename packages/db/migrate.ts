@@ -38,8 +38,16 @@ async function main() {
     // Split on semicolons at line ends; libsql executes one statement per call.
     const statements = sqlText
       .split(/;\s*(?:\n|$)/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith("--"));
+      // Strip full-line comments within each statement so a leading comment
+      // doesn't cause the whole statement to be dropped.
+      .map((s) =>
+        s
+          .split("\n")
+          .filter((line) => !line.trim().startsWith("--"))
+          .join("\n")
+          .trim(),
+      )
+      .filter((s) => s.length > 0);
 
     console.log(`Applying migration ${file} (${statements.length} statements)…`);
     for (const stmt of statements) {

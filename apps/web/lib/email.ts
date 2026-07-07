@@ -27,6 +27,23 @@ export async function sendEmail({ to, subject, html, text }: SendArgs): Promise<
   }
 }
 
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <h1 style="font-size:20px">Reset your AIorNot.vote password</h1>
+      <p>Click below to choose a new password. If you didn't request this, you can ignore this email.</p>
+      <p><a href="${resetUrl}" style="background:#FF3D8A;color:#08080C;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Reset password →</a></p>
+      <p style="color:#888;font-size:13px">Or paste this link: ${resetUrl}</p>
+      <p style="color:#888;font-size:13px">This link expires in ${env.verificationTtlMinutes} minutes.</p>
+    </div>`;
+  await sendEmail({
+    to,
+    subject: "Reset your password — AIorNot.vote",
+    html,
+    text: `Reset your password: ${resetUrl} (expires in ${env.verificationTtlMinutes} minutes)`,
+  });
+}
+
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<void> {
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">

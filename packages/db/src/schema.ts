@@ -39,6 +39,19 @@ export const emailVerificationTokens = sqliteTable("email_verification_tokens", 
   createdAt: text("created_at").notNull().default(now),
 });
 
+export const passwordResetTokens = sqliteTable(
+  "password_reset_tokens",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: text("expires_at").notNull(),
+    consumedAt: text("consumed_at"),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [index("idx_password_reset_user").on(t.userId)],
+);
+
 export const sessions = sqliteTable(
   "sessions",
   {

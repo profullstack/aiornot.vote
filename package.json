@@ -17,7 +17,8 @@
     "seed:demo": "pnpm --filter @aiornot/db seed:demo",
     "seed:unsplash": "pnpm --filter @aiornot/worker seed:unsplash",
     "seed:ai-variants": "pnpm --filter @aiornot/worker seed:ai-variants",
-    "recalc:leaderboards": "pnpm --filter @aiornot/worker recalc:leaderboards"
+    "recalc:leaderboards": "pnpm --filter @aiornot/worker recalc:leaderboards",
+    "seed:pool": "pnpm --filter @aiornot/worker seed:pool"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

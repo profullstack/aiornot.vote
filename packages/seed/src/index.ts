@@ -1,10 +1,12 @@
 import { getClient, ids } from "@aiornot/db";
 import type { Client } from "@libsql/client";
 import { buildVariantPrompt, promptSummary, SEED_CATEGORIES } from "./prompts";
-import { seedStorageConfigured, seedUpload } from "./storage";
+import { storeImage } from "./store-image";
 
 export { SEED_CATEGORIES } from "./prompts";
 export { seedStorageConfigured } from "./storage";
+export { mediaStorageDir } from "./media-dir";
+export { seedPool } from "./pool";
 
 function slugify(s: string): string {
   return (
@@ -150,65 +152,89 @@ export async function importUnsplashBatch(opts: {
 
 // ---- OpenAI AI variants ----------------------------------------------------
 
+const OPENAI_IMAGE_SIZE = "1024x1536";
+
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Call OpenAI image generation with retry/backoff; returns raw PNG bytes. */
+async function generateVariantImage(prompt: string, model: string): Promise<Buffer> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
+  let lastErr = "";
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) await sleep(1500 * 2 ** (attempt - 1)); // 1.5s, 3s, 6s
+    const res = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, prompt, size: OPENAI_IMAGE_SIZE, n: 1 }),
+    });
+    if (res.ok) {
+      const gen = (await res.json()) as { data: Array<{ b64_json?: string; url?: string }> };
+      const item = gen.data[0];
+      if (item?.b64_json) return Buffer.from(item.b64_json, "base64");
+      if (item?.url) return Buffer.from(await (await fetch(item.url)).arrayBuffer());
+      throw new Error("OpenAI returned no image data.");
+    }
+    lastErr = `${res.status}: ${(await res.text()).slice(0, 150)}`;
+    // Retry transient errors; fail fast on client errors (except rate limit).
+    if (res.status !== 429 && res.status < 500) break;
+  }
+  throw new Error(`OpenAI image gen failed (${lastErr})`);
+}
+
+/** Generate one photorealistic AI variant, store the image, insert the media row. */
+export async function createAiVariant(
+  client: Client,
+  opts: { category: string; caption?: string; parentId?: string | null; model?: string; seed?: number },
+): Promise<{ mediaId: string; slug: string; mediaUrl: string }> {
+  const model = opts.model || process.env.AI_IMAGE_MODEL || "gpt-image-1";
+  const category = opts.category;
+  const caption = opts.caption || category;
+  const prompt = buildVariantPrompt(category, caption, opts.seed ?? Date.now() + Math.floor(Math.random() * 1e6));
+
+  const buf = await generateVariantImage(prompt, model);
+  const hash = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const mediaUrl = await storeImage(`ai-variants/${hash}.png`, buf, "image/png");
+
+  const title = `AI variant · ${category.replace(/ photography$/, "")}`;
+  const mediaId = ids.media();
+  const slug = await uniqueSlug(client, title);
+  await client.execute({
+    sql: `INSERT INTO media
+      (id, slug, media_type, title, media_url, thumbnail_url, source_provider, seed_source,
+       source_parent_media_id, truth_label, truth_confidence, reveal_status, status,
+       width, height, ai_prompt_summary, ai_model, approved_at)
+      VALUES (?, ?, 'image', ?, ?, ?, 'openai', 'openai', ?, 'ai', 'seeded',
+              'hidden_until_guess', 'approved', 1024, 1536, ?, ?, CURRENT_TIMESTAMP)`,
+    args: [mediaId, slug, title, mediaUrl, mediaUrl, opts.parentId ?? null, promptSummary(category), model],
+  });
+  await client.execute({ sql: "INSERT OR IGNORE INTO media_stats (media_id) VALUES (?)", args: [mediaId] });
+  await attachTags(client, mediaId, [slugify(category.replace(/ photography$/, "")), "photorealistic", "ai-generated", "image"]);
+  return { mediaId, slug, mediaUrl };
+}
+
 export async function generateAiVariantsBatch(opts: {
   count: number;
   client?: Client;
 }): Promise<{ batchId: string; generated: number }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
-  if (!seedStorageConfigured()) {
-    throw new Error("Object storage (R2_*) must be configured to persist generated AI images.");
-  }
+  if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not set.");
   const client = opts.client ?? getClient();
-  const model = process.env.AI_IMAGE_MODEL || "gpt-image-1";
   const batchId = await startBatch(client, "OpenAI AI variants", "openai", null, opts.count);
   let generated = 0;
-
   try {
-    // Use recent Unsplash seeds as inspiration parents.
     const parents = await client.execute({
       sql: `SELECT m.id, m.title, m.description FROM media m
             WHERE m.seed_source = 'unsplash' AND m.truth_label = 'not_ai'
             ORDER BY RANDOM() LIMIT ?`,
       args: [opts.count],
     });
-
     for (let i = 0; i < opts.count; i++) {
       const parent = parents.rows[i % Math.max(1, parents.rows.length)];
       const category = SEED_CATEGORIES[i % SEED_CATEGORIES.length]!;
       const caption = (parent?.title as string) || (parent?.description as string) || category;
-      const prompt = buildVariantPrompt(category, caption, i + Date.now());
-
-      const genRes = await fetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model, prompt, size: "1024x1536", n: 1 }),
-      });
-      if (!genRes.ok) throw new Error(`OpenAI image gen failed (${genRes.status}): ${(await genRes.text()).slice(0, 150)}`);
-      const gen = (await genRes.json()) as { data: Array<{ b64_json?: string; url?: string }> };
-      const item = gen.data[0];
-      let buf: Buffer;
-      if (item?.b64_json) buf = Buffer.from(item.b64_json, "base64");
-      else if (item?.url) buf = Buffer.from(await (await fetch(item.url)).arrayBuffer());
-      else throw new Error("OpenAI returned no image data.");
-
-      const hash = Math.random().toString(36).slice(2, 10);
-      const publicUrl = await seedUpload(`ai-variants/${hash}.png`, buf, "image/png");
-
-      const title = `AI variant · ${category.replace(/ photography$/, "")}`;
-      const mediaId = ids.media();
-      const slug = await uniqueSlug(client, title);
-      await client.execute({
-        sql: `INSERT INTO media
-          (id, slug, media_type, title, media_url, thumbnail_url, source_provider, seed_source,
-           source_parent_media_id, truth_label, truth_confidence, reveal_status, status,
-           width, height, ai_prompt_summary, ai_model, approved_at)
-          VALUES (?, ?, 'image', ?, ?, ?, 'openai', 'openai', ?, 'ai', 'seeded',
-                  'hidden_until_guess', 'approved', 1024, 1536, ?, ?, CURRENT_TIMESTAMP)`,
-        args: [mediaId, slug, title, publicUrl, publicUrl, (parent?.id as string) ?? null, promptSummary(category), model],
-      });
-      await client.execute({ sql: "INSERT OR IGNORE INTO media_stats (media_id) VALUES (?)", args: [mediaId] });
-      await attachTags(client, mediaId, [slugify(category.replace(/ photography$/, "")), "photorealistic", "ai-generated", "image"]);
+      await createAiVariant(client, { category, caption, parentId: (parent?.id as string) ?? null, seed: i });
       generated++;
     }
     await finishBatch(client, batchId, 0, generated);
@@ -218,3 +244,7 @@ export async function generateAiVariantsBatch(opts: {
   }
   return { batchId, generated };
 }
+
+// Shared helpers reused by the pool orchestrator (pool.ts).
+export { startBatch, finishBatch, uniqueSlug, attachTags, slugify };
+export type { Client };

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -48,6 +49,12 @@ export default async function RootLayout({
         <SiteHeader user={user} />
         <main>{children}</main>
         <SiteFooter />
+        {/* Profullstack feedback widget (feedback.profullstack.com) */}
+        <Script
+          src="https://feedback.profullstack.com/embed/profullstack-feedback.js"
+          data-property="aiornot.vote"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

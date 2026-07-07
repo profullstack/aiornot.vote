@@ -14,3 +14,4 @@ local.db-*
 .DS_Store
 .turbo/
 coverage/
+.media/

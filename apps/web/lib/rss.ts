@@ -14,6 +14,11 @@ function cdata(s: string): string {
   return `<![CDATA[${s.replace(/]]>/g, "]]]]><![CDATA[>")}]]>`;
 }
 
+/** Feeds need absolute URLs; locally-stored media uses relative /media paths. */
+function abs(url: string): string {
+  return url.startsWith("/") ? `${env.appUrl}${url}` : url;
+}
+
 export type FeedItem = {
   title: string;
   link: string;
@@ -75,7 +80,7 @@ ${body}
 }
 
 export function mediaItemDescription(m: MediaCard): string {
-  const preview = m.thumbnailUrl || m.mediaUrl;
+  const preview = abs(m.thumbnailUrl || m.mediaUrl);
   const tags = m.tags
     .filter((t) => !t.isAnswerSpoiler)
     .map((t) => t.name)
@@ -103,7 +108,7 @@ export function mediaCardsToFeed(
       pubDate: m.approvedAt || m.createdAt,
       descriptionHtml: mediaItemDescription(m),
       categories: m.tags.filter((t) => !t.isAnswerSpoiler).map((t) => t.slug),
-      enclosure: m.mediaType === "image" ? { url: m.mediaUrl, type: "image/webp" } : undefined,
+      enclosure: m.mediaType === "image" ? { url: abs(m.mediaUrl), type: "image/webp" } : undefined,
     })),
   });
 }

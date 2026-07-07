@@ -20,7 +20,9 @@
     "recalc:leaderboards": "pnpm --filter @aiornot/worker recalc:leaderboards",
     "seed:pool": "pnpm --filter @aiornot/worker seed:pool",
     "draw:prizes": "pnpm --filter @aiornot/worker draw:prizes",
-    "gen:tips": "pnpm --filter @aiornot/worker gen:tips"
+    "gen:tips": "pnpm --filter @aiornot/worker gen:tips",
+    "test": "pnpm --filter @aiornot/web test",
+    "typecheck": "pnpm --filter @aiornot/web typecheck"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

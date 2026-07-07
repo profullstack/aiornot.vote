@@ -17,13 +17,18 @@ export function validateExternalUrl(raw: string): { ok: true; url: URL } | { ok:
     host === "localhost" ||
     host === "0.0.0.0" ||
     host === "::1" ||
+    host === "::" ||
     host.endsWith(".local") ||
     host.endsWith(".internal") ||
     /^127\./.test(host) ||
+    /^0\./.test(host) ||          // 0.0.0.0/8 — "this" network (RFC 1122)
     /^10\./.test(host) ||
     /^192\.168\./.test(host) ||
-    /^169\.254\./.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    /^169\.254\./.test(host) ||   // link-local (RFC 3927)
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host) || // 100.64.0.0/10 — shared address space (RFC 6598)
+    /^(fc|fd)[0-9a-f]{2}:/.test(host) || // fc00::/7 — IPv6 ULA (RFC 4193)
+    /^fe[89ab][0-9a-f]:/.test(host)       // fe80::/10 — IPv6 link-local (RFC 4291)
   ) {
     return { ok: false, error: "That host is not allowed." };
   }

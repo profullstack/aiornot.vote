@@ -24,21 +24,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, status: "granted", purpose: p.purpose });
   }
 
-  const cp = await getCoinpayPayment(p.coinpay_payment_id as string);
-  if (!cp) {
-    return NextResponse.json({ ok: true, status: "pending" });
-  }
-  if (!isPaymentPaid(cp.status)) {
-    // Reflect intermediate CoinPay states (pending/detected/…).
-    await sqlClient.execute({
-      sql: "UPDATE payments SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      args: [id],
-    });
-    return NextResponse.json({ ok: true, status: cp.status || "pending" });
+  const alreadyConfirmed = p.status === "confirmed";
+  if (!alreadyConfirmed) {
+    const cp = await getCoinpayPayment(p.coinpay_payment_id as string);
+    if (!cp) {
+      return NextResponse.json({ ok: true, status: "pending" });
+    }
+    if (!isPaymentPaid(cp.status)) {
+      // Reflect intermediate CoinPay states without downgrading a webhook-confirmed payment.
+      await sqlClient.execute({
+        sql: "UPDATE payments SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'pending'",
+        args: [id],
+      });
+      return NextResponse.json({ ok: true, status: cp.status || "pending" });
+    }
   }
 
-  // Paid — grant once. Atomically flip pending → granted so concurrent polls
-  // don't double-grant.
+  // Paid — grant once. Atomically flip the local payment to granted so
+  // concurrent polls don't double-grant.
   const flip = await sqlClient.execute({
     sql: "UPDATE payments SET status = 'granted', granted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status != 'granted'",
     args: [id],

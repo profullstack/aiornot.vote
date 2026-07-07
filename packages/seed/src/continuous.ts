@@ -65,10 +65,18 @@ export async function generateContinuousBatch(opts: { count?: number; client?: C
     const c = await client.execute("SELECT SUM(CASE WHEN truth_label='ai' THEN 1 ELSE 0 END) a, SUM(CASE WHEN truth_label='not_ai' THEN 1 ELSE 0 END) n FROM media WHERE status='approved'");
     const aiN = Number(c.rows[0]?.a ?? 0);
     const realN = Number(c.rows[0]?.n ?? 0);
-    // Generate the underrepresented type; prefer AI on ties (it's the harder half to source).
-    const makeAi = haveOpenai && aiN <= realN;
+    // Always top up the CURRENTLY-UNDERREPRESENTED class so the pool trends 50/50.
+    // Prefer AI on ties (it's the harder half to source).
+    const wantAi = aiN <= realN;
+    // Critical: if AI is the class we need but we can't make it (no OPENAI_API_KEY),
+    // SKIP this iteration. Falling back to a real photo here only deepens the skew
+    // — which is exactly what flooded the pool with not-AI before.
+    if (wantAi && !haveOpenai) {
+      console.warn("[continuous] AI is underrepresented but OPENAI_API_KEY is missing — skipping (not adding a real photo, to avoid worsening the imbalance)");
+      continue;
+    }
     try {
-      if (makeAi) {
+      if (wantAi) {
         const category = SEED_CATEGORIES[Math.floor(Math.random() * SEED_CATEGORIES.length)]!;
         const tag = slugify(category.replace(/ photography$/, ""));
         await createAiVariant(client, { category, tags: [tag], seed: Date.now() + i });

@@ -38,6 +38,7 @@ export default async function AdminHome() {
         <Link href="/admin/tags">Tags</Link>
         <Link href="/admin/users">Users</Link>
         <Link href="/admin/seed-batches">Seed</Link>
+        <Link href="/admin/prizes">Prizes</Link>
       </div>
     </div>
   );

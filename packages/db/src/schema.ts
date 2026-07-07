@@ -291,6 +291,30 @@ export const submissions = sqliteTable("submissions", {
   reviewedAt: text("reviewed_at"),
 });
 
+export const prizes = sqliteTable(
+  "prizes",
+  {
+    id: text("id").primaryKey(),
+    periodStart: text("period_start").notNull(),
+    periodEnd: text("period_end").notNull(),
+    rank: integer("rank").notNull(),
+    rewardKind: text("reward_kind").notNull(),
+    rewardLabel: text("reward_label").notNull(),
+    userId: text("user_id"),
+    status: text("status").notNull().default("unclaimed"),
+    claimDeadline: text("claim_deadline").notNull(),
+    claimedAt: text("claimed_at"),
+    fulfilledAt: text("fulfilled_at"),
+    notifiedAt: text("notified_at"),
+    carriedOver: integer("carried_over").notNull().default(0),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [
+    index("idx_prizes_user_status").on(t.userId, t.status),
+    index("idx_prizes_period").on(t.periodStart),
+  ],
+);
+
 export const auditLog = sqliteTable("audit_log", {
   id: text("id").primaryKey(),
   actorId: text("actor_id"),

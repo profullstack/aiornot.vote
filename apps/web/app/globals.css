@@ -245,6 +245,24 @@ a:hover { color: var(--human); }
 .notice.warn { border-color: var(--ai); }
 .empty { text-align: center; color: var(--muted-2); padding: 48px 0; }
 
+/* Prize win banner */
+.win-banner {
+  background: linear-gradient(90deg, rgba(255,61,138,0.16), rgba(61,255,168,0.12));
+  border-bottom: 1px solid var(--border-2);
+  padding: 12px 0;
+}
+.win-emoji { font-size: 22px; }
+
+/* Prize cards */
+.prize-pack { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 16px 0; }
+.prize-card { border: 1px solid var(--border-2); border-radius: 16px; padding: 20px; background: var(--panel); position: relative; }
+.prize-card .rank { font-family: var(--unbounded); font-weight: 900; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; }
+.prize-card.r1 { border-color: var(--ai); }
+.prize-card.r1 .rank { color: var(--ai); }
+.prize-card.r2 .rank { color: var(--human); }
+.prize-card .reward { font-family: var(--unbounded); font-weight: 700; font-size: 16px; margin: 10px 0 6px; line-height: 1.25; }
+.prize-card .winner { font-size: 13px; color: var(--muted-2); }
+
 /* Ad slot (CrawlProof) */
 .ad-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 auto 28px; max-width: 100%; }
 .ad-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint-2); }

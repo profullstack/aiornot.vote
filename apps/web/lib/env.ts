@@ -63,6 +63,7 @@ export const env = {
   },
   priceApiAccessUsd: Number(process.env.PRICE_API_ACCESS_USD || 1),
   priceLifetimeUsd: Number(process.env.PRICE_LIFETIME_USD || 2),
+  cronSecret: process.env.CRON_SECRET || "",
 
   hasResend: bool(process.env.RESEND_API_KEY ? "1" : "0"),
 };

@@ -32,7 +32,19 @@ export function SiteFooter() {
           <Link href="/submit">Submit media</Link>
           <Link href="/signup">Create account</Link>
           <Link href="/account">Your history</Link>
+          <Link href="/api">Crowd-detection API</Link>
         </div>
+      </div>
+      <div className="footer-bottom">
+        <span>
+          © {new Date().getFullYear()}{" "}
+          <a href="https://github.com/profullstack/aiornot.vote" target="_blank" rel="noreferrer">
+            Profullstack, Inc.
+          </a>
+        </span>
+        <a href="https://github.com/profullstack/aiornot.vote" target="_blank" rel="noreferrer">
+          Source on GitHub ↗
+        </a>
       </div>
     </footer>
   );

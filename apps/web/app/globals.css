@@ -245,6 +245,12 @@ a:hover { color: var(--human); }
 .notice.warn { border-color: var(--ai); }
 .empty { text-align: center; color: var(--muted-2); padding: 48px 0; }
 
+/* Ad slot (CrawlProof) */
+.ad-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 auto 28px; max-width: 100%; }
+.ad-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--faint-2); }
+.ad-slot > [data-cp-ad] { border: 1px solid var(--border-1); border-radius: 10px; overflow: hidden; background: var(--panel-alt); }
+.ad-slot iframe { border: 0; display: block; }
+
 /* Image magnifier / loupe */
 .magnifier { position: relative; display: block; line-height: 0; cursor: crosshair; touch-action: none; }
 .magnifier > img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }

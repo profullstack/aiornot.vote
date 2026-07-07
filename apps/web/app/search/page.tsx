@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { listMedia, PAGE_SIZE, type ListSort } from "@/lib/queries";
+import { toClientCard } from "@/lib/serialize";
 import { getCurrentUser, canParticipate } from "@/lib/session";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
@@ -84,7 +85,7 @@ export default async function SearchPage({
       </div>
 
       <RssBar feedPath={rssFeed} title="Search it once. Subscribe forever." copy="This search has its own RSS feed — save it in your reader." />
-      <MediaGrid items={items} canGuess={canParticipate(user)} isLoggedIn={!!user} />
+      <MediaGrid cards={items.map(toClientCard)} canGuess={canParticipate(user)} isLoggedIn={!!user} />
       <Pagination page={page} total={total} pageSize={PAGE_SIZE} basePath="/search" query={baseQuery.toString()} />
     </div>
   );

@@ -3,6 +3,7 @@ import { RssBar } from "./RssBar";
 import { MediaGrid } from "./MediaGrid";
 import { Pagination } from "./Pagination";
 import { listMedia, type ListSort } from "@/lib/queries";
+import { toClientCard } from "@/lib/serialize";
 import { getCurrentUser, canParticipate } from "@/lib/session";
 import { PAGE_SIZE } from "@/lib/queries";
 
@@ -34,7 +35,7 @@ export async function FeedSection({ page }: { page: number }) {
         </div>
       </div>
       <RssBar feedPath="/rss.xml" title="Follow the latest media by RSS" />
-      <MediaGrid items={items} canGuess={canParticipate(user)} isLoggedIn={!!user} />
+      <MediaGrid cards={items.map(toClientCard)} canGuess={canParticipate(user)} isLoggedIn={!!user} />
       <Pagination page={page} total={total} pageSize={PAGE_SIZE} basePath="/page" />
     </>
   );

@@ -7,6 +7,7 @@ export { SEED_CATEGORIES } from "./prompts";
 export { seedStorageConfigured } from "./storage";
 export { mediaStorageDir } from "./media-dir";
 export { seedPool } from "./pool";
+export { generateContinuousBatch } from "./continuous";
 
 function slugify(s: string): string {
   return (

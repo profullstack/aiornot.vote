@@ -23,11 +23,50 @@ export const users = sqliteTable(
     avatarUrl: text("avatar_url"),
     status: text("status").notNull().default("pending_email_verification"),
     role: text("role").notNull().default("user"),
+    isLifetimeMember: integer("is_lifetime_member").notNull().default(0),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
     lastLoginAt: text("last_login_at"),
   },
   (t) => [index("idx_users_email_verified").on(t.emailVerifiedAt)],
+);
+
+export const payments = sqliteTable(
+  "payments",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    purpose: text("purpose").notNull(),
+    amountUsd: real("amount_usd").notNull(),
+    blockchain: text("blockchain"),
+    coinpayPaymentId: text("coinpay_payment_id"),
+    paymentAddress: text("payment_address"),
+    cryptoAmount: text("crypto_amount"),
+    status: text("status").notNull().default("pending"),
+    grantedAt: text("granted_at"),
+    createdAt: text("created_at").notNull().default(now),
+    updatedAt: text("updated_at").notNull().default(now),
+  },
+  (t) => [
+    index("idx_payments_user").on(t.userId),
+    index("idx_payments_coinpay").on(t.coinpayPaymentId),
+  ],
+);
+
+export const apiKeys = sqliteTable(
+  "api_keys",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    keyHash: text("key_hash").notNull().unique(),
+    keyPrefix: text("key_prefix").notNull(),
+    label: text("label"),
+    isActive: integer("is_active").notNull().default(1),
+    requestCount: integer("request_count").notNull().default(0),
+    lastUsedAt: text("last_used_at"),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [index("idx_api_keys_user").on(t.userId)],
 );
 
 export const emailVerificationTokens = sqliteTable("email_verification_tokens", {

@@ -16,6 +16,7 @@ export type SessionUser = {
   role: string;
   emailVerified: boolean;
   isAdmin: boolean;
+  isMember: boolean;
 };
 
 function isoInDays(days: number): string {
@@ -73,7 +74,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (!token) return null;
 
   const res = await sqlClient.execute({
-    sql: `SELECT u.id, u.email, u.display_name, u.status, u.role, u.email_verified_at
+    sql: `SELECT u.id, u.email, u.display_name, u.status, u.role, u.email_verified_at, u.is_lifetime_member
           FROM sessions s JOIN users u ON u.id = s.user_id
           WHERE s.session_token_hash = ? AND s.expires_at > CURRENT_TIMESTAMP
           LIMIT 1`,
@@ -92,6 +93,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     role: row.role as string,
     emailVerified: row.email_verified_at != null,
     isAdmin: row.role === "admin" || isAdminEmail(email),
+    isMember: Number(row.is_lifetime_member ?? 0) === 1,
   };
 }
 

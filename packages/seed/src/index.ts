@@ -187,31 +187,51 @@ async function generateVariantImage(prompt: string, model: string): Promise<Buff
 /** Generate one photorealistic AI variant, store the image, insert the media row. */
 export async function createAiVariant(
   client: Client,
-  opts: { category: string; caption?: string; parentId?: string | null; model?: string; seed?: number },
+  opts: {
+    category: string;
+    caption?: string;
+    description?: string;
+    tags?: string[];
+    parentId?: string | null;
+    model?: string;
+    seed?: number;
+  },
 ): Promise<{ mediaId: string; slug: string; mediaUrl: string }> {
   const model = opts.model || process.env.AI_IMAGE_MODEL || "gpt-image-1";
   const category = opts.category;
   const caption = opts.caption || category;
-  const prompt = buildVariantPrompt(category, caption, opts.seed ?? Date.now() + Math.floor(Math.random() * 1e6));
+  const categorySlug = slugify(category.replace(/ photography$/, ""));
+
+  // Subject tags the image must actually depict (drives both the prompt and the
+  // tags we store, so they can't disagree).
+  const subjectTags = (opts.tags && opts.tags.length ? opts.tags : [categorySlug])
+    .map((t) => slugify(t))
+    .filter((t) => t && !["photorealistic", "ai-generated", "human-made", "image", "video"].includes(t));
+
+  const prompt = buildVariantPrompt(category, caption, opts.seed ?? Date.now() + Math.floor(Math.random() * 1e6), {
+    tags: subjectTags,
+    description: opts.description,
+  });
 
   const buf = await generateVariantImage(prompt, model);
   const hash = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const mediaUrl = await storeImage(`ai-variants/${hash}.png`, buf, "image/png");
 
-  const title = `AI variant · ${category.replace(/ photography$/, "")}`;
+  const primary = subjectTags[0] || categorySlug;
+  const title = `AI ${primary.replace(/-/g, " ")}`;
   const mediaId = ids.media();
   const slug = await uniqueSlug(client, title);
   await client.execute({
     sql: `INSERT INTO media
-      (id, slug, media_type, title, media_url, thumbnail_url, source_provider, seed_source,
+      (id, slug, media_type, title, description, media_url, thumbnail_url, source_provider, seed_source,
        source_parent_media_id, truth_label, truth_confidence, reveal_status, status,
        width, height, ai_prompt_summary, ai_model, approved_at)
-      VALUES (?, ?, 'image', ?, ?, ?, 'openai', 'openai', ?, 'ai', 'seeded',
+      VALUES (?, ?, 'image', ?, ?, ?, ?, 'openai', 'openai', ?, 'ai', 'seeded',
               'hidden_until_guess', 'approved', 1024, 1536, ?, ?, CURRENT_TIMESTAMP)`,
-    args: [mediaId, slug, title, mediaUrl, mediaUrl, opts.parentId ?? null, promptSummary(category), model],
+    args: [mediaId, slug, title, opts.description ?? null, mediaUrl, mediaUrl, opts.parentId ?? null, promptSummary(category), model],
   });
   await client.execute({ sql: "INSERT OR IGNORE INTO media_stats (media_id) VALUES (?)", args: [mediaId] });
-  await attachTags(client, mediaId, [slugify(category.replace(/ photography$/, "")), "photorealistic", "ai-generated", "image"]);
+  await attachTags(client, mediaId, [...subjectTags, "photorealistic", "ai-generated", "image"]);
   return { mediaId, slug, mediaUrl };
 }
 
@@ -232,9 +252,28 @@ export async function generateAiVariantsBatch(opts: {
     });
     for (let i = 0; i < opts.count; i++) {
       const parent = parents.rows[i % Math.max(1, parents.rows.length)];
-      const category = SEED_CATEGORIES[i % SEED_CATEGORIES.length]!;
-      const caption = (parent?.title as string) || (parent?.description as string) || category;
-      await createAiVariant(client, { category, caption, parentId: (parent?.id as string) ?? null, seed: i });
+      // Use the parent's real subject tags so the generated image (and its tags)
+      // match, instead of an arbitrary index-based category.
+      let tags: string[] = [];
+      if (parent?.id) {
+        const tr = await client.execute({
+          sql: `SELECT t.slug FROM media_tags mt JOIN tags t ON t.id = mt.tag_id
+                WHERE mt.media_id = ? AND t.is_answer_spoiler = 0
+                  AND t.slug NOT IN ('image','video','photorealistic')`,
+          args: [parent.id],
+        });
+        tags = tr.rows.map((r) => r.slug as string);
+      }
+      const category = tags[0] ? `${tags[0]} photography` : SEED_CATEGORIES[i % SEED_CATEGORIES.length]!;
+      const caption = (parent?.title as string) || (parent?.description as string) || tags.join(", ");
+      await createAiVariant(client, {
+        category,
+        caption,
+        description: (parent?.description as string) ?? undefined,
+        tags: tags.length ? tags : undefined,
+        parentId: (parent?.id as string) ?? null,
+        seed: i,
+      });
       generated++;
     }
     await finishBatch(client, batchId, 0, generated);

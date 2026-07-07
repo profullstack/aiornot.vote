@@ -24,6 +24,9 @@ export type CreateMediaInput = {
   aiPromptSummary?: string | null;
   aiModel?: string | null;
   sourceParentMediaId?: string | null;
+  revealStatus?: "hidden_until_guess" | "revealed" | "locked";
+  createdViaApi?: boolean;
+  apiKeyId?: string | null;
   tagSlugs?: string[];
 };
 
@@ -38,8 +41,9 @@ export async function createMedia(input: CreateMediaInput): Promise<{ id: string
       (id, slug, media_type, title, media_url, thumbnail_url, poster_url, storage_key,
        original_url, source_url, source_domain, source_provider, seed_source,
        source_parent_media_id, submitter_user_id, submitter_claim, truth_label,
-       truth_confidence, reveal_status, status, is_featured, ai_prompt_summary, ai_model, approved_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'hidden_until_guess', ?, ?, ?, ?, ?)`,
+       truth_confidence, reveal_status, status, is_featured, ai_prompt_summary, ai_model,
+       created_via_api, api_key_id, approved_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id,
       slug,
@@ -59,10 +63,13 @@ export async function createMedia(input: CreateMediaInput): Promise<{ id: string
       input.submitterClaim ?? null,
       input.truthLabel ?? "unknown",
       input.truthConfidence ?? "unverified",
+      input.revealStatus ?? "hidden_until_guess",
       status,
       input.isFeatured ? 1 : 0,
       input.aiPromptSummary ?? null,
       input.aiModel ?? null,
+      input.createdViaApi ? 1 : 0,
+      input.apiKeyId ?? null,
       status === "approved" ? new Date().toISOString() : null,
     ],
   });

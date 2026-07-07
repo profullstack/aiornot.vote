@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; background:#08080C; }
+    a { color:#FF3D8A; text-decoration:none; }
+    a:hover { color:#3DFFA8; }
+    @keyframes popIn { 0% { transform:scale(0.7); opacity:0; } 60% { transform:scale(1.06); } 100% { transform:scale(1); opacity:1; } }
+    @keyframes riseIn { from { transform:translateY(10px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    ::selection { background:#FF3D8A; color:#08080C; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#08080C; background-image:radial-gradient(ellipse 60% 40% at 20% -10%, rgba(255,61,138,0.10), transparent), radial-gradient(ellipse 60% 40% at 85% 110%, rgba(61,255,168,0.07), transparent); color:#EDEDF2; font-family:'Space Grotesk', sans-serif; display:flex; flex-direction:column;">
+
+  <!-- Header -->
+  <header style="display:flex; align-items:center; justify-content:space-between; padding:22px 36px; border-bottom:1px solid #17171F;">
+    <div style="display:flex; align-items:baseline; gap:2px; font-family:'Unbounded', sans-serif;">
+      <span style="font-weight:900; font-size:20px; letter-spacing:-0.5px; color:#EDEDF2;">AI</span>
+      <span style="font-weight:500; font-size:20px; color:#4A4A58; padding:0 2px;">or</span>
+      <span style="font-weight:900; font-size:20px; letter-spacing:-0.5px; color:#FF3D8A;">NOT</span>
+      <span style="font-weight:500; font-size:13px; color:#4A4A58; margin-left:4px;">.vote</span>
+    </div>
+    <sc-if value="{{ showHeaderStats }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; gap:28px; font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:#5C5C6E;">
+        <div style="display:flex; gap:8px; align-items:baseline;"><span>Round</span><span style="color:#EDEDF2; font-family:'Unbounded'; font-weight:700; font-size:15px;">{{ roundLabel }}</span></div>
+        <div style="display:flex; gap:8px; align-items:baseline;"><span>Score</span><span style="color:#3DFFA8; font-family:'Unbounded'; font-weight:700; font-size:15px;">{{ scoreLabel }}</span></div>
+        <div style="display:flex; gap:8px; align-items:baseline;"><span>Streak</span><span style="color:#FF3D8A; font-family:'Unbounded'; font-weight:700; font-size:15px;">{{ streakLabel }}</span></div>
+      </div>
+    </sc-if>
+  </header>
+
+  <!-- Prompt -->
+  <div style="text-align:center; padding:36px 24px 8px;">
+    <h1 style="margin:0; font-family:'Unbounded', sans-serif; font-weight:700; font-size:clamp(22px, 3vw, 34px); letter-spacing:-0.5px;">Which one is human?</h1>
+    <p style="margin:10px 0 0; color:#5C5C6E; font-size:15px;">Call it on each photo. No takebacks.</p>
+  </div>
+
+  <!-- Arena -->
+  <main style="flex:1; display:grid; grid-template-columns:1fr auto 1fr; gap:28px; align-items:stretch; max-width:1180px; width:100%; margin:0 auto; padding:28px 36px 20px; box-sizing:border-box;">
+
+    <!-- LEFT CARD -->
+    <div style="display:flex; flex-direction:column; gap:16px; animation:riseIn 0.5s ease both;">
+      <div style="position:relative; aspect-ratio:4/5; border-radius:18px; overflow:hidden; border:1px solid #1E1E2A; background:#101018;">
+        <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-left" shape="rect" placeholder="Drop photo A" style="position:absolute; inset:0;" hint-size="100%,100%"></x-import>
+        <div style="position:absolute; top:14px; left:14px; pointer-events:none; background:rgba(8,8,12,0.75); backdrop-filter:blur(6px); border:1px solid #2A2A38; border-radius:8px; padding:5px 10px; font-family:'Unbounded'; font-weight:700; font-size:12px; letter-spacing:0.1em; color:#8A8A9C;">A</div>
+        <sc-if value="{{ leftRevealed }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:rgba(8,8,12,0.72); backdrop-filter:blur(3px); animation:popIn 0.35s ease both;">
+            <div style="font-family:'Unbounded'; font-weight:900; font-size:34px; letter-spacing:-0.5px; color:{{ leftTruthColor }};">{{ leftTruthLabel }}</div>
+            <div style="font-size:14px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:{{ leftVerdictColor }};">{{ leftVerdictLabel }}</div>
+            <sc-if value="{{ showCommunity }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:6px; width:60%; margin-top:8px;">
+                <div style="height:6px; border-radius:3px; background:#22222E; overflow:hidden;"><div style="height:100%; width:{{ leftPctWidth }}; background:#FF3D8A; border-radius:3px;"></div></div>
+                <div style="font-size:12px; color:#8A8A9C; text-align:center;">{{ leftPctLabel }} of voters said AI</div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <button onClick="{{ voteLeftAI }}" style="font-family:'Unbounded'; font-weight:700; font-size:15px; letter-spacing:0.04em; padding:16px 0; border-radius:12px; cursor:pointer; background:{{ leftAiBtnBg }}; color:{{ leftAiBtnFg }}; border:1px solid {{ leftAiBtnBorder }};" style-hover="border-color:#FF3D8A; color:#FF3D8A;">AI</button>
+        <button onClick="{{ voteLeftReal }}" style="font-family:'Unbounded'; font-weight:700; font-size:15px; letter-spacing:0.04em; padding:16px 0; border-radius:12px; cursor:pointer; background:{{ leftRealBtnBg }}; color:{{ leftRealBtnFg }}; border:1px solid {{ leftRealBtnBorder }};" style-hover="border-color:#3DFFA8; color:#3DFFA8;">NOT AI</button>
+      </div>
+    </div>
+
+    <!-- VS divider -->
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding-bottom:64px;">
+      <div style="width:1px; flex:1; background:linear-gradient(#17171F, #2A2A38);"></div>
+      <div style="font-family:'Unbounded'; font-weight:900; font-size:18px; color:#4A4A58; letter-spacing:0.05em;">VS</div>
+      <div style="width:1px; flex:1; background:linear-gradient(#2A2A38, #17171F);"></div>
+    </div>
+
+    <!-- RIGHT CARD -->
+    <div style="display:flex; flex-direction:column; gap:16px; animation:riseIn 0.5s 0.08s ease both;">
+      <div style="position:relative; aspect-ratio:4/5; border-radius:18px; overflow:hidden; border:1px solid #1E1E2A; background:#101018;">
+        <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-right" shape="rect" placeholder="Drop photo B" style="position:absolute; inset:0;" hint-size="100%,100%"></x-import>
+        <div style="position:absolute; top:14px; left:14px; pointer-events:none; background:rgba(8,8,12,0.75); backdrop-filter:blur(6px); border:1px solid #2A2A38; border-radius:8px; padding:5px 10px; font-family:'Unbounded'; font-weight:700; font-size:12px; letter-spacing:0.1em; color:#8A8A9C;">B</div>
+        <sc-if value="{{ rightRevealed }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:rgba(8,8,12,0.72); backdrop-filter:blur(3px); animation:popIn 0.35s ease both;">
+            <div style="font-family:'Unbounded'; font-weight:900; font-size:34px; letter-spacing:-0.5px; color:{{ rightTruthColor }};">{{ rightTruthLabel }}</div>
+            <div style="font-size:14px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:{{ rightVerdictColor }};">{{ rightVerdictLabel }}</div>
+            <sc-if value="{{ showCommunity }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:6px; width:60%; margin-top:8px;">
+                <div style="height:6px; border-radius:3px; background:#22222E; overflow:hidden;"><div style="height:100%; width:{{ rightPctWidth }}; background:#FF3D8A; border-radius:3px;"></div></div>
+                <div style="font-size:12px; color:#8A8A9C; text-align:center;">{{ rightPctLabel }} of voters said AI</div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <button onClick="{{ voteRightAI }}" style="font-family:'Unbounded'; font-weight:700; font-size:15px; letter-spacing:0.04em; padding:16px 0; border-radius:12px; cursor:pointer; background:{{ rightAiBtnBg }}; color:{{ rightAiBtnFg }}; border:1px solid {{ rightAiBtnBorder }};" style-hover="border-color:#FF3D8A; color:#FF3D8A;">AI</button>
+        <button onClick="{{ voteRightReal }}" style="font-family:'Unbounded'; font-weight:700; font-size:15px; letter-spacing:0.04em; padding:16px 0; border-radius:12px; cursor:pointer; background:{{ rightRealBtnBg }}; color:{{ rightRealBtnFg }}; border:1px solid {{ rightRealBtnBorder }};" style-hover="border-color:#3DFFA8; color:#3DFFA8;">NOT AI</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer / next -->
+  <footer style="display:flex; justify-content:center; align-items:center; min-height:96px; padding:0 24px 32px;">
+    <sc-if value="{{ bothVoted }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ nextRound }}" style="font-family:'Unbounded'; font-weight:700; font-size:15px; letter-spacing:0.06em; padding:16px 44px; border-radius:999px; cursor:pointer; background:#EDEDF2; color:#08080C; border:none; animation:popIn 0.35s ease both;" style-hover="background:#FF3D8A; color:#08080C;">NEXT PAIR →</button>
+    </sc-if>
+    <sc-if value="{{ noneVoted }}" hint-placeholder-val="{{ true }}">
+      <div style="font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:#3A3A48;">Trust your eyes</div>
+    </sc-if>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;revealMode&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;instant&quot;, &quot;after-both&quot;], &quot;default&quot;: &quot;instant&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Gameplay&quot; },
+  &quot;showCommunity&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Gameplay&quot; },
+  &quot;showHeaderStats&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Header&quot; }
+}">
+class Component extends DCLogic {
+  state = { round: 1, leftVote: null, rightVote: null, score: 0, streak: 0 };
+
+  truth(side, round) {
+    // deterministic pseudo-random ground truth per round
+    const seed = round * (side === 'left' ? 13 : 29) + 7;
+    return (seed * 2654435761 % 97) % 2 === 0; // true => AI
+  }
+
+  communityPct(side, round) {
+    const seed = round * (side === 'left' ? 31 : 17) + 3;
+    return 22 + (seed * 2654435761 % 61); // 22–82
+  }
+
+  vote(side, choiceIsAI) {
+    const key = side + 'Vote';
+    if (this.state[key] !== null) return;
+    const correct = choiceIsAI === this.truth(side, this.state.round);
+    this.setState(s => ({
+      [key]: choiceIsAI,
+      score: s.score + (correct ? 1 : 0),
+      streak: correct ? s.streak + 1 : 0,
+    }));
+  }
+
+  pad(n) { return String(n).padStart(2, '0'); }
+
+  sideVals(side) {
+    const vote = this.state[side + 'Vote'];
+    const revealMode = this.props.revealMode ?? 'instant';
+    const both = this.state.leftVote !== null && this.state.rightVote !== null;
+    const revealed = vote !== null && (revealMode === 'instant' || both);
+    const isAI = this.truth(side, this.state.round);
+    const correct = vote === isAI;
+    const pct = this.communityPct(side, this.state.round);
+    const btn = (isAiBtn) => {
+      const picked = vote === isAiBtn;
+      const accent = isAiBtn ? '#FF3D8A' : '#3DFFA8';
+      if (vote === null) return { bg: '#101018', fg: '#EDEDF2', border: '#2A2A38' };
+      if (picked) return { bg: accent, fg: '#08080C', border: accent };
+      return { bg: '#0C0C12', fg: '#3A3A48', border: '#17171F' };
+    };
+    const ai = btn(true), real = btn(false);
+    const S = side.charAt(0).toUpperCase() + side.slice(1);
+    return {
+      [side + 'Revealed']: revealed,
+      [side + 'TruthLabel']: isAI ? 'AI' : 'NOT AI',
+      [side + 'TruthColor']: isAI ? '#FF3D8A' : '#3DFFA8',
+      [side + 'VerdictLabel']: vote === null ? '' : (correct ? 'You called it' : 'Fooled you'),
+      [side + 'VerdictColor']: correct ? '#3DFFA8' : '#FF7A5C',
+      [side + 'PctWidth']: pct + '%',
+      [side + 'PctLabel']: pct + '%',
+      [side + 'AiBtnBg']: ai.bg, [side + 'AiBtnFg']: ai.fg, [side + 'AiBtnBorder']: ai.border,
+      [side + 'RealBtnBg']: real.bg, [side + 'RealBtnFg']: real.fg, [side + 'RealBtnBorder']: real.border,
+      ['vote' + S + 'AI']: () => this.vote(side, true),
+      ['vote' + S + 'Real']: () => this.vote(side, false),
+    };
+  }
+
+  renderVals() {
+    const both = this.state.leftVote !== null && this.state.rightVote !== null;
+    return {
+      roundLabel: this.pad(this.state.round),
+      scoreLabel: this.pad(this.state.score),
+      streakLabel: this.pad(this.state.streak),
+      showHeaderStats: this.props.showHeaderStats ?? true,
+      showCommunity: this.props.showCommunity ?? true,
+      bothVoted: both,
+      noneVoted: this.state.leftVote === null && this.state.rightVote === null,
+      nextRound: () => this.setState(s => ({ round: s.round + 1, leftVote: null, rightVote: null })),
+      ...this.sideVals('left'),
+      ...this.sideVals('right'),
+    };
+  }
+}
+</script>
+</body>
+</html>

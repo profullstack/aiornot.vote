@@ -106,7 +106,7 @@ export function DetailVote({
           </div>
           {earned && (
             <div className="earned-toast">
-              {earned.emoji} Milestone unlocked — {earned.label}!
+              {earned.emoji} Milestone! {earned.label} — saved to your rewards. Spend it on your next image.
             </div>
           )}
           {revealContent && <div style={{ marginTop: 16 }}>{revealContent}</div>}

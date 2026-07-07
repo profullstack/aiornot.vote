@@ -60,7 +60,7 @@ export default async function AccountPage() {
         <div className="tile"><div className="val">🔍 {balances.aiScans}</div><div className="lbl">AI Scans</div></div>
         <div className="tile"><div className="val">🤖 {balances.aiVerdicts}</div><div className="lbl">AI Verdicts</div></div>
       </div>
-      <p className="muted-sm">Use them on any image&apos;s detail page. Earn more by extending your correct-guess streak.</p>
+      <p className="muted-sm">These stack and persist. Open any image and spend a 💡 Hint <strong>before you guess</strong>; 🔍 Scans &amp; 🤖 Verdicts run an AI on the image. Earn more by extending your streak.</p>
 
       <div className="divider" />
       <ApiKeysManager

@@ -10,9 +10,24 @@ export type CastGuessResult =
       isCorrect: boolean | null;
       truthLabel: "ai" | "not_ai" | "unknown";
       revealTruth: boolean;
+      alreadyVoted: boolean;
       stats: { aiGuesses: number; notAiGuesses: number; total: number; aiPct: number };
     }
   | { ok: false; error: string; code: number };
+
+async function readMediaStats(
+  mediaId: string,
+): Promise<{ aiGuesses: number; notAiGuesses: number; total: number; aiPct: number }> {
+  const r = await sqlClient.execute({
+    sql: "SELECT ai_guesses, not_ai_guesses, total_guesses FROM media_stats WHERE media_id = ? LIMIT 1",
+    args: [mediaId],
+  });
+  const row = r.rows[0];
+  const ai = Number(row?.ai_guesses ?? 0);
+  const notAi = Number(row?.not_ai_guesses ?? 0);
+  const total = Number(row?.total_guesses ?? 0);
+  return { aiGuesses: ai, notAiGuesses: notAi, total, aiPct: total > 0 ? Math.round((ai / total) * 100) : 0 };
+}
 
 /** Cast or change a guess. Recomputes media + user stats (simple, correct). */
 export async function castGuess(
@@ -40,36 +55,53 @@ export async function castGuess(
   const scored = scoreEligible && (truthLabel === "ai" || truthLabel === "not_ai");
   const isCorrect = scored ? (guess === truthLabel ? 1 : 0) : null;
 
+  // A vote is one-and-done: if the user already voted on this item, return their
+  // existing vote unchanged. This prevents flipping the answer after the reveal.
+  const existing = await sqlClient.execute({
+    sql: "SELECT guess, is_correct, is_scored FROM guesses WHERE media_id = ? AND user_id = ? LIMIT 1",
+    args: [mediaId, userId],
+  });
+  if (existing.rows.length > 0) {
+    const g = existing.rows[0]!;
+    return {
+      ok: true,
+      guess: g.guess as "ai" | "not_ai",
+      scored: Number(g.is_scored) === 1,
+      isCorrect: g.is_correct == null ? null : Number(g.is_correct) === 1,
+      truthLabel,
+      revealTruth: truthLabel !== "unknown",
+      alreadyVoted: true,
+      stats: await readMediaStats(mediaId),
+    };
+  }
+
+  // First vote wins even under a race: DO NOTHING on the unique (media,user) key.
   await sqlClient.execute({
     sql: `INSERT INTO guesses (id, media_id, user_id, guess, is_correct, is_scored, ip_hash, user_agent_hash)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(media_id, user_id) DO UPDATE SET
-            guess = excluded.guess,
-            is_correct = excluded.is_correct,
-            is_scored = excluded.is_scored,
-            updated_at = CURRENT_TIMESTAMP`,
-    args: [
-      ids.guess(),
-      mediaId,
-      userId,
-      guess,
-      isCorrect,
-      scored ? 1 : 0,
-      ipHash,
-      uaHash,
-    ],
+          ON CONFLICT(media_id, user_id) DO NOTHING`,
+    args: [ids.guess(), mediaId, userId, guess, isCorrect, scored ? 1 : 0, ipHash, uaHash],
   });
+
+  // Read back the authoritative stored vote (handles the race where another
+  // request inserted first).
+  const stored = await sqlClient.execute({
+    sql: "SELECT guess, is_correct, is_scored FROM guesses WHERE media_id = ? AND user_id = ? LIMIT 1",
+    args: [mediaId, userId],
+  });
+  const s = stored.rows[0]!;
 
   const stats = await recomputeMediaStats(mediaId, truthLabel);
   await recomputeUserStats(userId);
 
   return {
     ok: true,
-    guess,
-    scored,
-    isCorrect: isCorrect == null ? null : isCorrect === 1,
+    guess: s.guess as "ai" | "not_ai",
+    scored: Number(s.is_scored) === 1,
+    isCorrect: s.is_correct == null ? null : Number(s.is_correct) === 1,
     truthLabel,
     revealTruth: truthLabel !== "unknown",
+    alreadyVoted: false,
     stats,
   };
 }

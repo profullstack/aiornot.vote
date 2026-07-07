@@ -40,6 +40,43 @@ const DEMO: DemoItem[] = [
   { title: "Vintage car on a coastal road", truth: "not_ai", provider: "unsplash", tags: ["travel", "product", "cinematic"], aiPct: 40 },
 ];
 
+// Generate a larger, balanced demo pool so there's plenty to vote on. Each
+// category contributes a mix of real (not_ai) and AI (ai) items with varied
+// crowd splits, including some deliberately hard ~50/50 items.
+const CATEGORY_POOL: Array<{ cat: string; tags: string[] }> = [
+  { cat: "portrait", tags: ["portrait", "photorealistic"] },
+  { cat: "landscape", tags: ["landscape", "travel"] },
+  { cat: "street", tags: ["street-photo", "cinematic"] },
+  { cat: "food", tags: ["food", "product"] },
+  { cat: "fashion", tags: ["fashion", "cinematic"] },
+  { cat: "animal", tags: ["animal", "close-up"] },
+  { cat: "architecture", tags: ["architecture", "clean"] },
+  { cat: "sports", tags: ["sports", "photorealistic"] },
+  { cat: "travel", tags: ["travel", "cinematic"] },
+  { cat: "product", tags: ["product", "clean"] },
+  { cat: "newsworthy", tags: ["newsworthy", "photorealistic"] },
+  { cat: "close-up", tags: ["close-up", "uncanny"] },
+];
+const REAL_ADJ = ["candid", "documentary", "natural-light", "handheld", "editorial", "everyday"];
+const AI_ADJ = ["hyperreal", "too-perfect", "uncanny", "impossible-detail", "flawless", "dreamlike"];
+for (let i = 0; i < CATEGORY_POOL.length; i++) {
+  const { cat, tags } = CATEGORY_POOL[i]!;
+  for (let j = 0; j < 5; j++) {
+    const isAi = j % 2 === 1;
+    const adj = (isAi ? AI_ADJ : REAL_ADJ)[(i + j) % 6]!;
+    // Vary difficulty: some near 50/50 (hard), some obvious.
+    const base = isAi ? 55 : 40;
+    const aiPct = Math.max(8, Math.min(92, base + ((i * 7 + j * 13) % 40) - 15));
+    DEMO.push({
+      title: `${adj} ${cat} shot #${j + 1}`,
+      truth: isAi ? "ai" : "not_ai",
+      provider: isAi ? "openai" : "unsplash",
+      tags,
+      aiPct,
+    });
+  }
+}
+
 async function main() {
   const client = getClient();
 

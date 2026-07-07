@@ -54,18 +54,18 @@ export function DetailVote({
     <div>
       {isLoggedIn && canGuess ? (
         <>
-          <p className="muted-sm">Your call — no takebacks until you change it:</p>
+          <p className="muted-sm">Your call — one vote, no takebacks:</p>
           <div className="vote-row" style={{ maxWidth: 360 }}>
             <button
               className={`vote-btn ai ${guess === "ai" ? "picked-ai" : revealed ? "dim" : ""}`}
-              disabled={busy}
+              disabled={busy || revealed}
               onClick={() => cast("ai")}
             >
               AI
             </button>
             <button
               className={`vote-btn human ${guess === "not_ai" ? "picked-human" : revealed ? "dim" : ""}`}
-              disabled={busy}
+              disabled={busy || revealed}
               onClick={() => cast("not_ai")}
             >
               NOT AI
@@ -73,7 +73,7 @@ export function DetailVote({
           </div>
           {revealed && (
             <p className="muted-sm" style={{ marginTop: 8 }}>
-              You can change your guess until this item is locked.
+              You&apos;ve locked in your vote on this one.
             </p>
           )}
         </>

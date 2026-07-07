@@ -20,6 +20,7 @@ export default async function TagLeaderboard({
       activeHref={`/leaderboard/t/${tag.slug}`}
       feedPath={`/rss/leaderboard/t/${tag.slug}.xml`}
       note={`Correct guesses on #${tag.slug} media. Minimum 5 scored guesses to appear.`}
+      scope={{ timeframe: "all", tagSlug, minScored: 5 }}
     />
   );
 }

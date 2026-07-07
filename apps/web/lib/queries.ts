@@ -356,7 +356,7 @@ function sinceForTimeframe(tf?: string): string | null {
 }
 
 export async function getLeaderboard(args: LeaderboardArgs): Promise<LeaderboardRow[]> {
-  const minScored = args.minScored ?? (args.timeframe && args.timeframe !== "all" ? 5 : 10);
+  const minScored = args.minScored ?? 5;
   const limit = args.limit ?? 100;
   const where: string[] = [
     "u.email_verified_at IS NOT NULL",
@@ -417,6 +417,62 @@ export async function getLeaderboard(args: LeaderboardArgs): Promise<Leaderboard
       bestStreak: Number(r.best_streak ?? 0),
     };
   });
+}
+
+export type MyStanding = {
+  scored: number;
+  correct: number;
+  accuracy: number;
+  currentStreak: number;
+  bestStreak: number;
+  qualified: boolean;
+  minScored: number;
+  needed: number;
+};
+
+/** The signed-in user's own standing for a leaderboard scope (so they can see their votes count). */
+export async function getMyStanding(
+  userId: string,
+  args: { timeframe?: "all" | "week" | "month"; tagSlug?: string; mediaType?: "image" | "video"; minScored: number },
+): Promise<MyStanding> {
+  const where = ["g.user_id = ?", "g.is_scored = 1"];
+  const params: unknown[] = [userId];
+  const since = sinceForTimeframe(args.timeframe);
+  const needMediaJoin = !!args.mediaType;
+  if (since) {
+    where.push("g.created_at >= ?");
+    params.push(since);
+  }
+  if (args.mediaType) {
+    where.push("m.media_type = ?");
+    params.push(args.mediaType);
+  }
+  if (args.tagSlug) {
+    where.push("g.media_id IN (SELECT mt.media_id FROM media_tags mt JOIN tags t ON t.id = mt.tag_id WHERE t.slug = ?)");
+    params.push(args.tagSlug);
+  }
+  const res = await sqlClient.execute({
+    sql: `SELECT COUNT(*) AS scored, SUM(CASE WHEN g.is_correct = 1 THEN 1 ELSE 0 END) AS correct
+          FROM guesses g ${needMediaJoin ? "JOIN media m ON m.id = g.media_id" : ""}
+          WHERE ${where.join(" AND ")}`,
+    args: params as never[],
+  });
+  const scored = Number(res.rows[0]?.scored ?? 0);
+  const correct = Number(res.rows[0]?.correct ?? 0);
+  const us = await sqlClient.execute({
+    sql: "SELECT current_streak, best_streak FROM user_stats WHERE user_id = ? LIMIT 1",
+    args: [userId],
+  });
+  return {
+    scored,
+    correct,
+    accuracy: scored > 0 ? correct / scored : 0,
+    currentStreak: Number(us.rows[0]?.current_streak ?? 0),
+    bestStreak: Number(us.rows[0]?.best_streak ?? 0),
+    qualified: scored >= args.minScored,
+    minScored: args.minScored,
+    needed: Math.max(0, args.minScored - scored),
+  };
 }
 
 export async function getStreakLeaderboard(limit = 100): Promise<LeaderboardRow[]> {

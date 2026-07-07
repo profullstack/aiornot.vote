@@ -55,6 +55,7 @@ export default async function RootLayout({
           data-property="aiornot.vote"
           strategy="afterInteractive"
         />
+              <Script data-site="8ad2116a-ae39-434a-8e2e-216931f80f43" src="https://crawlproof.com/stats.js" strategy="afterInteractive" />
       </body>
     </html>
   );

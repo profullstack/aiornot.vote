@@ -30,6 +30,7 @@ export function CrowdPromo({
         <Link href="/api" className="btn btn-primary">Get a crowd verdict — API →</Link>
         <Link href="/submit" className="btn">Submit an image</Link>
         <Link href="/play" className="btn">Play &amp; judge</Link>
+        <Link href="/prizes" className="btn">🏆 Win weekly prizes</Link>
       </div>
 
       {(images > 0 || votes > 0) && (

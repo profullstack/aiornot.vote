@@ -74,6 +74,32 @@ export function AdminUserRow({ user }: { user: { id: string; email: string; role
   );
 }
 
+export function AdminDrawPrizes() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  return (
+    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+      <button
+        className="btn btn-primary"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setMsg(null);
+          const res = await fetch("/api/admin/prizes/draw", { method: "POST" });
+          const data = await res.json();
+          setBusy(false);
+          setMsg(data.ok ? `Drew last week: ${data.awarded} awarded, ${data.carriedIn} rolled in${data.drawn ? "" : ` (${data.reason})`}` : `Error: ${data.error}`);
+          if (data.ok) router.refresh();
+        }}
+      >
+        {busy ? "Drawing…" : "Draw last week's prizes"}
+      </button>
+      {msg && <span className="muted-sm">{msg}</span>}
+    </div>
+  );
+}
+
 export function AdminSeedControls() {
   const router = useRouter();
   const [msg, setMsg] = useState<string | null>(null);

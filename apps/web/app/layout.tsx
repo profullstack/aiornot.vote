@@ -3,7 +3,9 @@ import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { WinBanner } from "@/components/PrizeUI";
 import { getCurrentUser } from "@/lib/session";
+import { getClaimablePrizes } from "@/lib/prizes";
 import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
@@ -35,6 +37,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser();
+  const claimable = user ? await getClaimablePrizes(user.id).catch(() => []) : [];
   return (
     <html lang="en">
       <head>
@@ -47,6 +50,7 @@ export default async function RootLayout({
       </head>
       <body>
         <SiteHeader user={user} />
+        <WinBanner prizes={claimable.map((p) => ({ id: p.id, rewardLabel: p.rewardLabel, claimDeadline: p.claimDeadline }))} />
         <main>{children}</main>
         <SiteFooter />
         {/* Profullstack feedback widget (feedback.profullstack.com) */}

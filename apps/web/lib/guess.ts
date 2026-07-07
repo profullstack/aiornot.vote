@@ -11,13 +11,13 @@ export type CastGuessResult =
       truthLabel: "ai" | "not_ai" | "unknown";
       revealTruth: boolean;
       alreadyVoted: boolean;
-      stats: { aiGuesses: number; notAiGuesses: number; total: number; aiPct: number };
+      stats: { aiGuesses: number; notAiGuesses: number; total: number; totalGuesses: number; aiPct: number };
     }
   | { ok: false; error: string; code: number };
 
 async function readMediaStats(
   mediaId: string,
-): Promise<{ aiGuesses: number; notAiGuesses: number; total: number; aiPct: number }> {
+): Promise<{ aiGuesses: number; notAiGuesses: number; total: number; totalGuesses: number; aiPct: number }> {
   const r = await sqlClient.execute({
     sql: "SELECT ai_guesses, not_ai_guesses, total_guesses FROM media_stats WHERE media_id = ? LIMIT 1",
     args: [mediaId],
@@ -26,7 +26,7 @@ async function readMediaStats(
   const ai = Number(row?.ai_guesses ?? 0);
   const notAi = Number(row?.not_ai_guesses ?? 0);
   const total = Number(row?.total_guesses ?? 0);
-  return { aiGuesses: ai, notAiGuesses: notAi, total, aiPct: total > 0 ? Math.round((ai / total) * 100) : 0 };
+  return { aiGuesses: ai, notAiGuesses: notAi, total, totalGuesses: total, aiPct: total > 0 ? Math.round((ai / total) * 100) : 0 };
 }
 
 /** Cast or change a guess. Recomputes media + user stats (simple, correct). */
@@ -109,7 +109,7 @@ export async function castGuess(
 export async function recomputeMediaStats(
   mediaId: string,
   truthLabel: "ai" | "not_ai" | "unknown",
-): Promise<{ aiGuesses: number; notAiGuesses: number; total: number; aiPct: number }> {
+): Promise<{ aiGuesses: number; notAiGuesses: number; total: number; totalGuesses: number; aiPct: number }> {
   const res = await sqlClient.execute({
     sql: `SELECT
             SUM(CASE WHEN guess = 'ai' THEN 1 ELSE 0 END) AS ai,
@@ -151,7 +151,7 @@ export async function recomputeMediaStats(
     args: [mediaId, ai, notAi, total, correct, incorrect, crowdAccuracy, difficulty, trending],
   });
 
-  return { aiGuesses: ai, notAiGuesses: notAi, total, aiPct: Math.round(aiPct * 100) };
+  return { aiGuesses: ai, notAiGuesses: notAi, total, totalGuesses: total, aiPct: Math.round(aiPct * 100) };
 }
 
 export async function recomputeUserStats(userId: string): Promise<void> {

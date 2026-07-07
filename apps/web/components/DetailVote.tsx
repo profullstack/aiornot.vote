@@ -1,0 +1,107 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import type { ClientCard } from "./MediaCard";
+
+export function DetailVote({
+  card,
+  canGuess,
+  isLoggedIn,
+  revealContent,
+}: {
+  card: ClientCard;
+  canGuess: boolean;
+  isLoggedIn: boolean;
+  revealContent?: React.ReactNode;
+}) {
+  const [guess, setGuess] = useState<"ai" | "not_ai" | null>(card.userGuess);
+  const [correct, setCorrect] = useState<boolean | null>(card.userGuessCorrect);
+  const [truth, setTruth] = useState<"ai" | "not_ai" | "unknown">(
+    card.userGuess ? card.truthLabel : "unknown",
+  );
+  const [stats, setStats] = useState(card.stats);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const revealed = guess != null;
+
+  async function cast(g: "ai" | "not_ai") {
+    if (!canGuess || busy) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/guess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaId: card.id, guess: g }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErr(data.error || "Could not save your guess.");
+        return;
+      }
+      setGuess(g);
+      setCorrect(data.isCorrect);
+      setTruth(data.revealTruth ? data.truthLabel : "unknown");
+      setStats((s) => ({ ...s, ...data.stats }));
+    } catch {
+      setErr("Network error — try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      {isLoggedIn && canGuess ? (
+        <>
+          <p className="muted-sm">Your call — no takebacks until you change it:</p>
+          <div className="vote-row" style={{ maxWidth: 360 }}>
+            <button
+              className={`vote-btn ai ${guess === "ai" ? "picked-ai" : revealed ? "dim" : ""}`}
+              disabled={busy}
+              onClick={() => cast("ai")}
+            >
+              AI
+            </button>
+            <button
+              className={`vote-btn human ${guess === "not_ai" ? "picked-human" : revealed ? "dim" : ""}`}
+              disabled={busy}
+              onClick={() => cast("not_ai")}
+            >
+              NOT AI
+            </button>
+          </div>
+          {revealed && (
+            <p className="muted-sm" style={{ marginTop: 8 }}>
+              You can change your guess until this item is locked.
+            </p>
+          )}
+        </>
+      ) : isLoggedIn ? (
+        <div className="notice">Verify your email on your <Link href="/account">account</Link> to guess.</div>
+      ) : (
+        <div className="notice">
+          <Link href="/login">Sign in</Link> or <Link href="/signup">create an account</Link> to guess AI or Not AI.
+        </div>
+      )}
+
+      {err && <div className="form-error">{err}</div>}
+
+      {revealed && (
+        <div className="reveal" style={{ marginTop: 16 }}>
+          {truth !== "unknown" && correct != null && (
+            <div className={`reveal-verdict ${correct ? "correct" : "wrong"}`}>
+              {correct ? "You called it" : "Fooled you"} · Truth: {truth === "ai" ? "AI" : "NOT AI"}
+            </div>
+          )}
+          <div className="crowd-bar"><span style={{ width: `${stats.aiPct}%` }} /></div>
+          <div className="crowd-caption">
+            {stats.aiPct}% said AI · {100 - stats.aiPct}% said Not AI · {stats.totalGuesses}{" "}
+            {stats.totalGuesses === 1 ? "vote" : "votes"}
+          </div>
+          {revealContent && <div style={{ marginTop: 16 }}>{revealContent}</div>}
+        </div>
+      )}
+    </div>
+  );
+}

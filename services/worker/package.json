@@ -1,0 +1,20 @@
+{
+  "name": "@aiornot/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed:unsplash": "tsx jobs/import-unsplash.ts",
+    "seed:ai-variants": "tsx jobs/generate-ai-variant.ts",
+    "recalc:leaderboards": "tsx jobs/recalc-leaderboards.ts",
+    "warm:feeds": "tsx jobs/warm-feeds.ts"
+  },
+  "dependencies": {
+    "@aiornot/db": "workspace:*",
+    "@aiornot/seed": "workspace:*"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2"
+  }
+}

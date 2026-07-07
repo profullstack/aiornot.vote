@@ -31,7 +31,9 @@ async function createRealPhoto(client: Client): Promise<void> {
   const seed = Math.random().toString(36).slice(2, 12);
   const mediaUrl = `https://picsum.photos/seed/${seed}/1000/1250`;
   const thumbnailUrl = `https://picsum.photos/seed/${seed}/500/625`;
-  const title = `Real ${subject.replace(/-/g, " ")} photo`;
+  // Neutral title — same style as AI items so it never reveals the answer.
+  const s = subject.replace(/-/g, " ");
+  const title = `AI or Not: ${s.charAt(0).toUpperCase()}${s.slice(1)}`;
   const mediaId = ids.media();
   const slug = await uniqueSlug(client, title);
   await client.execute({

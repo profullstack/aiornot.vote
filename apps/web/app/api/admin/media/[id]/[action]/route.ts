@@ -1,9 +1,23 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi, audit } from "@/lib/admin";
 import { sqlClient } from "@/lib/db";
-import { recomputeMediaStats } from "@/lib/guess";
+import { recomputeMediaStats, recomputeUserStats } from "@/lib/guess";
 
 export const runtime = "nodejs";
+
+type TruthLabel = "ai" | "not_ai" | "unknown";
+
+function asTruthLabel(value: unknown): TruthLabel {
+  return value === "ai" || value === "not_ai" ? value : "unknown";
+}
+
+async function recomputeAffectedUsers(mediaId: string): Promise<void> {
+  const affected = await sqlClient.execute({
+    sql: "SELECT DISTINCT user_id FROM guesses WHERE media_id = ?",
+    args: [mediaId],
+  });
+  for (const r of affected.rows) await recomputeUserStats(r.user_id as string);
+}
 
 export async function POST(
   req: Request,
@@ -17,6 +31,7 @@ export async function POST(
   if (cur.rows.length === 0) {
     return NextResponse.json({ ok: false, error: "Media not found." }, { status: 404 });
   }
+  const currentTruthLabel = asTruthLabel(cur.rows[0]?.truth_label);
 
   let body: Record<string, unknown> = {};
   try {
@@ -49,9 +64,26 @@ export async function POST(
       break;
     case "exclude-from-scoring":
       await sqlClient.execute({ sql: "UPDATE media SET is_score_eligible=0, updated_at=CURRENT_TIMESTAMP WHERE id=?", args: [id] });
+      await sqlClient.execute({
+        sql: `UPDATE guesses SET is_scored=0, is_correct=NULL, updated_at=CURRENT_TIMESTAMP
+              WHERE media_id=?`,
+        args: [id],
+      });
+      await recomputeMediaStats(id, currentTruthLabel);
+      await recomputeAffectedUsers(id);
       break;
     case "include-in-scoring":
       await sqlClient.execute({ sql: "UPDATE media SET is_score_eligible=1, updated_at=CURRENT_TIMESTAMP WHERE id=?", args: [id] });
+      await sqlClient.execute({
+        sql: `UPDATE guesses SET
+                is_scored = CASE WHEN ? IN ('ai','not_ai') THEN 1 ELSE 0 END,
+                is_correct = CASE WHEN ? IN ('ai','not_ai') THEN (CASE WHEN guess = ? THEN 1 ELSE 0 END) ELSE NULL END,
+                updated_at = CURRENT_TIMESTAMP
+              WHERE media_id = ?`,
+        args: [currentTruthLabel, currentTruthLabel, currentTruthLabel, id],
+      });
+      await recomputeMediaStats(id, currentTruthLabel);
+      await recomputeAffectedUsers(id);
       break;
     case "set-truth-label": {
       const label = String(body.truthLabel || "");
@@ -72,10 +104,7 @@ export async function POST(
         args: [label, label, label, id],
       });
       await recomputeMediaStats(id, label as "ai" | "not_ai" | "unknown");
-      // Recompute affected users' stats.
-      const affected = await sqlClient.execute({ sql: "SELECT DISTINCT user_id FROM guesses WHERE media_id = ?", args: [id] });
-      const { recomputeUserStats } = await import("@/lib/guess");
-      for (const r of affected.rows) await recomputeUserStats(r.user_id as string);
+      await recomputeAffectedUsers(id);
       break;
     }
     default:

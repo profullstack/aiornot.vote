@@ -22,6 +22,7 @@ export function DetailVote({
     card.userGuess ? card.truthLabel : "unknown",
   );
   const [stats, setStats] = useState(card.stats);
+  const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const revealed = guess != null;
@@ -45,6 +46,7 @@ export function DetailVote({
       setCorrect(data.isCorrect);
       setTruth(data.revealTruth ? data.truthLabel : "unknown");
       setStats((s) => ({ ...s, ...data.stats }));
+      if (data.earned) setEarned({ emoji: data.earned.emoji, label: data.earned.label });
       router.refresh();
     } catch {
       setErr("Network error — try again.");
@@ -102,6 +104,11 @@ export function DetailVote({
             {stats.aiPct}% said AI · {100 - stats.aiPct}% said Not AI · {stats.totalGuesses}{" "}
             {stats.totalGuesses === 1 ? "vote" : "votes"}
           </div>
+          {earned && (
+            <div className="earned-toast">
+              {earned.emoji} Milestone unlocked — {earned.label}!
+            </div>
+          )}
           {revealContent && <div style={{ marginTop: 16 }}>{revealContent}</div>}
         </div>
       )}

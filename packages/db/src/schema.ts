@@ -315,6 +315,40 @@ export const prizes = sqliteTable(
   ],
 );
 
+export const userPowerups = sqliteTable("user_powerups", {
+  userId: text("user_id").primaryKey(),
+  hints: integer("hints").notNull().default(0),
+  aiScans: integer("ai_scans").notNull().default(0),
+  aiVerdicts: integer("ai_verdicts").notNull().default(0),
+  updatedAt: text("updated_at").notNull().default(now),
+});
+
+export const aiAnalyses = sqliteTable(
+  "ai_analyses",
+  {
+    mediaId: text("media_id").notNull(),
+    kind: text("kind").notNull(),
+    text: text("text").notNull(),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.mediaId, t.kind] })],
+);
+
+export const powerupUses = sqliteTable(
+  "powerup_uses",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    mediaId: text("media_id").notNull(),
+    kind: text("kind").notNull(),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [
+    uniqueIndex("uq_powerup_uses").on(t.userId, t.mediaId, t.kind),
+    index("idx_powerup_uses_user").on(t.userId),
+  ],
+);
+
 export const tips = sqliteTable("tips", {
   id: text("id").primaryKey(),
   text: text("text").notNull().unique(),

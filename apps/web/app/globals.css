@@ -245,6 +245,25 @@ a:hover { color: var(--human); }
 .notice.warn { border-color: var(--ai); }
 .empty { text-align: center; color: var(--muted-2); padding: 48px 0; }
 
+/* Streak rewards / power-ups */
+.powerups { border: 1px solid var(--border-2); border-radius: 14px; padding: 14px 16px; margin: 16px 0; background: var(--panel); }
+.powerups-head { font-family: var(--unbounded); font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.powerup-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.powerup-btn { font-family: var(--body); font-weight: 600; font-size: 13px; padding: 8px 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-3); background: var(--panel-alt); color: var(--text); }
+.powerup-btn.ready { border-color: var(--ai); color: var(--ai); }
+.powerup-btn.used { border-color: var(--human); color: var(--human); cursor: default; }
+.powerup-btn.locked { color: var(--faint); cursor: not-allowed; opacity: 0.7; }
+.powerup-result { margin-top: 12px; border-left: 2px solid var(--ai); padding: 8px 0 8px 12px; }
+.powerup-result-h { font-family: var(--unbounded); font-weight: 700; font-size: 12px; color: var(--ai); margin-bottom: 4px; }
+.powerup-result-b { font-size: 14px; color: var(--text); white-space: pre-wrap; line-height: 1.45; }
+
+/* Milestone earned toast (inline) */
+.earned-toast { margin-top: 10px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--ai); background: linear-gradient(90deg, rgba(255,61,138,0.14), rgba(61,255,168,0.1)); font-weight: 700; animation: popIn 0.35s ease both; }
+
+/* Badges */
+.badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.badge-pill { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border-3); background: var(--panel-alt); color: var(--text); }
+
 /* Tip bar */
 .tip-bar { border-bottom: 1px solid var(--border-1); background: var(--panel-alt); padding: 9px 0; }
 .tip-bar .container { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

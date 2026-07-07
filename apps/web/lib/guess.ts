@@ -1,0 +1,172 @@
+import "server-only";
+import { sqlClient } from "./db";
+import { ids } from "@aiornot/db";
+
+export type CastGuessResult =
+  | {
+      ok: true;
+      guess: "ai" | "not_ai";
+      scored: boolean;
+      isCorrect: boolean | null;
+      truthLabel: "ai" | "not_ai" | "unknown";
+      revealTruth: boolean;
+      stats: { aiGuesses: number; notAiGuesses: number; total: number; aiPct: number };
+    }
+  | { ok: false; error: string; code: number };
+
+/** Cast or change a guess. Recomputes media + user stats (simple, correct). */
+export async function castGuess(
+  userId: string,
+  mediaId: string,
+  guess: "ai" | "not_ai",
+  ipHash: string | null,
+  uaHash: string | null,
+): Promise<CastGuessResult> {
+  const mres = await sqlClient.execute({
+    sql: `SELECT id, truth_label, is_score_eligible, reveal_status, status
+          FROM media WHERE id = ? LIMIT 1`,
+    args: [mediaId],
+  });
+  const m = mres.rows[0];
+  if (!m || m.status !== "approved") {
+    return { ok: false, error: "Media not found.", code: 404 };
+  }
+  if (m.reveal_status === "locked") {
+    return { ok: false, error: "This item is locked; guesses can no longer change.", code: 409 };
+  }
+
+  const truthLabel = m.truth_label as "ai" | "not_ai" | "unknown";
+  const scoreEligible = Number(m.is_score_eligible ?? 1) === 1;
+  const scored = scoreEligible && (truthLabel === "ai" || truthLabel === "not_ai");
+  const isCorrect = scored ? (guess === truthLabel ? 1 : 0) : null;
+
+  await sqlClient.execute({
+    sql: `INSERT INTO guesses (id, media_id, user_id, guess, is_correct, is_scored, ip_hash, user_agent_hash)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(media_id, user_id) DO UPDATE SET
+            guess = excluded.guess,
+            is_correct = excluded.is_correct,
+            is_scored = excluded.is_scored,
+            updated_at = CURRENT_TIMESTAMP`,
+    args: [
+      ids.guess(),
+      mediaId,
+      userId,
+      guess,
+      isCorrect,
+      scored ? 1 : 0,
+      ipHash,
+      uaHash,
+    ],
+  });
+
+  const stats = await recomputeMediaStats(mediaId, truthLabel);
+  await recomputeUserStats(userId);
+
+  return {
+    ok: true,
+    guess,
+    scored,
+    isCorrect: isCorrect == null ? null : isCorrect === 1,
+    truthLabel,
+    revealTruth: truthLabel !== "unknown",
+    stats,
+  };
+}
+
+export async function recomputeMediaStats(
+  mediaId: string,
+  truthLabel: "ai" | "not_ai" | "unknown",
+): Promise<{ aiGuesses: number; notAiGuesses: number; total: number; aiPct: number }> {
+  const res = await sqlClient.execute({
+    sql: `SELECT
+            SUM(CASE WHEN guess = 'ai' THEN 1 ELSE 0 END) AS ai,
+            SUM(CASE WHEN guess = 'not_ai' THEN 1 ELSE 0 END) AS not_ai,
+            COUNT(*) AS total,
+            SUM(CASE WHEN is_scored = 1 AND is_correct = 1 THEN 1 ELSE 0 END) AS correct,
+            SUM(CASE WHEN is_scored = 1 AND is_correct = 0 THEN 1 ELSE 0 END) AS incorrect
+          FROM guesses WHERE media_id = ?`,
+    args: [mediaId],
+  });
+  const r = res.rows[0]!;
+  const ai = Number(r.ai ?? 0);
+  const notAi = Number(r.not_ai ?? 0);
+  const total = Number(r.total ?? 0);
+  const correct = Number(r.correct ?? 0);
+  const incorrect = Number(r.incorrect ?? 0);
+  const scoredTotal = correct + incorrect;
+  const crowdAccuracy = scoredTotal > 0 ? correct / scoredTotal : 0;
+  const aiPct = total > 0 ? ai / total : 0;
+  // Difficulty: closeness to a 50/50 split (hardest = 1).
+  const difficulty = 1 - Math.abs(aiPct - 0.5) / 0.5;
+  const trending = total * (0.5 + difficulty);
+
+  await sqlClient.execute({
+    sql: `INSERT INTO media_stats
+            (media_id, ai_guesses, not_ai_guesses, total_guesses, correct_guesses,
+             incorrect_guesses, crowd_accuracy, difficulty_score, trending_score, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(media_id) DO UPDATE SET
+            ai_guesses = excluded.ai_guesses,
+            not_ai_guesses = excluded.not_ai_guesses,
+            total_guesses = excluded.total_guesses,
+            correct_guesses = excluded.correct_guesses,
+            incorrect_guesses = excluded.incorrect_guesses,
+            crowd_accuracy = excluded.crowd_accuracy,
+            difficulty_score = excluded.difficulty_score,
+            trending_score = excluded.trending_score,
+            updated_at = CURRENT_TIMESTAMP`,
+    args: [mediaId, ai, notAi, total, correct, incorrect, crowdAccuracy, difficulty, trending],
+  });
+
+  return { aiGuesses: ai, notAiGuesses: notAi, total, aiPct: Math.round(aiPct * 100) };
+}
+
+export async function recomputeUserStats(userId: string): Promise<void> {
+  const all = await sqlClient.execute({
+    sql: `SELECT is_scored, is_correct, created_at FROM guesses
+          WHERE user_id = ? ORDER BY created_at ASC`,
+    args: [userId],
+  });
+  let total = 0;
+  let scored = 0;
+  let correct = 0;
+  let incorrect = 0;
+  let best = 0;
+  let running = 0;
+  let lastGuessAt: string | null = null;
+
+  for (const r of all.rows) {
+    total++;
+    lastGuessAt = r.created_at as string;
+    if (Number(r.is_scored ?? 0) !== 1) continue;
+    scored++;
+    if (Number(r.is_correct) === 1) {
+      correct++;
+      running++;
+      if (running > best) best = running;
+    } else {
+      incorrect++;
+      running = 0;
+    }
+  }
+  const accuracy = scored > 0 ? correct / scored : 0;
+
+  await sqlClient.execute({
+    sql: `INSERT INTO user_stats
+            (user_id, total_guesses, scored_guesses, correct_guesses, incorrect_guesses,
+             accuracy, current_streak, best_streak, last_guess_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(user_id) DO UPDATE SET
+            total_guesses = excluded.total_guesses,
+            scored_guesses = excluded.scored_guesses,
+            correct_guesses = excluded.correct_guesses,
+            incorrect_guesses = excluded.incorrect_guesses,
+            accuracy = excluded.accuracy,
+            current_streak = excluded.current_streak,
+            best_streak = excluded.best_streak,
+            last_guess_at = excluded.last_guess_at,
+            updated_at = CURRENT_TIMESTAMP`,
+    args: [userId, total, scored, correct, incorrect, accuracy, running, best, lastGuessAt],
+  });
+}

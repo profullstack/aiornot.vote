@@ -1,0 +1,27 @@
+{
+  "name": "aiornot.vote",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev": "pnpm --filter @aiornot/web dev",
+    "build": "pnpm --filter @aiornot/web build",
+    "start": "pnpm --filter @aiornot/web start",
+    "lint": "pnpm --filter @aiornot/web lint",
+    "migrate": "pnpm --filter @aiornot/db migrate",
+    "seed:tags": "pnpm --filter @aiornot/db seed:tags",
+    "seed:demo": "pnpm --filter @aiornot/db seed:demo",
+    "seed:unsplash": "pnpm --filter @aiornot/worker seed:unsplash",
+    "seed:ai-variants": "pnpm --filter @aiornot/worker seed:ai-variants",
+    "recalc:leaderboards": "pnpm --filter @aiornot/worker recalc:leaderboards",
+    "seed:pool": "pnpm --filter @aiornot/worker seed:pool"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

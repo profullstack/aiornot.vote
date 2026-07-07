@@ -8,6 +8,7 @@ export { seedStorageConfigured } from "./storage";
 export { mediaStorageDir } from "./media-dir";
 export { seedPool } from "./pool";
 export { generateContinuousBatch } from "./continuous";
+export { generateTips } from "./tips";
 
 function slugify(s: string): string {
   return (

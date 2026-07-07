@@ -19,7 +19,8 @@
     "seed:ai-variants": "pnpm --filter @aiornot/worker seed:ai-variants",
     "recalc:leaderboards": "pnpm --filter @aiornot/worker recalc:leaderboards",
     "seed:pool": "pnpm --filter @aiornot/worker seed:pool",
-    "draw:prizes": "pnpm --filter @aiornot/worker draw:prizes"
+    "draw:prizes": "pnpm --filter @aiornot/worker draw:prizes",
+    "gen:tips": "pnpm --filter @aiornot/worker gen:tips"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

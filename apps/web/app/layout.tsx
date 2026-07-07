@@ -4,8 +4,10 @@ import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WinBanner } from "@/components/PrizeUI";
+import { TipBar } from "@/components/TipBar";
 import { getCurrentUser } from "@/lib/session";
 import { getClaimablePrizes } from "@/lib/prizes";
+import { getRandomTip } from "@/lib/tips";
 import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
@@ -37,7 +39,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser();
-  const claimable = user ? await getClaimablePrizes(user.id).catch(() => []) : [];
+  const [claimable, tip] = await Promise.all([
+    user ? getClaimablePrizes(user.id).catch(() => []) : Promise.resolve([]),
+    getRandomTip(),
+  ]);
   return (
     <html lang="en">
       <head>
@@ -51,6 +56,7 @@ export default async function RootLayout({
       <body>
         <SiteHeader user={user} />
         <WinBanner prizes={claimable.map((p) => ({ id: p.id, rewardLabel: p.rewardLabel, claimDeadline: p.claimDeadline }))} />
+        <TipBar tip={tip} />
         <main>{children}</main>
         <SiteFooter />
         {/* Profullstack feedback widget (feedback.profullstack.com) */}

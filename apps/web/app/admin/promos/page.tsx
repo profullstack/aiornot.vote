@@ -20,13 +20,16 @@ async function createAction(formData: FormData) {
   "use server";
   await requireAdminPage();
   const code = String(formData.get("code") || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-  const grants = String(formData.get("grants") || "membership") === "play_pass" ? "play_pass" : "membership";
+  const percentOff = Math.min(100, Math.max(1, Number(formData.get("percent_off") || 100)));
+  const appliesTo = ["any", "play_pass", "lifetime_membership"].includes(String(formData.get("applies_to")))
+    ? String(formData.get("applies_to"))
+    : "any";
   const maxRaw = String(formData.get("max_uses") || "").trim();
   const maxUses = maxRaw ? Math.max(1, Number(maxRaw)) : null;
   if (code) {
     await sqlClient.execute({
-      sql: "INSERT OR IGNORE INTO promo_codes (code, grants, active, max_uses, note) VALUES (?, ?, 1, ?, ?)",
-      args: [code, grants, maxUses, "Created in admin"],
+      sql: "INSERT OR IGNORE INTO promo_codes (code, grants, percent_off, applies_to, active, max_uses, note) VALUES (?, 'membership', ?, ?, 1, ?, ?)",
+      args: [code, percentOff, appliesTo, maxUses, "Created in admin"],
     });
   }
   revalidatePath("/admin/promos");
@@ -42,18 +45,20 @@ export default async function AdminPromos() {
         <span className="sub"><Link href="/membership">Public access page →</Link></span>
       </div>
       <p className="muted-sm">
-        Codes grant instant access without payment. Toggle <strong>100PERCENTOFF</strong> on when you
-        want to hand out free access, off when you don&apos;t. <code>membership</code> = full lifetime
-        (includes play + #nsfw); <code>play_pass</code> = play access only.
+        Codes are <strong>percentage discounts</strong> applied at checkout. <code>100%</code> = free comp
+        (granted instantly, no payment); anything less charges the discounted price in crypto. Scale the
+        percentage down as you grow. <strong>Applies to</strong> limits which product a code discounts
+        (<code>any</code>, play pass, or membership). Toggle a code off to disable it.
       </p>
 
       <table className="lb-table" style={{ marginTop: 8 }}>
-        <thead><tr><th>Code</th><th>Grants</th><th>Uses</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Code</th><th>% off</th><th>Applies to</th><th>Uses</th><th>Status</th><th></th></tr></thead>
         <tbody>
           {codes.map((c) => (
             <tr key={c.code}>
               <td><code>{c.code}</code></td>
-              <td className="muted-sm">{c.grants}</td>
+              <td className="lb-correct">{c.percentOff}%</td>
+              <td className="muted-sm">{c.appliesTo}</td>
               <td className="muted-sm">{c.uses}{c.maxUses != null ? ` / ${c.maxUses}` : ""}</td>
               <td style={{ color: c.active ? "var(--human)" : "var(--muted-2)" }}>{c.active ? "ACTIVE" : "off"}</td>
               <td>
@@ -65,19 +70,24 @@ export default async function AdminPromos() {
               </td>
             </tr>
           ))}
-          {codes.length === 0 && <tr><td colSpan={5} className="muted-sm">No codes yet.</td></tr>}
+          {codes.length === 0 && <tr><td colSpan={6} className="muted-sm">No codes yet.</td></tr>}
         </tbody>
       </table>
 
       <div className="form-card" style={{ marginTop: 18, maxWidth: 480 }}>
         <div className="rss-title">Create a code</div>
         <form action={createAction} style={{ display: "grid", gap: 10, marginTop: 10 }}>
-          <input name="code" placeholder="CODE" required
+          <input name="code" placeholder="CODE (e.g. SUMMER25)" required
             style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", textTransform: "uppercase", letterSpacing: "0.08em" }} />
-          <select name="grants" defaultValue="membership"
+          <label className="muted-sm">Percent off (1–100; 100 = free comp)</label>
+          <input name="percent_off" type="number" min={1} max={100} defaultValue={50} required
+            style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }} />
+          <label className="muted-sm">Applies to</label>
+          <select name="applies_to" defaultValue="any"
             style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }}>
-            <option value="membership">membership (full lifetime)</option>
-            <option value="play_pass">play_pass (play only)</option>
+            <option value="any">any purchase</option>
+            <option value="play_pass">play pass only</option>
+            <option value="lifetime_membership">membership only</option>
           </select>
           <input name="max_uses" type="number" min={1} placeholder="Max uses (blank = unlimited)"
             style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }} />

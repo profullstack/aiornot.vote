@@ -89,44 +89,86 @@ export async function grantPlayPass(userId: string): Promise<void> {
   });
 }
 
-export type PromoResult = { ok: true; granted: "membership" | "play_pass" } | { ok: false; error: string };
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+export type PromoQuote =
+  | { ok: true; code: string; percentOff: number; baseUsd: number; finalUsd: number; free: boolean }
+  | { ok: false; error: string };
 
 /**
- * Redeem an admin promo code (e.g. 100PERCENTOFF). Applies the code's grant to
- * the user. One redemption per user per code; respects active flag + max_uses.
+ * Validate a promo code against a purchase and compute the discounted price.
+ * Does NOT mutate anything — pricing only. One redemption per user per code;
+ * respects active flag, applies_to (which product) and max_uses.
  */
-export async function redeemPromo(userId: string, codeRaw: string): Promise<PromoResult> {
+export async function quotePromo(
+  userId: string,
+  codeRaw: string,
+  purpose: string,
+  baseUsd: number,
+): Promise<PromoQuote> {
   const code = codeRaw.trim().toUpperCase();
   if (!code) return { ok: false, error: "Enter a code." };
   const r = await sqlClient.execute({
-    sql: "SELECT code, grants, active, max_uses, uses FROM promo_codes WHERE code = ? LIMIT 1",
+    sql: "SELECT code, percent_off, applies_to, active, max_uses, uses FROM promo_codes WHERE code = ? LIMIT 1",
     args: [code],
   });
   const row = r.rows[0];
   if (!row || Number(row.active) !== 1) return { ok: false, error: "That code isn't valid right now." };
+  const appliesTo = (row.applies_to as string) || "any";
+  if (appliesTo !== "any" && appliesTo !== purpose) {
+    return { ok: false, error: "That code doesn't apply to this purchase." };
+  }
   if (row.max_uses != null && Number(row.uses) >= Number(row.max_uses)) {
     return { ok: false, error: "This code has been fully redeemed." };
   }
-  // Record the redemption first — the composite PK makes double-redeem a no-op.
-  try {
-    await sqlClient.execute({ sql: "INSERT INTO promo_redemptions (code, user_id) VALUES (?, ?)", args: [code, userId] });
-  } catch {
-    return { ok: false, error: "You've already redeemed this code." };
-  }
-  await sqlClient.execute({ sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ?", args: [code] });
-  const grants = (row.grants as string) === "play_pass" ? "play_pass" : "membership";
-  if (grants === "membership") await grantMembership(userId);
-  else await grantPlayPass(userId);
-  return { ok: true, granted: grants };
+  const dup = await sqlClient.execute({
+    sql: "SELECT 1 FROM promo_redemptions WHERE code = ? AND user_id = ? LIMIT 1",
+    args: [code, userId],
+  });
+  if (dup.rows[0]) return { ok: false, error: "You've already used this code." };
+
+  const percentOff = Math.min(100, Math.max(1, Number(row.percent_off ?? 100)));
+  const finalUsd = round2(baseUsd * (1 - percentOff / 100));
+  return { ok: true, code, percentOff, baseUsd, finalUsd, free: finalUsd <= 0 };
 }
 
-export type PromoCode = { code: string; grants: string; active: boolean; maxUses: number | null; uses: number; note: string | null };
+/** Record a promo redemption (idempotent). Call once the discount is actually granted. */
+export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<void> {
+  const code = codeRaw.trim().toUpperCase();
+  if (!code) return;
+  try {
+    await sqlClient.execute({ sql: "INSERT INTO promo_redemptions (code, user_id) VALUES (?, ?)", args: [code, userId] });
+    await sqlClient.execute({ sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ?", args: [code] });
+  } catch {
+    /* already recorded — composite PK makes this a no-op */
+  }
+}
+
+/** Apply the entitlement for a purpose directly (used for 100%-off comps). */
+export async function grantPurpose(userId: string, purpose: string): Promise<GrantResult> {
+  return grantForPayment({ id: newId("pay"), userId, purpose });
+}
+
+export type PromoCode = {
+  code: string;
+  percentOff: number;
+  appliesTo: string;
+  active: boolean;
+  maxUses: number | null;
+  uses: number;
+  note: string | null;
+};
 
 export async function listPromoCodes(): Promise<PromoCode[]> {
-  const r = await sqlClient.execute("SELECT code, grants, active, max_uses, uses, note FROM promo_codes ORDER BY created_at DESC");
+  const r = await sqlClient.execute(
+    "SELECT code, percent_off, applies_to, active, max_uses, uses, note FROM promo_codes ORDER BY created_at DESC",
+  );
   return r.rows.map((x) => ({
     code: x.code as string,
-    grants: x.grants as string,
+    percentOff: Number(x.percent_off ?? 100),
+    appliesTo: (x.applies_to as string) || "any",
     active: Number(x.active) === 1,
     maxUses: x.max_uses == null ? null : Number(x.max_uses),
     uses: Number(x.uses),

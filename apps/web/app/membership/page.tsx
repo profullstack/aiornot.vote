@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { env } from "@/lib/env";
 import { BuyButton } from "@/components/PaymentUI";
-import { PromoForm } from "@/components/PromoForm";
 
 export const metadata = { title: "Get access" };
 export const dynamic = "force-dynamic";
@@ -63,13 +62,11 @@ export default async function MembershipPage() {
         </div>
       </div>
 
-      {/* Promo code */}
       {user && !user.isMember && (
-        <div className="form-card" style={{ marginTop: 18 }}>
-          <div className="rss-title">Have a code?</div>
-          <p className="muted-sm" style={{ marginBottom: 10 }}>Redeem a promo code for instant access.</p>
-          <PromoForm />
-        </div>
+        <p className="muted-sm" style={{ marginTop: 14 }}>
+          🎟️ Got a promo code? Enter it in the <strong>Promo code</strong> box next to either buy button —
+          it discounts the price (or unlocks free for a 100%-off code).
+        </p>
       )}
 
       <p className="muted-sm" style={{ marginTop: 14 }}>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { sqlClient } from "@/lib/db";
 import { getCoinpayPayment, isPaymentPaid } from "@/lib/coinpay";
-import { grantForPayment } from "@/lib/entitlements";
+import { grantForPayment, recordPromoRedemption } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const id = new URL(req.url).searchParams.get("id") || "";
 
   const res = await sqlClient.execute({
-    sql: "SELECT id, user_id, purpose, status, coinpay_payment_id FROM payments WHERE id = ? LIMIT 1",
+    sql: "SELECT id, user_id, purpose, status, coinpay_payment_id, promo_code FROM payments WHERE id = ? LIMIT 1",
     args: [id],
   });
   const p = res.rows[0];
@@ -54,6 +54,8 @@ export async function GET(req: Request) {
     userId: user.id,
     purpose: p.purpose as string,
   });
+  // A discounted (non-free) promo payment records its redemption on grant.
+  if (p.promo_code) await recordPromoRedemption(p.promo_code as string, user.id);
   return NextResponse.json({
     ok: true,
     status: "granted",

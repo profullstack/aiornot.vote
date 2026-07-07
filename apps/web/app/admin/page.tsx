@@ -31,6 +31,8 @@ export default async function AdminHome() {
         <Link href="/admin/users" className="tile"><div className="val">{users}</div><div className="lbl">Users</div></Link>
         <Link href="/admin/tags" className="tile"><div className="val">{tags}</div><div className="lbl">Tags</div></Link>
         <Link href="/admin/seed-batches" className="tile"><div className="val">{batches}</div><div className="lbl">Seed batches</div></Link>
+        <Link href="/admin/promos" className="tile"><div className="val">%</div><div className="lbl">Promo codes</div></Link>
+        <Link href="/admin/newsletter" className="tile"><div className="val">✉️</div><div className="lbl">Newsletter</div></Link>
       </div>
       <div className="tabs" style={{ marginTop: 8 }}>
         <Link href="/admin/media" className="active">Media</Link>

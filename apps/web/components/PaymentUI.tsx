@@ -17,16 +17,19 @@ export function BuyButton({
 }) {
   const router = useRouter();
   const [coin, setCoin] = useState("SOL");
+  const [promo, setPromo] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
 
   async function buy() {
     setBusy(true);
     setErr(null);
+    setOk(null);
     const res = await fetch("/api/payments/create-checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ purpose, blockchain: coin }),
+      body: JSON.stringify({ purpose, blockchain: coin, promoCode: promo.trim() || undefined }),
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
@@ -34,19 +37,38 @@ export function BuyButton({
       setErr(data.error || "Could not start checkout.");
       return;
     }
+    // 100%-off comp: granted instantly, no payment.
+    if (data.granted) {
+      setOk("Unlocked — thank you! 🎉");
+      setTimeout(() => router.refresh(), 800);
+      return;
+    }
     router.push(`/checkout/${data.paymentId}`);
   }
 
   return (
-    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-      <select value={coin} onChange={(e) => setCoin(e.target.value)} disabled={busy}
-        style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }}>
-        {COINS.map((c) => <option key={c} value={c}>{c.replace("_", " ")}</option>)}
-      </select>
-      <button className="btn btn-primary" onClick={buy} disabled={busy}>
-        {busy ? "Starting…" : `${label} — $${priceUsd} in crypto`}
-      </button>
+    <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <select value={coin} onChange={(e) => setCoin(e.target.value)} disabled={busy}
+          style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }}>
+          {COINS.map((c) => <option key={c} value={c}>{c.replace("_", " ")}</option>)}
+        </select>
+        <input
+          value={promo}
+          onChange={(e) => setPromo(e.target.value.toUpperCase())}
+          placeholder="PROMO CODE (optional)"
+          aria-label="Promo code"
+          style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)", letterSpacing: "0.06em", textTransform: "uppercase", width: 190 }}
+        />
+      </div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <button className="btn btn-primary" onClick={buy} disabled={busy}>
+          {busy ? "Starting…" : `${label} — $${priceUsd} in crypto`}
+        </button>
+        {promo.trim() && <span className="muted-sm">a valid code discounts this at checkout</span>}
+      </div>
       {err && <span className="form-error">{err}</span>}
+      {ok && <span className="form-ok">{ok}</span>}
     </div>
   );
 }

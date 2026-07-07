@@ -20,6 +20,7 @@ export default async function MediaLeaderboard({
       activeHref={`/leaderboard/media/${type}`}
       feedPath="/rss/leaderboard.xml"
       note={`Correct guesses on ${mediaType} media only.`}
+      scope={{ timeframe: "all", mediaType, minScored: 5 }}
     />
   );
 }

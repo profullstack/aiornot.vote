@@ -12,7 +12,8 @@ export default async function LeaderboardPage() {
       rows={rows}
       activeHref="/leaderboard"
       feedPath="/rss/leaderboard.xml"
-      note="Ranked by correct guesses, then accuracy. Minimum 10 scored guesses to appear."
+      note="Ranked by correct guesses, then accuracy. Minimum 5 scored guesses to appear."
+      scope={{ timeframe: "all", minScored: 5 }}
     />
   );
 }

@@ -13,6 +13,7 @@ export default async function StreaksLeaderboard() {
       activeHref="/leaderboard/streaks"
       feedPath="/rss/leaderboard.xml"
       note="Ranked by current active streak of correct guesses."
+      scope={{ timeframe: "all", minScored: 1 }}
     />
   );
 }

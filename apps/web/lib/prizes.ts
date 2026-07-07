@@ -157,11 +157,18 @@ export async function claimPrize(userId: string, prizeId: string): Promise<Claim
   if (!p || p.user_id !== userId) return { ok: false, error: "Prize not found." };
   if (p.status === "claimed") return { ok: false, error: "You already claimed this prize." };
   if (p.status !== "unclaimed") return { ok: false, error: "This prize is no longer available." };
-  if (new Date(p.claim_deadline as string).getTime() < Date.now()) {
-    await sqlClient.execute({ sql: "UPDATE prizes SET status = 'expired' WHERE id = ?", args: [prizeId] });
+  const now = new Date();
+  const nowISO = now.toISOString();
+  if (new Date(p.claim_deadline as string).getTime() < now.getTime()) {
+    await sqlClient.execute({ sql: "UPDATE prizes SET status = 'expired' WHERE id = ? AND status = 'unclaimed'", args: [prizeId] });
     return { ok: false, error: "The claim window has closed." };
   }
-  await sqlClient.execute({ sql: "UPDATE prizes SET status = 'claimed', claimed_at = ? WHERE id = ?", args: [new Date().toISOString(), prizeId] });
+  const claimed = await sqlClient.execute({
+    sql: `UPDATE prizes SET status = 'claimed', claimed_at = ?
+          WHERE id = ? AND user_id = ? AND status = 'unclaimed' AND claim_deadline >= ?`,
+    args: [nowISO, prizeId, userId, nowISO],
+  });
+  if (claimed.rowsAffected === 0) return { ok: false, error: "This prize is no longer available." };
 
   // Notify admins to fulfil (send the code out of band).
   const email = (await sqlClient.execute({ sql: "SELECT email FROM users WHERE id = ? LIMIT 1", args: [userId] })).rows[0]?.email as string | undefined;

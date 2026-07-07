@@ -356,6 +356,28 @@ export const tips = sqliteTable("tips", {
   createdAt: text("created_at").notNull().default(now),
 });
 
+export const prizeSponsorships = sqliteTable(
+  "prize_sponsorships",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id"),
+    sponsorName: text("sponsor_name").notNull(),
+    sponsorUrl: text("sponsor_url"),
+    prizeLabel: text("prize_label").notNull(),
+    message: text("message"),
+    amountUsd: real("amount_usd").notNull(),
+    blockchain: text("blockchain"),
+    coinpayPaymentId: text("coinpay_payment_id"),
+    paymentAddress: text("payment_address"),
+    cryptoAmount: text("crypto_amount"),
+    status: text("status").notNull().default("pending"),
+    periodStart: text("period_start").notNull(),
+    createdAt: text("created_at").notNull().default(now),
+    paidAt: text("paid_at"),
+  },
+  (t) => [index("idx_sponsorships_period").on(t.periodStart, t.status)],
+);
+
 export const auditLog = sqliteTable("audit_log", {
   id: text("id").primaryKey(),
   actorId: text("actor_id"),

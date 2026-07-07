@@ -45,6 +45,11 @@ export function prevCompletedWeek(now = new Date()): { start: string; end: strin
   return { start: start.toISOString(), end: thisMon.toISOString() };
 }
 
+/** Monday of the week currently being played (what sponsorships target). */
+export function currentWeekStart(now = new Date()): string {
+  return mondayUTC(now).toISOString();
+}
+
 /** Ranked winners for an arbitrary [start, end) window. */
 async function winnersForPeriod(startISO: string, endISO: string, limit: number): Promise<Array<{ userId: string; correct: number; scored: number }>> {
   const res = await sqlClient.execute({
@@ -72,7 +77,7 @@ export async function expirePrizes(): Promise<number> {
   return r.rowsAffected;
 }
 
-export type DrawResult = { drawn: boolean; reason?: string; awarded: number; carriedIn: number; period: { start: string; end: string } };
+export type DrawResult = { drawn: boolean; reason?: string; awarded: number; carriedIn: number; sponsored?: number; period: { start: string; end: string } };
 
 /**
  * Draw the weekly prize pack for the most-recently-completed week. Base rewards
@@ -99,7 +104,19 @@ export async function drawWeeklyPrizes(opts?: { period?: { start: string; end: s
   });
   const carryRewards = carry.rows.map((r) => ({ kind: r.reward_kind as string, label: r.reward_label as string, sourceId: r.id as string }));
 
+  // Sponsor-funded prizes for the drawn week (marked fulfilled below).
+  const sponsors = await sqlClient.execute({
+    sql: "SELECT id, prize_label, sponsor_name FROM prize_sponsorships WHERE period_start = ? AND status = 'active' ORDER BY created_at ASC",
+    args: [period.start],
+  });
+  const sponsorRewards = sponsors.rows.map((r) => ({
+    kind: "sponsored",
+    label: `${r.prize_label as string} — sponsored by ${r.sponsor_name as string}`,
+    sponsorshipId: r.id as string,
+  }));
+
   const pack = [
+    ...sponsorRewards.map((r) => ({ kind: r.kind, label: r.label, carried: false, sourceId: null as string | null })),
     ...BASE_REWARDS.map((r) => ({ ...r, carried: false, sourceId: null as string | null })),
     ...carryRewards.map((r) => ({ kind: r.kind, label: r.label, carried: true, sourceId: r.sourceId })),
   ];
@@ -130,7 +147,15 @@ export async function drawWeeklyPrizes(opts?: { period?: { start: string; end: s
     }
   }
 
-  return { drawn: true, awarded, carriedIn: carryRewards.length, period };
+  // Sponsorships for this week have now been placed into the pack.
+  if (sponsorRewards.length > 0) {
+    await sqlClient.execute({
+      sql: "UPDATE prize_sponsorships SET status = 'fulfilled' WHERE period_start = ? AND status = 'active'",
+      args: [period.start],
+    });
+  }
+
+  return { drawn: true, awarded, carriedIn: carryRewards.length, sponsored: sponsorRewards.length, period };
 }
 
 async function notifyWinner(userId: string, rewardLabel: string, rank: number, deadline: string): Promise<void> {

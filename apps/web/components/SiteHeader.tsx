@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { SessionUser } from "@/lib/session";
+import { LogoutButton } from "@/components/AuthForms";
 
 export function Wordmark() {
   return (
@@ -38,6 +39,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
             <Link href="/account" className="btn btn-sm">
               {user.displayName || "Account"}
             </Link>
+            <LogoutButton />
           </>
         ) : (
           <>

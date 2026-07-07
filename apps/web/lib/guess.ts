@@ -1,6 +1,7 @@
 import "server-only";
 import { sqlClient } from "./db";
 import { ids } from "@aiornot/db";
+import { awardMilestones, type Milestone } from "./rewards";
 
 export type CastGuessResult =
   | {
@@ -11,6 +12,7 @@ export type CastGuessResult =
       truthLabel: "ai" | "not_ai" | "unknown";
       revealTruth: boolean;
       alreadyVoted: boolean;
+      earned?: Milestone | null;
       stats: { aiGuesses: number; notAiGuesses: number; total: number; totalGuesses: number; aiPct: number };
     }
   | { ok: false; error: string; code: number };
@@ -94,6 +96,13 @@ export async function castGuess(
   const stats = await recomputeMediaStats(mediaId, truthLabel);
   await recomputeUserStats(userId);
 
+  // If this correct guess pushed the streak onto a milestone, grant the reward.
+  let earned: Milestone | null = null;
+  if (Number(s.is_scored) === 1 && Number(s.is_correct) === 1) {
+    const us = await sqlClient.execute({ sql: "SELECT current_streak FROM user_stats WHERE user_id = ? LIMIT 1", args: [userId] });
+    earned = await awardMilestones(userId, Number(us.rows[0]?.current_streak ?? 0));
+  }
+
   return {
     ok: true,
     guess: s.guess as "ai" | "not_ai",
@@ -102,6 +111,7 @@ export async function castGuess(
     truthLabel,
     revealTruth: truthLabel !== "unknown",
     alreadyVoted: false,
+    earned,
     stats,
   };
 }

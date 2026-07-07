@@ -8,6 +8,8 @@ import { DetailVote } from "@/components/DetailVote";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
 import { Magnifier } from "@/components/Magnifier";
+import { PowerupBar } from "@/components/RewardUI";
+import { getMediaRewardState } from "@/lib/rewards";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,7 @@ export default async function MediaDetailPage({
 
   const relatedTagSlugs = m.tags.filter((t) => !t.isAnswerSpoiler).map((t) => t.slug);
   const related = await getRelatedMedia(m.id, relatedTagSlugs, 6);
+  const rewardState = user ? await getMediaRewardState(user.id, m.id).catch(() => null) : null;
 
   // Provenance is revealed after the user guesses (client-controlled).
   const provenance = (
@@ -116,6 +119,15 @@ export default async function MediaDetailPage({
             isLoggedIn={!!user}
             revealContent={m.userGuess ? provenance : undefined}
           />
+
+          {rewardState && (
+            <PowerupBar
+              mediaId={m.id}
+              balances={rewardState.balances}
+              unlocked={rewardState.unlocked}
+              isLoggedIn={!!user}
+            />
+          )}
 
           {user?.isAdmin && (
             <>

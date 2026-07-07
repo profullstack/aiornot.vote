@@ -35,6 +35,7 @@ export function MediaCard({
     card.userGuess ? card.truthLabel : "unknown",
   );
   const [stats, setStats] = useState(card.stats);
+  const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -61,6 +62,7 @@ export function MediaCard({
       setCorrect(data.isCorrect);
       setTruth(data.revealTruth ? data.truthLabel : "unknown");
       setStats((s) => ({ ...s, ...data.stats, aiPct: data.stats.aiPct }));
+      if (data.earned) setEarned({ emoji: data.earned.emoji, label: data.earned.label });
     } catch {
       setErr("Network error — try again.");
     } finally {
@@ -137,6 +139,11 @@ export function MediaCard({
               {stats.aiPct}% said AI · {100 - stats.aiPct}% said Not AI ·{" "}
               {stats.totalGuesses} {stats.totalGuesses === 1 ? "vote" : "votes"}
             </div>
+            {earned && (
+              <div className="earned-toast" style={{ fontSize: 13 }}>
+                {earned.emoji} {earned.label}!
+              </div>
+            )}
           </div>
         )}
       </div>

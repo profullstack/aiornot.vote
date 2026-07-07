@@ -12,6 +12,8 @@ const TABS = [
   { label: "Streaks", href: "/leaderboard/streaks" },
   { label: "Images", href: "/leaderboard/media/images" },
   { label: "Videos", href: "/leaderboard/media/videos" },
+  { label: "Most followed", href: "/leaderboard/followers" },
+  { label: "Most following", href: "/leaderboard/following" },
 ];
 
 export async function LeaderboardView({

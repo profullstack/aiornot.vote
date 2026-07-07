@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import type { LeaderboardRow } from "@/lib/queries";
 
 type SortKey = "rank" | "displayName" | "correct" | "scored" | "accuracy" | "currentStreak" | "bestStreak";
@@ -63,7 +64,7 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
         {sorted.map((r) => (
           <tr key={r.userId}>
             <td className={`lb-rank ${r.rank <= 3 ? "top" : ""}`}>{String(r.rank).padStart(2, "0")}</td>
-            <td className="lb-name">{r.displayName}</td>
+            <td className="lb-name"><Link href={`/u/${r.userId}`}>{r.displayName}</Link></td>
             <td className="lb-correct">{r.correct}</td>
             <td>{r.scored}</td>
             <td>{Math.round(r.accuracy * 100)}%</td>

@@ -126,6 +126,7 @@ export default async function MediaDetailPage({
               balances={rewardState.balances}
               unlocked={rewardState.unlocked}
               isLoggedIn={!!user}
+              hasVoted={!!m.userGuess}
             />
           )}
 

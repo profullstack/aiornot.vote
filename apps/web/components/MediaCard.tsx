@@ -141,7 +141,7 @@ export function MediaCard({
             </div>
             {earned && (
               <div className="earned-toast" style={{ fontSize: 13 }}>
-                {earned.emoji} {earned.label}!
+                {earned.emoji} {earned.label} — saved to your rewards!
               </div>
             )}
           </div>

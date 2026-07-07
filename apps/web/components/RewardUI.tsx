@@ -16,11 +16,13 @@ export function PowerupBar({
   balances: initialBalances,
   unlocked: initialUnlocked,
   isLoggedIn,
+  hasVoted,
 }: {
   mediaId: string;
   balances: Balances;
   unlocked: Partial<Record<Kind, string>>;
   isLoggedIn: boolean;
+  hasVoted: boolean;
 }) {
   const [balances, setBalances] = useState(initialBalances);
   const [results, setResults] = useState<Partial<Record<Kind, string>>>(initialUnlocked);
@@ -52,11 +54,17 @@ export function PowerupBar({
 
   if (!isLoggedIn) return null;
 
+  // A Hint only helps before you guess — don't offer it once you've voted
+  // (but still show one you already unlocked). Scans/Verdicts stay available.
+  const kinds = (Object.keys(META) as Kind[]).filter(
+    (k) => !(k === "hint" && hasVoted && results.hint == null),
+  );
+
   return (
     <div className="powerups">
-      <div className="powerups-head">Streak rewards</div>
+      <div className="powerups-head">{hasVoted ? "Analyze this image" : "Use a reward before you guess"}</div>
       <div className="powerup-btns">
-        {(Object.keys(META) as Kind[]).map((kind) => {
+        {kinds.map((kind) => {
           const m = META[kind];
           const count = balances[m.balKey];
           const unlockedHere = results[kind] != null;
@@ -85,7 +93,8 @@ export function PowerupBar({
         ) : null,
       )}
       <div className="muted-sm" style={{ marginTop: 6 }}>
-        Build a correct-guess streak to earn Hints (10🔥), AI Scans (20🔥) and AI Verdicts (50🔥). <Link href="/rewards">How rewards work →</Link>
+        💡 Hints reveal a clue (spend one <strong>before</strong> you guess). 🔍 Scans &amp; 🤖 Verdicts run an AI on the image.
+        Rewards stack in your balance and persist — earn more by extending your streak. <Link href="/rewards">How it works →</Link>
       </div>
     </div>
   );

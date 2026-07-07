@@ -5,10 +5,11 @@ import Link from "next/link";
 type Kind = "hint" | "ai_scan" | "ai_verdict";
 type Balances = { hints: number; aiScans: number; aiVerdicts: number };
 
-const META: Record<Kind, { emoji: string; name: string; streak: number; balKey: keyof Balances }> = {
-  hint: { emoji: "💡", name: "Hint", streak: 10, balKey: "hints" },
-  ai_scan: { emoji: "🔍", name: "AI Scan", streak: 20, balKey: "aiScans" },
-  ai_verdict: { emoji: "🤖", name: "AI Verdict", streak: 50, balKey: "aiVerdicts" },
+// `every` = how often you re-earn this power-up as your streak climbs (see lib/rewards.ts GRANT_EVERY).
+const META: Record<Kind, { emoji: string; name: string; every: number; balKey: keyof Balances }> = {
+  hint: { emoji: "💡", name: "Hint", every: 5, balKey: "hints" },
+  ai_scan: { emoji: "🔍", name: "AI Scan", every: 20, balKey: "aiScans" },
+  ai_verdict: { emoji: "🤖", name: "AI Verdict", every: 50, balKey: "aiVerdicts" },
 };
 
 export function PowerupBar({
@@ -75,10 +76,10 @@ export function PowerupBar({
               className={`powerup-btn ${unlockedHere ? "used" : canUse ? "ready" : "locked"}`}
               disabled={busy === kind || (!canUse && !unlockedHere)}
               onClick={() => canUse && !unlockedHere && use(kind)}
-              title={canUse ? "" : `Earn at a ${m.streak}-guess streak`}
+              title={canUse ? "" : `Earn one every ${m.every} correct in a row`}
             >
               {busy === kind ? "…" : `${m.emoji} ${m.name}`}
-              {unlockedHere ? " ✓" : canUse ? ` (${count})` : ` 🔒 ${m.streak}🔥`}
+              {unlockedHere ? " ✓" : canUse ? ` (${count})` : ` 🔒 every ${m.every}🔥`}
             </button>
           );
         })}

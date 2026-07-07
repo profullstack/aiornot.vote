@@ -8,15 +8,21 @@ export type Grant = { hints?: number; aiScans?: number; aiVerdicts?: number };
 
 export type Milestone = { streak: number; grant: Grant; badge: string | null; emoji: string; label: string };
 
-/** The streak-milestone ladder. Rewards stack up as you keep a streak going. */
-export const MILESTONES: Milestone[] = [
-  { streak: 3, grant: { hints: 1 }, badge: null, emoji: "🔥", label: "+1 Hint" },
-  { streak: 10, grant: { hints: 1 }, badge: "Sharp Eye", emoji: "👁️", label: "Sharp Eye · +1 Hint" },
-  { streak: 20, grant: { aiScans: 1 }, badge: "Detective", emoji: "🔍", label: "Detective · +1 AI Scan" },
-  { streak: 30, grant: { hints: 2 }, badge: "Hawk Eye", emoji: "🦅", label: "Hawk Eye · +2 Hints" },
-  { streak: 50, grant: { aiVerdicts: 1 }, badge: "Oracle", emoji: "🤖", label: "Oracle · +1 AI Verdict" },
-  { streak: 75, grant: { aiScans: 1, hints: 1 }, badge: "Machine Whisperer", emoji: "🧠", label: "Machine Whisperer · +1 Scan, +1 Hint" },
-  { streak: 100, grant: { aiVerdicts: 1 }, badge: "Legend", emoji: "🏆", label: "Legend · +1 AI Verdict" },
+/**
+ * Recurring power-up grants — you keep earning, over and over, as your streak climbs.
+ * A Hint every 5 correct in a row, an AI Scan every 20, an AI Verdict every 50.
+ * Every hit stacks in your balance; break your streak and you start earning them again.
+ */
+export const GRANT_EVERY = { hint: 5, aiScan: 20, aiVerdict: 50 } as const;
+
+/** Named badge tiers — permanent, awarded off your best-ever streak. */
+export const BADGE_TIERS: Array<{ streak: number; badge: string; emoji: string }> = [
+  { streak: 10, badge: "Sharp Eye", emoji: "👁️" },
+  { streak: 20, badge: "Detective", emoji: "🔍" },
+  { streak: 30, badge: "Hawk Eye", emoji: "🦅" },
+  { streak: 50, badge: "Oracle", emoji: "🤖" },
+  { streak: 75, badge: "Machine Whisperer", emoji: "🧠" },
+  { streak: 100, badge: "Legend", emoji: "🏆" },
 ];
 
 export type Balances = { hints: number; aiScans: number; aiVerdicts: number };
@@ -32,19 +38,42 @@ export async function getBalances(userId: string): Promise<Balances> {
 }
 
 export function getBadges(bestStreak: number): Array<{ badge: string; emoji: string; streak: number }> {
-  return MILESTONES.filter((m) => m.badge && bestStreak >= m.streak).map((m) => ({ badge: m.badge as string, emoji: m.emoji, streak: m.streak }));
+  return BADGE_TIERS.filter((t) => bestStreak >= t.streak).map((t) => ({ badge: t.badge, emoji: t.emoji, streak: t.streak }));
 }
 
-/** Called after a correct guess. If the new streak hits a milestone, grant it. */
+/**
+ * Called after a correct guess. Grants recurring power-ups whenever the new streak
+ * lands on a multiple of a grant interval — so the rewards keep coming as you play.
+ * Returns a summary of what was earned (for the toast), or null if this streak
+ * length didn't land on any interval.
+ */
 export async function awardMilestones(userId: string, newStreak: number): Promise<Milestone | null> {
-  const m = MILESTONES.find((x) => x.streak === newStreak);
-  if (!m) return null;
+  if (newStreak <= 0) return null;
+  const grant: Grant = {
+    hints: newStreak % GRANT_EVERY.hint === 0 ? 1 : 0,
+    aiScans: newStreak % GRANT_EVERY.aiScan === 0 ? 1 : 0,
+    aiVerdicts: newStreak % GRANT_EVERY.aiVerdict === 0 ? 1 : 0,
+  };
+  if (!grant.hints && !grant.aiScans && !grant.aiVerdicts) return null;
+
   await ensureRow(userId);
   await sqlClient.execute({
     sql: `UPDATE user_powerups SET hints = hints + ?, ai_scans = ai_scans + ?, ai_verdicts = ai_verdicts + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
-    args: [m.grant.hints ?? 0, m.grant.aiScans ?? 0, m.grant.aiVerdicts ?? 0, userId],
+    args: [grant.hints ?? 0, grant.aiScans ?? 0, grant.aiVerdicts ?? 0, userId],
   });
-  return m;
+
+  const parts: string[] = [];
+  if (grant.hints) parts.push(`+${grant.hints} 💡 Hint`);
+  if (grant.aiScans) parts.push(`+${grant.aiScans} 🔍 AI Scan`);
+  if (grant.aiVerdicts) parts.push(`+${grant.aiVerdicts} 🤖 AI Verdict`);
+  const badge = BADGE_TIERS.find((t) => t.streak === newStreak) ?? null;
+  return {
+    streak: newStreak,
+    grant,
+    badge: badge?.badge ?? null,
+    emoji: badge?.emoji ?? "🔥",
+    label: `${newStreak}🔥 streak — ${parts.join(", ")}${badge ? ` · 🏅 ${badge.badge}` : ""}`,
+  };
 }
 
 const COL: Record<PowerupKind, string> = { hint: "hints", ai_scan: "ai_scans", ai_verdict: "ai_verdicts" };

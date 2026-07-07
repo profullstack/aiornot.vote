@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MILESTONES } from "@/lib/rewards";
+import { GRANT_EVERY, BADGE_TIERS } from "@/lib/rewards";
 
 export const metadata = {
   title: "Streak rewards",
@@ -12,20 +12,44 @@ export default function RewardsPage() {
       <div className="hero" style={{ padding: "24px 0" }}>
         <h1>Streak <span className="ai">rewards</span></h1>
         <p>
-          Every correct guess in a row builds your streak. Hit a milestone and you earn
-          power-ups that <strong>stack up</strong> — spend them on any image&apos;s detail page.
-          Miss one and the streak resets, but your earned rewards stay.
+          Every correct guess in a row builds your streak, and you earn power-ups
+          <strong> over and over</strong> as it climbs — not just once. They <strong>stack up</strong> in
+          your balance to spend on any image&apos;s detail page. Miss one and the streak resets,
+          but your earned rewards stay and you start earning again from the next guess.
         </p>
       </div>
 
-      <div className="section-head"><h2>The ladder</h2></div>
+      <div className="section-head"><h2>What you earn, and how often</h2></div>
       <table className="lb-table">
-        <thead><tr><th>Streak</th><th>Reward</th></tr></thead>
+        <thead><tr><th>Every…</th><th>You earn</th></tr></thead>
         <tbody>
-          {MILESTONES.map((m) => (
-            <tr key={m.streak}>
-              <td className="lb-rank" style={{ color: "var(--ai)" }}>{m.streak}🔥</td>
-              <td>{m.emoji} {m.label}{m.badge ? ` · 🏅 "${m.badge}" badge` : ""}</td>
+          <tr>
+            <td className="lb-rank" style={{ color: "var(--ai)" }}>{GRANT_EVERY.hint} in a row</td>
+            <td>💡 <strong>+1 Hint</strong> — again at {GRANT_EVERY.hint * 2}, {GRANT_EVERY.hint * 3}, {GRANT_EVERY.hint * 4}…</td>
+          </tr>
+          <tr>
+            <td className="lb-rank" style={{ color: "var(--ai)" }}>{GRANT_EVERY.aiScan} in a row</td>
+            <td>🔍 <strong>+1 AI Scan</strong> — again at {GRANT_EVERY.aiScan * 2}, {GRANT_EVERY.aiScan * 3}…</td>
+          </tr>
+          <tr>
+            <td className="lb-rank" style={{ color: "var(--ai)" }}>{GRANT_EVERY.aiVerdict} in a row</td>
+            <td>🤖 <strong>+1 AI Verdict</strong> — again at {GRANT_EVERY.aiVerdict * 2}, {GRANT_EVERY.aiVerdict * 3}…</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="muted-sm" style={{ marginTop: 8 }}>
+        So a 20-streak run hands you 4 Hints (at 5, 10, 15, 20) <em>and</em> an AI Scan (at 20). Keep going and they keep coming.
+      </p>
+
+      <div className="section-head" style={{ marginTop: 24 }}><h2>Badges</h2></div>
+      <p className="muted-sm" style={{ marginBottom: 8 }}>Permanent — awarded off your best-ever streak.</p>
+      <table className="lb-table">
+        <thead><tr><th>Best streak</th><th>Badge</th></tr></thead>
+        <tbody>
+          {BADGE_TIERS.map((t) => (
+            <tr key={t.streak}>
+              <td className="lb-rank" style={{ color: "var(--ai)" }}>{t.streak}🔥</td>
+              <td>{t.emoji} 🏅 &ldquo;{t.badge}&rdquo;</td>
             </tr>
           ))}
         </tbody>

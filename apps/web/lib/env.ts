@@ -52,6 +52,18 @@ export const env = {
   posthogKey: process.env.POSTHOG_KEY || "",
   posthogHost: process.env.POSTHOG_HOST || "",
 
+  coinpay: {
+    apiKey: process.env.COINPAY_API_KEY || "",
+    businessId: process.env.COINPAY_BUSINESS_ID || "",
+    baseUrl: process.env.COINPAY_BASE_URL || "https://coinpayportal.com/api",
+    webhookSecret: process.env.COINPAY_WEBHOOK_SECRET || "",
+  },
+  get coinpayConfigured() {
+    return !!(this.coinpay.apiKey && this.coinpay.businessId);
+  },
+  priceApiAccessUsd: Number(process.env.PRICE_API_ACCESS_USD || 1),
+  priceLifetimeUsd: Number(process.env.PRICE_LIFETIME_USD || 2),
+
   hasResend: bool(process.env.RESEND_API_KEY ? "1" : "0"),
 };
 

@@ -114,6 +114,9 @@ export async function seedPool(
         await createAiVariant(client, {
           category,
           caption,
+          // Tell the model exactly what to depict so the image matches the
+          // category it will be tagged under.
+          tags: [catSlug],
           parentId: (parent?.id as string) ?? null,
           seed: i + Math.floor(Math.random() * 1e6),
         });

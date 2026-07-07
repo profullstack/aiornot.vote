@@ -25,16 +25,29 @@ function pick<T>(arr: T[], seed: number): T {
   return arr[Math.abs(seed) % arr.length]!;
 }
 
-/** Category-aware, reveal-safe prompt for an AI variant inspired by (not copying) a real photo. */
-export function buildVariantPrompt(category: string, caption: string, seed = Date.now()): string {
+/**
+ * Category-aware, reveal-safe prompt for an AI variant inspired by (not copying)
+ * a real photo. Pass the intended `tags` and a short `description` so the model
+ * depicts exactly the subject the item will be tagged with (avoids the image and
+ * its tags disagreeing).
+ */
+export function buildVariantPrompt(
+  category: string,
+  caption: string,
+  seed = Date.now(),
+  opts: { tags?: string[]; description?: string } = {},
+): string {
+  const subject = (opts.tags ?? []).filter((t) => !["photorealistic", "ai-generated", "human-made", "image", "video"].includes(t));
   return [
-    `Create a photorealistic editorial-style image inspired by this scene, but do not copy it exactly.`,
-    `Scene: ${caption}.`,
-    `Keep the general category: ${category}.`,
-    `Change at least three major creative details: ${pick(LIGHTING, seed)}, ${pick(BACKGROUND, seed + 1)}, ${pick(ANGLE, seed + 2)}, ${pick(STYLING, seed + 3)}.`,
-    `Make it look like a real camera photo, not illustration, not CGI, not fantasy art.`,
+    `Create a photorealistic editorial-style photograph in the "${category}" category.`,
+    subject.length ? `The image MUST clearly and unambiguously depict: ${subject.join(", ")}.` : "",
+    opts.description ? `Scene description: ${opts.description}.` : caption ? `Loose inspiration (do not copy): ${caption}.` : "",
+    `Vary the execution with realistic detail: ${pick(LIGHTING, seed)}, ${pick(BACKGROUND, seed + 1)}, ${pick(ANGLE, seed + 2)}, ${pick(STYLING, seed + 3)}.`,
+    `It must look like a real camera photo — not illustration, not CGI, not fantasy art. Keep the subject matter accurate to the category and tags above.`,
     `No text, no watermark, no logos.`,
-  ].join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 /** Short summary stored on the media row (reveal metadata). */

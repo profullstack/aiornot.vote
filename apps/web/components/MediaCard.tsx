@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { Magnifier } from "./Magnifier";
 
 export type ClientTag = { slug: string; name: string; isAnswerSpoiler: boolean };
 export type ClientCard = {
@@ -73,8 +74,7 @@ export function MediaCard({
         {card.mediaType === "video" ? (
           <video src={card.mediaUrl} poster={card.posterUrl || undefined} muted playsInline preload="metadata" />
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={poster} alt={card.title} loading="lazy" />
+          <Magnifier src={poster} alt={card.title} fit="cover" fill zoom={2.4} lensSize={150} />
         )}
         <span className="badge-type">{card.mediaType}</span>
         {card.isFeatured && <span className="badge-featured">Featured</span>}

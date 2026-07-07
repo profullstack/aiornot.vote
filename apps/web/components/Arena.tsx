@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { Magnifier } from "./Magnifier";
 
 type PlayItem = {
   id: string;
@@ -103,8 +104,7 @@ export function Arena() {
               {current.mediaType === "video" ? (
                 <video src={current.mediaUrl} poster={current.posterUrl || undefined} muted playsInline />
               ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={current.mediaUrl} alt={current.title} />
+                <Magnifier key={current.id} src={current.mediaUrl} alt={current.title} fit="cover" fill zoom={2.8} lensSize={190} />
               )}
               {reveal && (
                 <div className="arena-overlay">

@@ -12,16 +12,21 @@ export function SubmitForm() {
     e.preventDefault();
     setBusy(true);
     setErr(null);
-    const res = await fetch("/api/submit", { method: "POST", body: new FormData(e.currentTarget) });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) {
-      setErr(data.error || "Could not submit.");
-      return;
+    try {
+      const res = await fetch("/api/submit", { method: "POST", body: new FormData(e.currentTarget) });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setErr(data.error || "Could not submit.");
+        return;
+      }
+      setOk(true);
+      (e.target as HTMLFormElement).reset();
+      setTimeout(() => router.push("/account"), 1200);
+    } catch {
+      setErr("Network error — please try again.");
+    } finally {
+      setBusy(false);
     }
-    setOk(true);
-    (e.target as HTMLFormElement).reset();
-    setTimeout(() => router.push("/account"), 1200);
   }
 
   return (

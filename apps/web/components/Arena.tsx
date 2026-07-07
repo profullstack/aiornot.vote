@@ -32,11 +32,16 @@ export function Arena() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/play/queue");
-    const data = await res.json();
-    setQueue(data.items || []);
-    setI(0);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/play/queue");
+      const data = await res.json();
+      setQueue(data.items || []);
+      setI(0);
+    } catch {
+      setQueue([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -48,21 +53,26 @@ export function Arena() {
   async function vote(g: "ai" | "not_ai") {
     if (!current || busy || reveal) return;
     setBusy(true);
-    const res = await fetch("/api/guess", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mediaId: current.id, guess: g }),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok || !data.ok) return;
-    const correct = !!data.isCorrect;
-    setReveal({ truth: data.truthLabel, correct, aiPct: data.stats.aiPct, total: data.stats.total });
-    if (correct) {
-      setScore((s) => s + 1);
-      setStreak((s) => s + 1);
-    } else {
-      setStreak(0);
+    try {
+      const res = await fetch("/api/guess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaId: current.id, guess: g }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return;
+      const correct = !!data.isCorrect;
+      setReveal({ truth: data.truthLabel, correct, aiPct: data.stats.aiPct, total: data.stats.total });
+      if (correct) {
+        setScore((s) => s + 1);
+        setStreak((s) => s + 1);
+      } else {
+        setStreak(0);
+      }
+    } catch {
+      // Network error: just re-enable the buttons so the user can try again.
+    } finally {
+      setBusy(false);
     }
   }
 

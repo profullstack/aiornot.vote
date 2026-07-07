@@ -14,6 +14,12 @@ describe("validateExternalUrl (SSRF guard)", () => {
   it("blocks link-local 169.254", () => {
     expect(validateExternalUrl("http://169.254.169.254/latest/meta-data").ok).toBe(false);
   });
+  it("blocks IPv6 loopback and private literals", () => {
+    expect(validateExternalUrl("http://[::1]/x").ok).toBe(false);
+    expect(validateExternalUrl("http://[::]/x").ok).toBe(false);
+    expect(validateExternalUrl("http://[fd00::1]/x").ok).toBe(false);
+    expect(validateExternalUrl("http://[fe80::1]/x").ok).toBe(false);
+  });
   it("blocks non-http schemes", () => {
     expect(validateExternalUrl("file:///etc/passwd").ok).toBe(false);
   });

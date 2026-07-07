@@ -12,7 +12,7 @@ export function validateExternalUrl(raw: string): { ok: true; url: URL } | { ok:
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     return { ok: false, error: "Only http and https URLs are allowed." };
   }
-  const host = url.hostname.toLowerCase();
+  const host = url.hostname.toLowerCase().replace(/^\[(.*)\]$/, "$1");
   if (
     host === "localhost" ||
     host === "0.0.0.0" ||

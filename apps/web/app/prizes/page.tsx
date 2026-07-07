@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { BASE_REWARDS, getLatestPack, getRecentWinners, getUserPrizes } from "@/lib/prizes";
+import { getCurrentSponsors, MIN_SPONSOR_USD } from "@/lib/sponsorships";
 import { ClaimButton } from "@/components/PrizeUI";
+import { SponsorForm } from "@/components/SponsorUI";
 
 export const metadata = {
   title: "Weekly prizes",
@@ -13,10 +15,11 @@ const RANK_LABEL = ["1st place", "2nd place", "3rd place"];
 
 export default async function PrizesPage() {
   const user = await getCurrentUser();
-  const [pack, winners, mine] = await Promise.all([
+  const [pack, winners, mine, sponsors] = await Promise.all([
     getLatestPack(),
     getRecentWinners(12),
     user ? getUserPrizes(user.id) : Promise.resolve([]),
+    getCurrentSponsors(),
   ]);
   const claimable = mine.filter((p) => p.status === "unclaimed" && new Date(p.claimDeadline).getTime() > Date.now());
 
@@ -52,6 +55,31 @@ export default async function PrizesPage() {
         ))}
       </div>
       <p className="muted-sm">Minimum a few scored guesses to qualify. Unclaimed rewards from past weeks get added on top of this pack.</p>
+
+      {sponsors.length > 0 && (
+        <>
+          <div className="section-head" style={{ marginTop: 20 }}><h2>💛 Sponsored this week</h2></div>
+          <div className="prize-pack">
+            {sponsors.map((s) => (
+              <div key={s.id} className="prize-card r1">
+                <div className="rank">Sponsored prize</div>
+                <div className="reward">{s.prizeLabel}</div>
+                <div className="winner">
+                  by {s.sponsorUrl ? <a href={s.sponsorUrl} target="_blank" rel="noreferrer nofollow">{s.sponsorName}</a> : s.sponsorName}
+                  {s.message ? ` — ${s.message}` : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="section-head" style={{ marginTop: 24 }}><h2>Sponsor a week 💛</h2></div>
+      <p className="muted">
+        Put up a prize and get a shout-out on this page + in the winner announcement. Pay in crypto via CoinPay
+        (min ${MIN_SPONSOR_USD}). Your prize joins this week&apos;s pack and goes to a top guesser.
+      </p>
+      <SponsorForm minUsd={MIN_SPONSOR_USD} loggedIn={!!user} />
 
       {pack.length > 0 && (
         <>

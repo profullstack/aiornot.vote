@@ -29,6 +29,10 @@ export function Arena() {
   const [reveal, setReveal] = useState<Reveal>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hints, setHints] = useState(0);
+  const [hintText, setHintText] = useState<string | null>(null);
+  const [hintBusy, setHintBusy] = useState(false);
+  const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,6 +40,7 @@ export function Arena() {
       const res = await fetch("/api/play/queue");
       const data = await res.json();
       setQueue(data.items || []);
+      setHints(data.balances?.hints ?? 0);
       setI(0);
     } catch {
       setQueue([]);
@@ -63,6 +68,7 @@ export function Arena() {
       if (!res.ok || !data.ok) return;
       const correct = !!data.isCorrect;
       setReveal({ truth: data.truthLabel, correct, aiPct: data.stats.aiPct, total: data.stats.total });
+      if (data.earned) setEarned({ emoji: data.earned.emoji, label: data.earned.label });
       if (correct) {
         setScore((s) => s + 1);
         setStreak((s) => s + 1);
@@ -78,9 +84,30 @@ export function Arena() {
 
   function next() {
     setReveal(null);
+    setHintText(null);
+    setEarned(null);
     setRound((r) => r + 1);
     if (i + 1 >= queue.length) load();
     else setI((n) => n + 1);
+  }
+
+  async function useHint() {
+    if (!current || hintBusy || reveal || hints <= 0) return;
+    setHintBusy(true);
+    try {
+      const res = await fetch("/api/rewards/use", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaId: current.id, kind: "hint" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setHintText(data.text);
+        setHints(data.balances.hints);
+      }
+    } finally {
+      setHintBusy(false);
+    }
   }
 
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -131,10 +158,27 @@ export function Arena() {
                 </div>
               )}
             </div>
+            {!reveal && (
+              hintText ? (
+                <div className="powerup-result" style={{ margin: 0 }}>
+                  <div className="powerup-result-h">💡 Hint</div>
+                  <div className="powerup-result-b">{hintText}</div>
+                </div>
+              ) : hints > 0 ? (
+                <button className="powerup-btn ready" style={{ alignSelf: "center" }} disabled={hintBusy} onClick={useHint}>
+                  {hintBusy ? "…" : `💡 Use a hint (${hints})`}
+                </button>
+              ) : null
+            )}
             <div className="vote-row">
               <button className="vote-btn ai" disabled={busy || !!reveal} onClick={() => vote("ai")}>AI</button>
               <button className="vote-btn human" disabled={busy || !!reveal} onClick={() => vote("not_ai")}>NOT AI</button>
             </div>
+            {reveal && earned && (
+              <div className="earned-toast" style={{ fontSize: 13 }}>
+                {earned.emoji} {earned.label} — saved to your rewards!
+              </div>
+            )}
             <div style={{ textAlign: "center", minHeight: 56 }}>
               {reveal ? (
                 <button className="btn btn-pill btn-primary" onClick={next} style={{ animation: "popIn 0.35s ease both" }}>

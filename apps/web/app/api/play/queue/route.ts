@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { sqlClient } from "@/lib/db";
+import { getBalances } from "@/lib/rewards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,5 +31,6 @@ export async function GET() {
     thumbnailUrl: (r.thumbnail_url as string) ?? null,
     posterUrl: (r.poster_url as string) ?? null,
   }));
-  return NextResponse.json({ ok: true, items });
+  const balances = user ? await getBalances(user.id) : { hints: 0, aiScans: 0, aiVerdicts: 0 };
+  return NextResponse.json({ ok: true, items, balances });
 }

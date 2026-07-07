@@ -30,15 +30,19 @@ export async function POST(req: Request) {
   const v = validateExternalUrl(imageUrl);
   if (!v.ok) return NextResponse.json({ error: `image_url: ${v.error}` }, { status: 400 });
 
+  // Images only for now.
+  if (/\.(mp4|webm|mov|avi|mkv|m4v)(\?|$)/i.test(imageUrl)) {
+    return NextResponse.json({ error: "Only images are supported right now." }, { status: 400 });
+  }
+
   const title = String(body.title || "Is this AI or real?").slice(0, 140);
   const tags: string[] = Array.isArray(body.tags)
     ? body.tags.map((t: unknown) => String(t).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/(^-|-$)/g, "")).filter(Boolean).slice(0, 8)
     : [];
-  const mediaType = /\.(mp4|webm|mov)(\?|$)/i.test(imageUrl) ? "video" : "image";
 
   const media = await createMedia({
     title,
-    mediaType,
+    mediaType: "image",
     mediaUrl: imageUrl,
     originalUrl: imageUrl,
     sourceUrl: imageUrl,

@@ -8,8 +8,9 @@ export function HomeHero({ tags }: { tags: TagRow[] }) {
         Can you tell what&apos;s <span className="ai">AI</span>?
       </h1>
       <p>
-        Guess photorealistic images and videos. Track your score. Subscribe to
-        every list by RSS.
+        Crowd-sourced AI image detection, disguised as a game. Guess
+        photorealistic images, track your score — and get the crowd&apos;s
+        verdict on any image by RSS or API.
       </p>
       <form className="hero-search" action="/search" method="get">
         <input

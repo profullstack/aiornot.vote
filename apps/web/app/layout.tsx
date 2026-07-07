@@ -55,7 +55,11 @@ export default async function RootLayout({
           data-property="aiornot.vote"
           strategy="afterInteractive"
         />
-              <Script data-site="8ad2116a-ae39-434a-8e2e-216931f80f43" src="https://crawlproof.com/stats.js" strategy="afterInteractive" />
+        {/* CrawlProof analytics + ad network. Ad units are placed in the UI
+            (see AdSlot in the footer); ad.js fills any [data-cp-ad] slot in a
+            sandboxed iframe and never blocks page load. */}
+        <Script data-site="8ad2116a-ae39-434a-8e2e-216931f80f43" src="https://crawlproof.com/stats.js" strategy="afterInteractive" />
+        <Script src="https://crawlproof.com/ad.js" strategy="afterInteractive" />
       </body>
     </html>
   );

@@ -21,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
   const mediaRoutes: MetadataRoute.Sitemap = media.rows.map((r) => ({
     url: `${base}/m/${r.slug as string}`,
-    lastModified: new Date((r.updated_at as string) + "Z"),
+    lastModified: new Date((r.updated_at as string).replace(" ", "T") + "Z"),
     changeFrequency: "weekly",
     priority: 0.5,
   }));

@@ -8,10 +8,13 @@ export type ClientCard = {
   id: string;
   slug: string;
   title: string;
-  mediaType: "image" | "video";
+  mediaType: "image" | "video" | "link";
   mediaUrl: string;
   thumbnailUrl: string | null;
   posterUrl: string | null;
+  body: string | null;
+  sourceUrl: string | null;
+  sourceProvider: string | null;
   isFeatured: boolean;
   truthLabel: "ai" | "not_ai" | "unknown";
   tags: ClientTag[];
@@ -77,15 +80,25 @@ export function MediaCard({
 
   return (
     <article className="card">
-      <div className="card-media">
-        {card.mediaType === "video" ? (
-          <video src={card.mediaUrl} poster={card.posterUrl || undefined} muted playsInline preload="metadata" />
-        ) : (
-          <Magnifier src={poster} alt={card.title} fit="cover" fill zoom={2.4} lensSize={150} />
-        )}
-        <span className="badge-type">{card.mediaType}</span>
-        {card.isFeatured && <span className="badge-featured">Featured</span>}
-      </div>
+      {card.mediaType === "link" ? (
+        <div className="card-media card-post" style={{ display: "flex", alignItems: "center", padding: "18px 18px", background: "var(--panel-alt)" }}>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: "var(--text)", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {card.body || card.title}
+          </p>
+          <span className="badge-type">{card.sourceProvider === "url" ? "post" : card.sourceProvider || "post"}</span>
+          {card.isFeatured && <span className="badge-featured">Featured</span>}
+        </div>
+      ) : (
+        <div className="card-media">
+          {card.mediaType === "video" ? (
+            <video src={card.mediaUrl} poster={card.posterUrl || undefined} muted playsInline preload="metadata" />
+          ) : (
+            <Magnifier src={poster} alt={card.title} fit="cover" fill zoom={2.4} lensSize={150} />
+          )}
+          <span className="badge-type">{card.mediaType}</span>
+          {card.isFeatured && <span className="badge-featured">Featured</span>}
+        </div>
+      )}
       <div className="card-body">
         <h3 className="card-title">
           <Link href={`/m/${card.slug}`}>{card.title}</Link>

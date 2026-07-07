@@ -19,7 +19,7 @@ export type MediaCard = {
   slug: string;
   title: string;
   description: string | null;
-  mediaType: "image" | "video";
+  mediaType: "image" | "video" | "link";
   mediaUrl: string;
   thumbnailUrl: string | null;
   posterUrl: string | null;
@@ -68,7 +68,7 @@ function cardFromRow(r: Row): MediaCard {
     slug: r.slug as string,
     title: r.title as string,
     description: (r.description as string) ?? null,
-    mediaType: (r.media_type as "image" | "video") ?? "image",
+    mediaType: (r.media_type as "image" | "video" | "link") ?? "image",
     mediaUrl: r.media_url as string,
     thumbnailUrl: (r.thumbnail_url as string) ?? null,
     posterUrl: (r.poster_url as string) ?? null,

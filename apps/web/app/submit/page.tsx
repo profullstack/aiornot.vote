@@ -14,6 +14,10 @@ export default async function SubmitPage() {
         Share an image or short video for the community to judge. Everything is
         reviewed before it goes live.
       </p>
+      <div className="notice" style={{ marginBottom: 4 }}>
+        📝 Got a <strong>tweet, Reddit thread, Bluesky or Nostr post</strong> instead?{" "}
+        <Link href="/submit/link">Submit a post for the crowd to judge →</Link>
+      </div>
       {!user ? (
         <div className="notice">
           <Link href="/login">Sign in</Link> or <Link href="/signup">create an account</Link> to submit.

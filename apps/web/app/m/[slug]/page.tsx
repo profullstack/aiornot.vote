@@ -111,7 +111,14 @@ export default async function MediaDetailPage({
     <div className="container">
       <div className="detail">
         <div className="detail-media">
-          {m.mediaType === "video" ? (
+          {m.mediaType === "link" ? (
+            <div style={{ background: "var(--panel-alt)", border: "1px solid var(--border-1)", borderRadius: 14, padding: "22px 24px" }}>
+              <div className="muted-sm" style={{ textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
+                {m.sourceDomain || "post"}
+              </div>
+              <p style={{ margin: 0, fontSize: 18, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{m.description || m.title}</p>
+            </div>
+          ) : m.mediaType === "video" ? (
             <video src={m.mediaUrl} poster={m.posterUrl || undefined} controls playsInline />
           ) : (
             <Magnifier src={m.mediaUrl} alt={m.title} zoom={2.8} lensSize={220} />

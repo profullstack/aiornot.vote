@@ -55,21 +55,40 @@ export async function signup(
   }
 
   const existing = await sqlClient.execute({
-    sql: "SELECT id FROM users WHERE email_normalized = ?",
+    sql: "SELECT id, password_hash FROM users WHERE email_normalized = ? LIMIT 1",
     args: [normalized],
   });
-  if (existing.rows.length > 0) {
+  const existingRow = existing.rows[0];
+  if (existingRow && existingRow.password_hash) {
     return { ok: false, error: "An account with this email already exists." };
   }
 
-  const userId = ids.user();
   const pw = await hashPassword(password);
   const role = isAdminEmail(normalized) ? "admin" : "user";
-  await sqlClient.execute({
-    sql: `INSERT INTO users (id, email, email_normalized, password_hash, display_name, status, role)
-          VALUES (?, ?, ?, ?, ?, 'pending_email_verification', ?)`,
-    args: [userId, email, normalized, pw, displayName?.trim() || null, role],
-  });
+
+  let userId: string;
+  if (existingRow) {
+    // Claim a passwordless placeholder (e.g. a seeded admin, or a future
+    // magic-link account) by setting a password. Force re-verification so
+    // control of the inbox is proven before the account can be used —
+    // this prevents anyone from grabbing a pre-verified admin email.
+    userId = existingRow.id as string;
+    await sqlClient.execute({
+      sql: `UPDATE users
+            SET password_hash = ?, display_name = COALESCE(?, display_name), role = ?,
+                status = 'pending_email_verification', email_verified_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      args: [pw, displayName?.trim() || null, role, userId],
+    });
+  } else {
+    userId = ids.user();
+    await sqlClient.execute({
+      sql: `INSERT INTO users (id, email, email_normalized, password_hash, display_name, status, role)
+            VALUES (?, ?, ?, ?, ?, 'pending_email_verification', ?)`,
+      args: [userId, email, normalized, pw, displayName?.trim() || null, role],
+    });
+  }
   await sqlClient.execute({
     sql: "INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)",
     args: [userId],

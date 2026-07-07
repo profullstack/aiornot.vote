@@ -43,27 +43,15 @@ const DEMO: DemoItem[] = [
 async function main() {
   const client = getClient();
 
-  // Ensure a demo admin user exists (matches ADMIN_EMAILS default).
+  // NOTE: we intentionally do NOT create an admin user row here. Admin access is
+  // granted at signup to any address listed in ADMIN_EMAILS — just register with
+  // that email (and verify) to become an admin. Seeding a pre-verified,
+  // passwordless admin would both block registration ("already exists") and let
+  // anyone claim admin without proving inbox control.
   const adminEmail = (process.env.ADMIN_EMAILS || "anthony@profullstack.com")
     .split(",")[0]
     .trim();
-  const adminNorm = adminEmail.toLowerCase();
-  let adminId: string;
-  const existingAdmin = await client.execute({
-    sql: "SELECT id FROM users WHERE email_normalized = ?",
-    args: [adminNorm],
-  });
-  if (existingAdmin.rows.length > 0) {
-    adminId = existingAdmin.rows[0].id as string;
-  } else {
-    adminId = ids.user();
-    await client.execute({
-      sql: `INSERT INTO users (id, email, email_normalized, email_verified_at, display_name, status, role)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, 'active', 'admin')`,
-      args: [adminId, adminEmail, adminNorm, "Admin"],
-    });
-    console.log(`Created admin user ${adminEmail} (set a password via /signup with this email, or magic link).`);
-  }
+  console.log(`Admin bootstrap: sign up at /signup with ${adminEmail} and verify to get admin.`);
 
   // Map of tag slug -> id
   const tagRows = await client.execute("SELECT id, slug FROM tags");

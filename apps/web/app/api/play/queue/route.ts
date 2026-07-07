@@ -23,6 +23,7 @@ export async function GET() {
     sql: `SELECT m.id, m.slug, m.title, m.media_type, m.media_url, m.thumbnail_url, m.poster_url, m.truth_label
           FROM media m
           WHERE m.status = 'approved' AND m.truth_label IN ('ai','not_ai') ${notGuessed}
+            AND m.id NOT IN (SELECT mt.media_id FROM media_tags mt JOIN tags t ON t.id = mt.tag_id WHERE t.members_only = 1)
           ORDER BY RANDOM() LIMIT 60`,
     args: args as never[],
   });

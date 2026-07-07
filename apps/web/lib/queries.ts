@@ -4,7 +4,7 @@ import type { Row } from "@libsql/client";
 
 export const PAGE_SIZE = 24;
 
-export type MediaTag = { slug: string; name: string; isAnswerSpoiler: boolean };
+export type MediaTag = { slug: string; name: string; isAnswerSpoiler: boolean; membersOnly: boolean };
 
 export type MediaStatsView = {
   aiGuesses: number;
@@ -97,6 +97,8 @@ export type ListArgs = {
   page?: number;
   pageSize?: number;
   userId?: string | null;
+  /** Include members-only (e.g. #nsfw) media. Default false — gated everywhere. */
+  includeMembersOnly?: boolean;
 };
 
 const SELECT_CARD = `
@@ -117,6 +119,13 @@ export async function listMedia(args: ListArgs): Promise<{ items: MediaCard[]; t
     params.push(args.mediaType);
   }
   if (args.featuredOnly) where.push("m.is_featured = 1");
+  // Members-only media (e.g. #nsfw) is hidden from every default feed, play
+  // queue, RSS and search — only surfaced when a caller explicitly opts in.
+  if (!args.includeMembersOnly) {
+    where.push(
+      "m.id NOT IN (SELECT mt.media_id FROM media_tags mt JOIN tags t ON t.id = mt.tag_id WHERE t.members_only = 1)",
+    );
+  }
   if (args.tagSlug) {
     where.push(
       "m.id IN (SELECT mt.media_id FROM media_tags mt JOIN tags t ON t.id = mt.tag_id WHERE t.slug = ?)",
@@ -173,7 +182,7 @@ async function attachTags(items: MediaCard[]): Promise<void> {
   const ids = items.map((i) => i.id);
   const placeholders = ids.map(() => "?").join(",");
   const res = await sqlClient.execute({
-    sql: `SELECT mt.media_id, t.slug, t.name, t.is_answer_spoiler
+    sql: `SELECT mt.media_id, t.slug, t.name, t.is_answer_spoiler, t.members_only
           FROM media_tags mt JOIN tags t ON t.id = mt.tag_id
           WHERE mt.media_id IN (${placeholders}) AND t.is_visible = 1`,
     args: ids as never[],
@@ -185,6 +194,7 @@ async function attachTags(items: MediaCard[]): Promise<void> {
       slug: r.slug as string,
       name: r.name as string,
       isAnswerSpoiler: Number(r.is_answer_spoiler ?? 0) === 1,
+      membersOnly: Number(r.members_only ?? 0) === 1,
     });
     byMedia.set(r.media_id as string, arr);
   }
@@ -275,6 +285,7 @@ export type TagRow = {
   description: string | null;
   isDefault: boolean;
   isAnswerSpoiler: boolean;
+  membersOnly: boolean;
   mediaCount: number;
 };
 
@@ -283,7 +294,7 @@ export async function listTags(opts?: { defaultsOnly?: boolean; hideSpoilers?: b
   if (opts?.defaultsOnly) where.push("t.is_default = 1");
   if (opts?.hideSpoilers) where.push("t.is_answer_spoiler = 0");
   const res = await sqlClient.execute(
-    `SELECT t.slug, t.name, t.description, t.is_default, t.is_answer_spoiler,
+    `SELECT t.slug, t.name, t.description, t.is_default, t.is_answer_spoiler, t.members_only,
             (SELECT COUNT(*) FROM media_tags mt JOIN media m ON m.id = mt.media_id
              WHERE mt.tag_id = t.id AND m.status = 'approved') AS media_count
      FROM tags t WHERE ${where.join(" AND ")}
@@ -295,13 +306,14 @@ export async function listTags(opts?: { defaultsOnly?: boolean; hideSpoilers?: b
     description: (r.description as string) ?? null,
     isDefault: Number(r.is_default ?? 0) === 1,
     isAnswerSpoiler: Number(r.is_answer_spoiler ?? 0) === 1,
+    membersOnly: Number(r.members_only ?? 0) === 1,
     mediaCount: Number(r.media_count ?? 0),
   }));
 }
 
 export async function getTagBySlug(slug: string): Promise<TagRow | null> {
   const res = await sqlClient.execute({
-    sql: `SELECT t.slug, t.name, t.description, t.is_default, t.is_answer_spoiler,
+    sql: `SELECT t.slug, t.name, t.description, t.is_default, t.is_answer_spoiler, t.members_only,
             (SELECT COUNT(*) FROM media_tags mt JOIN media m ON m.id = mt.media_id
              WHERE mt.tag_id = t.id AND m.status = 'approved') AS media_count
           FROM tags t WHERE t.slug = ? LIMIT 1`,
@@ -315,6 +327,7 @@ export async function getTagBySlug(slug: string): Promise<TagRow | null> {
     description: (r.description as string) ?? null,
     isDefault: Number(r.is_default ?? 0) === 1,
     isAnswerSpoiler: Number(r.is_answer_spoiler ?? 0) === 1,
+    membersOnly: Number(r.members_only ?? 0) === 1,
     mediaCount: Number(r.media_count ?? 0),
   };
 }

@@ -199,6 +199,7 @@ export const tags = sqliteTable(
     isDefault: integer("is_default").notNull().default(0),
     isVisible: integer("is_visible").notNull().default(1),
     isAnswerSpoiler: integer("is_answer_spoiler").notNull().default(0),
+    membersOnly: integer("members_only").notNull().default(0),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
   },

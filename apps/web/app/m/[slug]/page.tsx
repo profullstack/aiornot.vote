@@ -41,6 +41,28 @@ export default async function MediaDetailPage({
   const m = await getMediaBySlug(slug, user?.id ?? null);
   if (!m) notFound();
 
+  // Members-only media (e.g. #nsfw): non-members get an upsell, not the content.
+  if (m.tags.some((t) => t.membersOnly) && !user?.isMember) {
+    return (
+      <div className="container-narrow" style={{ paddingTop: 24 }}>
+        <div className="form-card">
+          <h1 style={{ fontSize: 20 }}>🔞 Members-only content</h1>
+          <p className="muted" style={{ lineHeight: 1.8 }}>
+            This one is part of the members-only <Link href="/t/nsfw">#nsfw</Link> collection.
+            Unlock it — and the whole collection — with lifetime membership.
+          </p>
+          <div style={{ marginTop: 14 }}>
+            {!user ? (
+              <Link href="/login" className="btn btn-primary">Sign in</Link>
+            ) : (
+              <Link href="/membership" className="btn btn-primary">Unlock with membership →</Link>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const relatedTagSlugs = m.tags.filter((t) => !t.isAnswerSpoiler).map((t) => t.slug);
   const related = await getRelatedMedia(m.id, relatedTagSlugs, 6);
   const rewardState = user ? await getMediaRewardState(user.id, m.id).catch(() => null) : null;

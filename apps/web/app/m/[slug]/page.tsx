@@ -7,6 +7,7 @@ import { toClientCard } from "@/lib/serialize";
 import { DetailVote } from "@/components/DetailVote";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
+import { Magnifier } from "@/components/Magnifier";
 
 export const dynamic = "force-dynamic";
 
@@ -88,8 +89,7 @@ export default async function MediaDetailPage({
           {m.mediaType === "video" ? (
             <video src={m.mediaUrl} poster={m.posterUrl || undefined} controls playsInline />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.mediaUrl} alt={m.title} />
+            <Magnifier src={m.mediaUrl} alt={m.title} zoom={2.8} lensSize={220} />
           )}
         </div>
 

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0b0b12"/>
+  <text x="50%" y="52%" dominant-baseline="central" text-anchor="middle"
+        font-family="Arial, sans-serif" font-weight="900" font-size="30" fill="#6c5ce7">AI</text>
+  <text x="50%" y="80%" dominant-baseline="central" text-anchor="middle"
+        font-family="Arial, sans-serif" font-weight="900" font-size="15" fill="#e6e6ef">?</text>
+</svg>

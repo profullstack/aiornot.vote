@@ -3,7 +3,9 @@ import { FeedSection } from "@/components/FeedSection";
 import { CrowdPromo } from "@/components/CrowdPromo";
 import { listTags } from "@/lib/queries";
 import { sqlClient } from "@/lib/db";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 export const dynamic = "force-dynamic";
 
 async function num(sql: string): Promise<number> {

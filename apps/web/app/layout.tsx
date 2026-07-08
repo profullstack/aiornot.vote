@@ -17,7 +17,11 @@ export const metadata: Metadata = {
     template: "%s — AIorNot.vote",
   },
   description:
-    "Crowd-sourced AI image detection as a service. Verified humans vote whether a photorealistic image is AI-generated or real — get the crowd's verdict on the web, by RSS, or via API.",
+    "Can you tell AI from real? Play the crowd-sourced AI-detection game — vote on images, videos & posts, or get the crowd's verdict by API and RSS.",
+  applicationName: "AIorNot.vote",
+  authors: [{ name: "Profullstack, Inc.", url: "https://profullstack.com" }],
+  creator: "Profullstack, Inc.",
+  publisher: "Profullstack, Inc.",
   alternates: {
     types: {
       "application/rss+xml": [
@@ -46,6 +50,50 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "@id": `${env.appUrl}/#org`,
+                name: "AIorNot.vote",
+                url: env.appUrl,
+                description:
+                  "Crowd-sourced AI-vs-real detection: verified humans vote whether media is AI-generated or real.",
+                founder: { "@type": "Organization", name: "Profullstack, Inc." },
+                sameAs: [
+                  "https://github.com/profullstack/aiornot.vote",
+                  "https://profullstack.com",
+                ],
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "@id": `${env.appUrl}/#website`,
+                name: "AIorNot.vote",
+                url: env.appUrl,
+                publisher: { "@id": `${env.appUrl}/#org` },
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: `${env.appUrl}/search?q={search_term_string}`,
+                  "query-input": "required name=search_term_string",
+                },
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebApplication",
+                name: "AIorNot.vote",
+                url: env.appUrl,
+                applicationCategory: "GameApplication",
+                operatingSystem: "Any (web)",
+                offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+                publisher: { "@id": `${env.appUrl}/#org` },
+              },
+            ]),
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

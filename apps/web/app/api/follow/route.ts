@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, canParticipate } from "@/lib/session";
-import { followUser, unfollowUser, getFollowCounts, isFollowing } from "@/lib/social";
+import { followUser, unfollowUser, getFollowCounts, getPublicProfile, isFollowing } from "@/lib/social";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -20,9 +20,17 @@ export async function POST(req: Request) {
   if (!targetId || targetId === user.id) {
     return NextResponse.json({ ok: false, error: "Invalid target." }, { status: 400 });
   }
+  if (action !== "follow" && action !== "unfollow") {
+    return NextResponse.json({ ok: false, error: "Invalid action." }, { status: 400 });
+  }
+
+  const target = await getPublicProfile(targetId);
+  if (!target) {
+    return NextResponse.json({ ok: false, error: "User not found." }, { status: 404 });
+  }
+
   if (action === "follow") await followUser(user.id, targetId);
-  else if (action === "unfollow") await unfollowUser(user.id, targetId);
-  else return NextResponse.json({ ok: false, error: "Invalid action." }, { status: 400 });
+  else await unfollowUser(user.id, targetId);
 
   const [counts, following] = await Promise.all([getFollowCounts(targetId), isFollowing(user.id, targetId)]);
   return NextResponse.json({ ok: true, following, followers: counts.followers });

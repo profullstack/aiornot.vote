@@ -35,8 +35,9 @@ export function SiteFooter() {
           <h4>Participate</h4>
           <Link href="/submit">Submit media</Link>
           <Link href="/signup">Create account</Link>
-          <Link href="/account">Your history</Link>
           <Link href="/api">Crowd-detection API</Link>
+          <Link href="/pricing">Pricing</Link>
+          <Link href="/about">About</Link>
         </div>
       </div>
       <div className="footer-bottom">

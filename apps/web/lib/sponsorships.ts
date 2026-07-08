@@ -83,14 +83,24 @@ export async function createSponsorship(
   return { ok: true, id };
 }
 
-export async function getSponsorship(id: string): Promise<Sponsorship | null> {
-  const r = await sqlClient.execute({ sql: "SELECT * FROM prize_sponsorships WHERE id = ? LIMIT 1", args: [id] });
+export async function getSponsorship(id: string, userId?: string): Promise<Sponsorship | null> {
+  const r = await sqlClient.execute({
+    sql: userId
+      ? "SELECT * FROM prize_sponsorships WHERE id = ? AND user_id = ? LIMIT 1"
+      : "SELECT * FROM prize_sponsorships WHERE id = ? LIMIT 1",
+    args: userId ? [id, userId] : [id],
+  });
   return r.rows[0] ? rowToSponsorship(r.rows[0] as Record<string, unknown>) : null;
 }
 
 /** Poll CoinPay; activate the sponsorship on payment (idempotent). */
-export async function checkSponsorship(id: string): Promise<{ status: string } | null> {
-  const r = await sqlClient.execute({ sql: "SELECT id, status, coinpay_payment_id, sponsor_name, prize_label, amount_usd FROM prize_sponsorships WHERE id = ? LIMIT 1", args: [id] });
+export async function checkSponsorship(id: string, userId?: string): Promise<{ status: string } | null> {
+  const r = await sqlClient.execute({
+    sql: userId
+      ? "SELECT id, status, coinpay_payment_id, sponsor_name, prize_label, amount_usd FROM prize_sponsorships WHERE id = ? AND user_id = ? LIMIT 1"
+      : "SELECT id, status, coinpay_payment_id, sponsor_name, prize_label, amount_usd FROM prize_sponsorships WHERE id = ? LIMIT 1",
+    args: userId ? [id, userId] : [id],
+  });
   const row = r.rows[0];
   if (!row) return null;
   if (row.status === "active" || row.status === "fulfilled") return { status: "active" };

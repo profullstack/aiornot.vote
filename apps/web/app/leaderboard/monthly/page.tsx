@@ -13,7 +13,7 @@ export default async function MonthlyLeaderboard() {
       activeHref="/leaderboard/monthly"
       feedPath="/rss/leaderboard/monthly.xml"
       note="Correct guesses this calendar month. Minimum 5 scored guesses to appear."
-      scope={{ timeframe: "month", minScored: 5 }}
+      scope={{ timeframe: "month", minScored: 1 }}
     />
   );
 }

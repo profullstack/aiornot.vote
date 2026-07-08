@@ -369,7 +369,7 @@ function sinceForTimeframe(tf?: string): string | null {
 }
 
 export async function getLeaderboard(args: LeaderboardArgs): Promise<LeaderboardRow[]> {
-  const minScored = args.minScored ?? 5;
+  const minScored = args.minScored ?? 1;
   const limit = args.limit ?? 100;
   const where: string[] = [
     "u.email_verified_at IS NOT NULL",

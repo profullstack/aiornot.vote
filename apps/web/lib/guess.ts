@@ -31,6 +31,40 @@ async function readMediaStats(
   return { aiGuesses: ai, notAiGuesses: notAi, total, totalGuesses: total, aiPct: total > 0 ? Math.round((ai / total) * 100) : 0 };
 }
 
+/**
+ * Anonymous trial guess: computes correctness and returns the reveal + current
+ * crowd stats WITHOUT persisting anything (no guess row, no stat change, no
+ * streak). Used for the free pre-signup rounds. Never touches the leaderboard.
+ */
+export async function castGuessAnon(
+  mediaId: string,
+  guess: "ai" | "not_ai",
+): Promise<CastGuessResult> {
+  const mres = await sqlClient.execute({
+    sql: `SELECT id, truth_label, is_score_eligible, status FROM media WHERE id = ? LIMIT 1`,
+    args: [mediaId],
+  });
+  const m = mres.rows[0];
+  if (!m || m.status !== "approved") {
+    return { ok: false, error: "Media not found.", code: 404 };
+  }
+  const truthLabel = m.truth_label as "ai" | "not_ai" | "unknown";
+  const scoreEligible = Number(m.is_score_eligible ?? 1) === 1;
+  const scored = scoreEligible && (truthLabel === "ai" || truthLabel === "not_ai");
+  const isCorrect = scored ? guess === truthLabel : null;
+  return {
+    ok: true,
+    guess,
+    scored,
+    isCorrect,
+    truthLabel,
+    revealTruth: truthLabel !== "unknown",
+    alreadyVoted: false,
+    earned: null,
+    stats: await readMediaStats(mediaId),
+  };
+}
+
 /** Cast or change a guess. Recomputes media + user stats (simple, correct). */
 export async function castGuess(
   userId: string,

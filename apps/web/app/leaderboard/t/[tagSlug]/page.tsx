@@ -12,7 +12,7 @@ export default async function TagLeaderboard({
   const { tagSlug } = await params;
   const tag = await getTagBySlug(tagSlug);
   if (!tag) notFound();
-  const rows = await getLeaderboard({ timeframe: "all", tagSlug, minScored: 5 });
+  const rows = await getLeaderboard({ timeframe: "all", tagSlug, minScored: 1 });
   return (
     <LeaderboardView
       title={`Leaderboard · #${tag.slug}`}
@@ -20,7 +20,7 @@ export default async function TagLeaderboard({
       activeHref={`/leaderboard/t/${tag.slug}`}
       feedPath={`/rss/leaderboard/t/${tag.slug}.xml`}
       note={`Correct guesses on #${tag.slug} media. Minimum 5 scored guesses to appear.`}
-      scope={{ timeframe: "all", tagSlug, minScored: 5 }}
+      scope={{ timeframe: "all", tagSlug, minScored: 1 }}
     />
   );
 }

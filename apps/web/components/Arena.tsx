@@ -20,7 +20,7 @@ type Reveal = {
   total: number;
 } | null;
 
-export function Arena() {
+export function Arena({ signedIn }: { signedIn: boolean }) {
   const [queue, setQueue] = useState<PlayItem[]>([]);
   const [i, setI] = useState(0);
   const [round, setRound] = useState(1);
@@ -33,7 +33,8 @@ export function Arena() {
   const [hintText, setHintText] = useState<string | null>(null);
   const [hintBusy, setHintBusy] = useState(false);
   const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
-  const [needsPass, setNeedsPass] = useState(false);
+  const [needsSignup, setNeedsSignup] = useState(false);
+  const [freeLeft, setFreeLeft] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,11 +67,12 @@ export function Arena() {
         body: JSON.stringify({ mediaId: current.id, guess: g }),
       });
       const data = await res.json();
-      if (res.status === 402) {
-        setNeedsPass(true);
+      if (data.code === "needs_signup") {
+        setNeedsSignup(true);
         return;
       }
       if (!res.ok || !data.ok) return;
+      if (typeof data.freePlaysLeft === "number") setFreeLeft(data.freePlaysLeft);
       const correct = !!data.isCorrect;
       setReveal({ truth: data.truthLabel, correct, aiPct: data.stats.aiPct, total: data.stats.total });
       if (data.earned) setEarned({ emoji: data.earned.emoji, label: data.earned.label });
@@ -133,6 +135,13 @@ export function Arena() {
         <p>Call it. No takebacks.</p>
       </div>
 
+      {!signedIn && !needsSignup && (
+        <div className="muted-sm" style={{ textAlign: "center", padding: "0 24px" }}>
+          🎮 Free trial{freeLeft !== null ? ` — ${freeLeft} play${freeLeft === 1 ? "" : "s"} left` : ""} ·{" "}
+          <Link href="/signup">Join free</Link> to save your streak & rank.
+        </div>
+      )}
+
       <div style={{ maxWidth: 460, margin: "0 auto", padding: "12px 24px 40px" }}>
         {loading ? (
           <div className="empty">Loading…</div>
@@ -175,14 +184,19 @@ export function Arena() {
                 </button>
               ) : null
             )}
-            {needsPass && (
-              <div className="notice warn" style={{ textAlign: "center" }}>
-                🎮 A one-time $1 play pass keeps the bots out. <Link href="/membership">Get access →</Link>
+            {needsSignup && (
+              <div className="notice" style={{ textAlign: "center" }}>
+                🎉 Nice — you&apos;re hooked! <strong>Join free</strong> to keep playing, save your streak,
+                and climb the leaderboard.
+                <div style={{ marginTop: 10, display: "flex", gap: 8, justifyContent: "center" }}>
+                  <Link href="/signup" className="btn btn-primary btn-pill">Create free account</Link>
+                  <Link href="/login" className="btn btn-pill">Sign in</Link>
+                </div>
               </div>
             )}
             <div className="vote-row">
-              <button className="vote-btn ai" disabled={busy || !!reveal} onClick={() => vote("ai")}>AI</button>
-              <button className="vote-btn human" disabled={busy || !!reveal} onClick={() => vote("not_ai")}>NOT AI</button>
+              <button className="vote-btn ai" disabled={busy || !!reveal || needsSignup} onClick={() => vote("ai")}>AI</button>
+              <button className="vote-btn human" disabled={busy || !!reveal || needsSignup} onClick={() => vote("not_ai")}>NOT AI</button>
             </div>
             {reveal && earned && (
               <div className="earned-toast" style={{ fontSize: 13 }}>

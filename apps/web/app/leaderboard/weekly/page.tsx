@@ -13,7 +13,7 @@ export default async function WeeklyLeaderboard() {
       activeHref="/leaderboard/weekly"
       feedPath="/rss/leaderboard/weekly.xml"
       note="Correct guesses this week (Monday start). Minimum 5 scored guesses to appear."
-      scope={{ timeframe: "week", minScored: 5 }}
+      scope={{ timeframe: "week", minScored: 1 }}
     />
   );
 }

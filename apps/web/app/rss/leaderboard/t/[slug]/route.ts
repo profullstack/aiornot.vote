@@ -11,7 +11,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const slug = stripXml(raw);
   const tag = await getTagBySlug(slug);
   if (!tag) return new Response("Not found", { status: 404 });
-  const rows = await getLeaderboard({ timeframe: "all", tagSlug: slug, minScored: 5 });
+  const rows = await getLeaderboard({ timeframe: "all", tagSlug: slug, minScored: 1 });
   const xml = leaderboardToFeed(rows, {
     title: `AIorNot.vote — Leaderboard #${slug}`,
     link: `${env.appUrl}/leaderboard/t/${slug}`,

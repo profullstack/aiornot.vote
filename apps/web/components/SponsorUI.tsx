@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CopyButton } from "./CopyButton";
-
-const COINS = ["SOL", "POL", "ETH", "BTC", "USDC_ETH", "USDC_POL", "DOGE", "BCH", "BNB", "ADA"];
+import { COINPAY_BLOCKCHAINS, coinpayBlockchainLabel } from "@/lib/coinpay-blockchains";
 
 export function SponsorForm({ minUsd, loggedIn }: { minUsd: number; loggedIn: boolean }) {
   const router = useRouter();
@@ -71,7 +70,7 @@ export function SponsorForm({ minUsd, loggedIn }: { minUsd: number; loggedIn: bo
         <div className="field" style={{ minWidth: 140 }}>
           <label htmlFor="blockchain">Pay with</label>
           <select id="blockchain" name="blockchain" defaultValue="SOL">
-            {COINS.map((c) => <option key={c} value={c}>{c.replace("_", " ")}</option>)}
+            {COINPAY_BLOCKCHAINS.map((c) => <option key={c} value={c}>{coinpayBlockchainLabel(c)}</option>)}
           </select>
         </div>
       </div>

@@ -25,6 +25,13 @@ export async function POST(req: Request) {
   if (!canParticipate(user)) {
     return NextResponse.json({ ok: false, error: "Verify your email before submitting." }, { status: 403 });
   }
+  // Site-wide play pass gates media submissions too (keeps AI bots out).
+  if (!user.canPlay) {
+    return NextResponse.json(
+      { ok: false, error: "A one-time $1 play pass is required to submit.", code: "needs_pass" },
+      { status: 402 },
+    );
+  }
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   if (!rateLimit(`submit:${user.id}:${hashIp(ip)}`, 10, 10 * 60_000).ok) {
     return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });

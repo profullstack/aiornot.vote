@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, canParticipate } from "@/lib/session";
 import { castGuess, castGuessAnon } from "@/lib/guess";
-import { getAnonRounds, bumpAnonRounds, ANON_FREE_ROUNDS } from "@/lib/anon";
+import { bumpAnonRounds, ANON_NAG_EVERY } from "@/lib/anon";
 import { rateLimit } from "@/lib/rate-limit";
 import { hashIp } from "@/lib/crypto";
 
@@ -27,23 +27,13 @@ export async function POST(req: Request) {
 
   const user = await getCurrentUser();
 
-  // Anonymous trial: a handful of free rounds before we ask them to join.
+  // Anonymous play: unlimited rounds, but every ANON_NAG_EVERY a dismissible
+  // "join free" nag. Logged-in-but-unverified users must verify first.
   if (!user || !canParticipate(user)) {
     if (user && !canParticipate(user)) {
       return NextResponse.json(
         { ok: false, error: "Verify your email to keep playing." },
         { status: 403 },
-      );
-    }
-    const played = await getAnonRounds();
-    if (played >= ANON_FREE_ROUNDS) {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "needs_signup",
-          error: "That's your free plays — join free to keep going, save your streak, and hit the leaderboard.",
-        },
-        { status: 401 },
       );
     }
     const rl = rateLimit(`guess-anon:${ip ? hashIp(ip) : "0"}`, 30, 60_000);
@@ -57,8 +47,8 @@ export async function POST(req: Request) {
     if (!result.ok) {
       return NextResponse.json({ ok: false, error: result.error }, { status: result.code });
     }
-    const usedNow = await bumpAnonRounds();
-    return NextResponse.json({ ...result, anon: true, freePlaysLeft: Math.max(0, ANON_FREE_ROUNDS - usedNow) });
+    const played = await bumpAnonRounds();
+    return NextResponse.json({ ...result, anon: true, playsCount: played, nag: played % ANON_NAG_EVERY === 0 });
   }
 
   const rl = rateLimit(`guess:${user.id}`, 60, 60_000);

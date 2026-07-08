@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { Magnifier } from "./Magnifier";
 
@@ -33,8 +33,16 @@ export function Arena({ signedIn }: { signedIn: boolean }) {
   const [hintText, setHintText] = useState<string | null>(null);
   const [hintBusy, setHintBusy] = useState(false);
   const [earned, setEarned] = useState<{ emoji: string; label: string } | null>(null);
-  const [needsSignup, setNeedsSignup] = useState(false);
-  const [freeLeft, setFreeLeft] = useState<number | null>(null);
+  const [showNag, setShowNag] = useState(false);
+  const nagRef = useRef<HTMLDialogElement>(null);
+
+  // Drive the native <dialog> as a blocking modal the guest must dismiss.
+  useEffect(() => {
+    const d = nagRef.current;
+    if (!d) return;
+    if (showNag && !d.open) d.showModal();
+    else if (!showNag && d.open) d.close();
+  }, [showNag]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,12 +75,7 @@ export function Arena({ signedIn }: { signedIn: boolean }) {
         body: JSON.stringify({ mediaId: current.id, guess: g }),
       });
       const data = await res.json();
-      if (data.code === "needs_signup") {
-        setNeedsSignup(true);
-        return;
-      }
       if (!res.ok || !data.ok) return;
-      if (typeof data.freePlaysLeft === "number") setFreeLeft(data.freePlaysLeft);
       const correct = !!data.isCorrect;
       setReveal({ truth: data.truthLabel, correct, aiPct: data.stats.aiPct, total: data.stats.total });
       if (data.earned) setEarned({ emoji: data.earned.emoji, label: data.earned.label });
@@ -82,6 +85,8 @@ export function Arena({ signedIn }: { signedIn: boolean }) {
       } else {
         setStreak(0);
       }
+      // Guest hit another multiple of N rounds — pop the dismissible join nag.
+      if (data.nag) setShowNag(true);
     } catch {
       // Network error: just re-enable the buttons so the user can try again.
     } finally {
@@ -135,10 +140,9 @@ export function Arena({ signedIn }: { signedIn: boolean }) {
         <p>Call it. No takebacks.</p>
       </div>
 
-      {!signedIn && !needsSignup && (
+      {!signedIn && (
         <div className="muted-sm" style={{ textAlign: "center", padding: "0 24px" }}>
-          🎮 Free trial{freeLeft !== null ? ` — ${freeLeft} play${freeLeft === 1 ? "" : "s"} left` : ""} ·{" "}
-          <Link href="/signup">Join free</Link> to save your streak & rank.
+          🎮 Playing as guest · <Link href="/signup">Join free</Link> to save your streak & rank.
         </div>
       )}
 
@@ -184,19 +188,9 @@ export function Arena({ signedIn }: { signedIn: boolean }) {
                 </button>
               ) : null
             )}
-            {needsSignup && (
-              <div className="notice" style={{ textAlign: "center" }}>
-                🎉 Nice — you&apos;re hooked! <strong>Join free</strong> to keep playing, save your streak,
-                and climb the leaderboard.
-                <div style={{ marginTop: 10, display: "flex", gap: 8, justifyContent: "center" }}>
-                  <Link href="/signup" className="btn btn-primary btn-pill">Create free account</Link>
-                  <Link href="/login" className="btn btn-pill">Sign in</Link>
-                </div>
-              </div>
-            )}
             <div className="vote-row">
-              <button className="vote-btn ai" disabled={busy || !!reveal || needsSignup} onClick={() => vote("ai")}>AI</button>
-              <button className="vote-btn human" disabled={busy || !!reveal || needsSignup} onClick={() => vote("not_ai")}>NOT AI</button>
+              <button className="vote-btn ai" disabled={busy || !!reveal} onClick={() => vote("ai")}>AI</button>
+              <button className="vote-btn human" disabled={busy || !!reveal} onClick={() => vote("not_ai")}>NOT AI</button>
             </div>
             {reveal && earned && (
               <div className="earned-toast" style={{ fontSize: 13 }}>
@@ -215,6 +209,30 @@ export function Arena({ signedIn }: { signedIn: boolean }) {
           </div>
         )}
       </div>
+
+      <dialog
+        ref={nagRef}
+        className="nag-dialog"
+        onCancel={(e) => e.preventDefault()}
+        onClose={() => setShowNag(false)}
+      >
+        <h2 style={{ marginTop: 0 }}>Enjoying it? 🎉</h2>
+        <p className="muted">
+          You&apos;re playing as a guest. Create a <strong>free account</strong> to save your streak,
+          climb the leaderboard, earn power-ups — and lose these interruptions.
+        </p>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 8 }}>
+          <Link href="/signup" className="btn btn-primary btn-pill">Create free account</Link>
+          <Link href="/login" className="btn btn-pill">Sign in</Link>
+        </div>
+        <button
+          className="btn btn-pill"
+          style={{ marginTop: 12, background: "transparent", color: "var(--muted-2)" }}
+          onClick={() => setShowNag(false)}
+        >
+          Keep playing as guest →
+        </button>
+      </dialog>
     </div>
   );
 }

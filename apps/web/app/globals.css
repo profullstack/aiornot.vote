@@ -421,3 +421,13 @@ a:hover { color: var(--human); }
 .vs .line { width: 1px; flex: 1; background: linear-gradient(var(--border-1), var(--border-3)); }
 .vs .label { font-family: var(--unbounded); font-weight: 900; font-size: 18px; color: var(--faint); }
 @media (max-width: 720px) { .arena { grid-template-columns: 1fr; } .vs { flex-direction: row; padding: 0; } .vs .line { height: 1px; width: auto; } }
+
+/* Guest "join free" nag dialog (shown to anon players every N rounds) */
+.nag-dialog {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border-2); border-radius: 18px;
+  padding: 28px; max-width: 420px; width: calc(100% - 40px);
+  text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+}
+.nag-dialog h2 { font-family: var(--unbounded); font-weight: 700; font-size: 22px; }
+.nag-dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }

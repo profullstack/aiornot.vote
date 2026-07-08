@@ -4,14 +4,14 @@ import { hmac, safeEqual } from "./crypto";
 import { env } from "./env";
 
 /**
- * Anonymous trial play. Visitors may guess a handful of rounds WITHOUT an
- * account so the game feels alive before we ask them to join. We never persist
- * anon guesses (no DB write, no crowd-stat impact, never on the leaderboard) —
- * we only keep a signed count of rounds played in a cookie. Clearing cookies
- * resets it; that's fine, the goal is to remove friction, not to hard-gate.
+ * Anonymous play. Visitors may keep guessing WITHOUT an account, but every
+ * ANON_NAG_EVERY rounds they get a dismissible "join free" nag (soft gate, not
+ * a hard cap). We never persist anon guesses (no DB write, no crowd-stat
+ * impact, never on the leaderboard) — we only keep a signed count of rounds
+ * played in a cookie so we know when to nag.
  */
 const COOKIE = "aon_anon";
-export const ANON_FREE_ROUNDS = 5;
+export const ANON_NAG_EVERY = 5;
 
 function sign(n: number): string {
   return `${n}.${hmac(`anon:${n}`, env.sessionSecret)}`;
@@ -27,11 +27,6 @@ function parse(raw: string | undefined): number {
   if (!Number.isInteger(n) || n < 0) return 0;
   if (!safeEqual(sig, hmac(`anon:${n}`, env.sessionSecret))) return 0;
   return n;
-}
-
-export async function getAnonRounds(): Promise<number> {
-  const jar = await cookies();
-  return parse(jar.get(COOKIE)?.value);
 }
 
 /** Increment the anon round counter and persist it. Returns the new count. */

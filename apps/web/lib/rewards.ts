@@ -105,8 +105,38 @@ async function resultText(mediaId: string, kind: PowerupKind): Promise<string> {
 
 export type UseResult = { ok: true; kind: PowerupKind; text: string; balances: Balances } | { ok: false; error: string };
 
+async function canUsePowerupOnMedia(userId: string, mediaId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const media = await sqlClient.execute({
+    sql: "SELECT status FROM media WHERE id = ? LIMIT 1",
+    args: [mediaId],
+  });
+  const row = media.rows[0];
+  if (!row || row.status !== "approved") {
+    return { ok: false, error: "Media not found." };
+  }
+
+  const gated = await sqlClient.execute({
+    sql: `SELECT 1
+          FROM media_tags mt JOIN tags t ON t.id = mt.tag_id
+          WHERE mt.media_id = ? AND t.members_only = 1
+          LIMIT 1`,
+    args: [mediaId],
+  });
+  if (gated.rows.length === 0) return { ok: true };
+
+  const member = await sqlClient.execute({
+    sql: "SELECT is_lifetime_member FROM users WHERE id = ? LIMIT 1",
+    args: [userId],
+  });
+  if (Number(member.rows[0]?.is_lifetime_member ?? 0) === 1) return { ok: true };
+  return { ok: false, error: "This media is members-only." };
+}
+
 /** Spend a power-up on a media item (or return the already-unlocked result). */
 export async function usePowerup(userId: string, mediaId: string, kind: PowerupKind): Promise<UseResult> {
+  const allowed = await canUsePowerupOnMedia(userId, mediaId);
+  if (!allowed.ok) return allowed;
+
   const already = await sqlClient.execute({ sql: "SELECT 1 FROM powerup_uses WHERE user_id = ? AND media_id = ? AND kind = ? LIMIT 1", args: [userId, mediaId, kind] });
   if (already.rows.length > 0) {
     return { ok: true, kind, text: await resultText(mediaId, kind), balances: await getBalances(userId) };

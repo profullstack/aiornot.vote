@@ -1,0 +1,29 @@
+# AIorNot.vote
+
+> A free game and crowd-sourced AI-detection service: verified humans vote whether a
+> photorealistic image, video, or post is AI-generated or real, and you get the crowd's
+> verdict on the web, by RSS, or via API. Built by Profullstack, Inc.
+
+## What it is
+
+- [Play](https://aiornot.vote/play): Guess AI vs. real one item at a time and build a streak. Free; a few rounds as a guest, then a free account.
+- [Latest feed](https://aiornot.vote/): Newest media the crowd is voting on.
+- [Leaderboard](https://aiornot.vote/leaderboard): Top human detectors by accuracy and streak.
+- [Tags](https://aiornot.vote/tags): Browse media by category.
+
+## For developers & agents
+
+- [Crowd-detection API](https://aiornot.vote/api): Query the crowd's AI-vs-real verdict programmatically.
+- [Agent skill](https://aiornot.vote/skill.md): What agents can do with the site.
+- [RSS feeds](https://aiornot.vote/feeds): Latest, trending, featured, and leaderboard feeds.
+
+## Account & pricing
+
+- [Pricing](https://aiornot.vote/pricing): Playing is free. Optional $2 lifetime membership and $1 API access (crypto via CoinPay).
+- [Create account](https://aiornot.vote/signup): Free — save streaks, appear on leaderboards, earn rewards.
+
+## About
+
+- [About](https://aiornot.vote/about): What AIorNot.vote is and who builds it.
+- [Terms](https://aiornot.vote/terms) · [Privacy](https://aiornot.vote/privacy)
+- Source: https://github.com/profullstack/aiornot.vote

@@ -3,6 +3,7 @@ import { sqlClient } from "./db";
 import { newId } from "@aiornot/db";
 import { env } from "./env";
 import { sendEmail } from "./email";
+import { escapeHtml } from "./html";
 
 // The base weekly prize pack (top 3 of the weekly leaderboard).
 export const BASE_REWARDS: Array<{ kind: string; label: string }> = [
@@ -163,11 +164,12 @@ async function notifyWinner(userId: string, rewardLabel: string, rank: number, d
   const email = u.rows[0]?.email as string | undefined;
   if (!email) return;
   const by = new Date(deadline).toUTCString();
+  const rewardLabelHtml = escapeHtml(rewardLabel);
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <h1 style="font-size:20px">🏆 You won a weekly prize on AIorNot.vote!</h1>
       <p>You finished <strong>#${rank}</strong> on last week's leaderboard and won:</p>
-      <p style="font-size:16px"><strong>${rewardLabel}</strong></p>
+      <p style="font-size:16px"><strong>${rewardLabelHtml}</strong></p>
       <p><a href="${env.appUrl}/prizes" style="background:#FF3D8A;color:#08080C;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Claim your prize →</a></p>
       <p style="color:#888;font-size:13px">Claim by ${by}, or it rolls into a future prize pack.</p>
     </div>`;
@@ -196,11 +198,13 @@ export async function claimPrize(userId: string, prizeId: string): Promise<Claim
 
   // Notify admins to fulfil (send the code out of band).
   const email = (await sqlClient.execute({ sql: "SELECT email FROM users WHERE id = ? LIMIT 1", args: [userId] })).rows[0]?.email as string | undefined;
+  const emailHtml = escapeHtml(email);
+  const rewardLabelHtml = escapeHtml(p.reward_label);
   for (const admin of env.adminEmails) {
     await sendEmail({
       to: admin,
       subject: "Prize claimed — send the code",
-      html: `<p><strong>${email}</strong> claimed: <strong>${p.reward_label}</strong>.</p><p>Send them the code.</p>`,
+      html: `<p><strong>${emailHtml}</strong> claimed: <strong>${rewardLabelHtml}</strong>.</p><p>Send them the code.</p>`,
       text: `${email} claimed: ${p.reward_label}. Send the code.`,
     }).catch(() => {});
   }

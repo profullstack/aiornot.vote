@@ -6,6 +6,7 @@ import { createCoinpayPayment, getCoinpayPayment, isPaymentPaid } from "./coinpa
 import { currentWeekStart } from "./prizes";
 import { sendEmail } from "./email";
 import { escapeHtml } from "./html";
+import { normalizeSponsorUrl } from "./sponsor-url";
 
 export const MIN_SPONSOR_USD = 5;
 
@@ -57,6 +58,8 @@ export async function createSponsorship(
   const prize = input.prizeLabel.trim().slice(0, 120);
   if (!name) return { ok: false, error: "Sponsor name is required." };
   if (!prize) return { ok: false, error: "Describe the prize you're offering." };
+  const sponsorUrl = normalizeSponsorUrl(input.sponsorUrl);
+  if (!sponsorUrl.ok) return sponsorUrl;
   const amount = Math.round(Number(input.amountUsd) * 100) / 100;
   if (!(amount >= MIN_SPONSOR_USD)) return { ok: false, error: `Minimum sponsorship is $${MIN_SPONSOR_USD}.` };
 
@@ -77,7 +80,7 @@ export async function createSponsorship(
        coinpay_payment_id, payment_address, crypto_amount, status, period_start)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
     args: [
-      id, input.userId, name, input.sponsorUrl?.trim() || null, prize, input.message?.trim()?.slice(0, 200) || null,
+      id, input.userId, name, sponsorUrl.url, prize, input.message?.trim()?.slice(0, 200) || null,
       amount, input.blockchain, p.id, p.payment_address ?? null, p.crypto_amount ?? null, period,
     ],
   });

@@ -17,7 +17,7 @@ export type SessionUser = {
   emailVerified: boolean;
   isAdmin: boolean;
   isMember: boolean;
-  /** May play (vote/guess): bought the $1 play pass OR is a lifetime member. */
+  /** May play (vote/guess). Play is free — any verified, active account can play. */
   canPlay: boolean;
 };
 
@@ -96,7 +96,8 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     emailVerified: row.email_verified_at != null,
     isAdmin: row.role === "admin" || isAdminEmail(email),
     isMember: Number(row.is_lifetime_member ?? 0) === 1,
-    canPlay: Number(row.is_lifetime_member ?? 0) === 1 || row.play_pass_at != null,
+    // Play is free: no $1 pass required. Membership/play_pass still tracked for history.
+    canPlay: true,
   };
 }
 

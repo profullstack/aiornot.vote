@@ -13,39 +13,17 @@ export default async function MembershipPage() {
       <div className="hero" style={{ padding: "24px 0" }}>
         <h1>Get <span className="ai">access</span></h1>
         <p>
-          A one-time crypto payment keeps the bots out — that&apos;s what a human-vs-AI game needs to
-          stay honest. Two tiers, pay once via CoinPay, forever.
+          <strong>Playing is free</strong> — just <Link href="/login">sign in</Link> and verify your
+          email, then vote on every image, video and post. Go lifetime for members-only extras.
         </p>
       </div>
 
-      {/* Play pass */}
-      <div className="form-card">
-        <div className="section-head" style={{ marginTop: 0 }}>
-          <h2>Play pass — ${env.pricePlayPassUsd}</h2>
-        </div>
-        <ul className="muted" style={{ lineHeight: 1.9 }}>
-          <li>🎮 <strong>Play the game</strong> — vote on every image, video and post</li>
-          <li>🏆 Climb the leaderboards, build streaks, earn power-ups</li>
-          <li>🚫 One-time — no subscription, keeps out drive-by AI bots</li>
-        </ul>
-        <div style={{ marginTop: 16 }}>
-          {!user ? (
-            <Link href="/login" className="btn btn-primary">Sign in to get your pass</Link>
-          ) : user.canPlay ? (
-            <div className="form-ok">You have play access — go <Link href="/play">play →</Link></div>
-          ) : (
-            <BuyButton purpose="play_pass" priceUsd={env.pricePlayPassUsd} label="Get the play pass" />
-          )}
-        </div>
-      </div>
-
       {/* Lifetime membership */}
-      <div className="form-card" style={{ marginTop: 18 }}>
+      <div className="form-card">
         <div className="section-head" style={{ marginTop: 0 }}>
           <h2>Lifetime membership — ${env.priceLifetimeUsd}</h2>
         </div>
         <ul className="muted" style={{ lineHeight: 1.9 }}>
-          <li>✅ <strong>Includes play access</strong> — no separate pass needed</li>
           <li>🔞 Access the members-only <strong>#nsfw</strong> collection</li>
           <li>🏅 Lifetime <strong>Member</strong> badge on the leaderboard</li>
           <li>🔑 Create <strong>API keys for free</strong> (skip the $1 per-key charge)</li>

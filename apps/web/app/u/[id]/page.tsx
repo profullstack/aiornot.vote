@@ -6,6 +6,8 @@ import { getUserStats } from "@/lib/queries";
 import { getPublicProfile, getFollowCounts, isFollowing } from "@/lib/social";
 import { getBadges } from "@/lib/rewards";
 import { FollowButton } from "@/components/FollowButton";
+import { ShareStats } from "@/components/ShareStats";
+import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const p = await getPublicProfile(id);
   if (!p) return { title: "Player not found" };
-  return { title: `${p.displayName} — player profile`, description: `${p.displayName}'s AIorNot.vote stats and badges.` };
+  const stats = await getUserStats(p.id).catch(() => null);
+  const desc = stats
+    ? `${p.displayName} has ${stats.correctGuesses} correct AI-vs-real calls at ${Math.round(stats.accuracy * 100)}% accuracy (best streak ${stats.bestStreak}) on AIorNot.vote.`
+    : `${p.displayName}'s AIorNot.vote stats and badges.`;
+  return {
+    title: `${p.displayName} — player profile`,
+    description: desc,
+    alternates: { canonical: `/u/${p.id}` },
+    openGraph: { title: `${p.displayName} on AIorNot.vote`, description: desc, type: "profile" },
+    twitter: { card: "summary_large_image", title: `${p.displayName} on AIorNot.vote`, description: desc },
+  };
 }
 
 const Stat = ({ v, label, color }: { v: string | number; label: string; color?: string }) => (
@@ -37,6 +49,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   ]);
   const badges = getBadges(stats.bestStreak);
 
+  const acc = Math.round(stats.accuracy * 100);
+  const profileUrl = `${env.appUrl}/u/${profile.id}`;
+  const shareText = isSelf
+    ? `I've called ${stats.correctGuesses} AI-vs-real right at ${acc}% accuracy (best streak ${stats.bestStreak}🔥) on AIorNot.vote. Can you beat me?`
+    : `${profile.displayName} has ${stats.correctGuesses} correct AI-vs-real calls at ${acc}% accuracy on AIorNot.vote. Can you beat them?`;
+
   return (
     <div className="container-narrow" style={{ paddingTop: 24 }}>
       <div className="section-head">
@@ -58,6 +76,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
           ) : (
             <FollowButton targetId={profile.id} initialFollowing={followingViewer} initialFollowers={counts.followers} canFollow={!!viewer} />
           )}
+        </div>
+      </div>
+
+      <div className="form-card" style={{ marginTop: 14 }}>
+        <div className="rss-title">{isSelf ? "Share your stats" : `Share ${profile.displayName}'s stats`}</div>
+        <div style={{ marginTop: 10 }}>
+          <ShareStats url={profileUrl} text={shareText} />
         </div>
       </div>
 

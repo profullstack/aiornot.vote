@@ -7,6 +7,8 @@ import { getBalances, getBadges } from "@/lib/rewards";
 import { LogoutButton, ResendVerification } from "@/components/AuthForms";
 import { ApiKeysManager } from "@/components/PaymentUI";
 import { BadgeRow } from "@/components/RewardUI";
+import { ShareStats } from "@/components/ShareStats";
+import { env } from "@/lib/env";
 
 export const metadata = { title: "Your account" };
 export const dynamic = "force-dynamic";
@@ -51,6 +53,16 @@ export default async function AccountPage() {
         <div className="tile"><div className="val">{stats.bestStreak}</div><div className="lbl">Best streak</div></div>
         <div className="tile"><div className="val">{stats.totalGuesses}</div><div className="lbl">Total guesses</div></div>
       </div>
+
+      {user.emailVerified && (
+        <div style={{ marginTop: 14, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <span className="muted-sm" style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: 12 }}>Share your stats</span>
+          <ShareStats
+            url={`${env.appUrl}/u/${user.id}`}
+            text={`I've called ${stats.correctGuesses} AI-vs-real right at ${Math.round(stats.accuracy * 100)}% accuracy (best streak ${stats.bestStreak}🔥) on AIorNot.vote. Can you beat me?`}
+          />
+        </div>
+      )}
 
       <div className="divider" />
       <div className="section-head"><h2 style={{ fontSize: 20 }}>Rewards</h2><Link href="/rewards" className="sub">How it works →</Link></div>

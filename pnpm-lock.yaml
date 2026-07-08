@@ -102,7 +102,6 @@ importers:
       '@aiornot/seed':
         specifier: workspace:*
         version: link:../../packages/seed
-    devDependencies:
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1

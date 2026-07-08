@@ -10,13 +10,12 @@
     "warm:feeds": "tsx jobs/warm-feeds.ts",
     "seed:pool": "tsx jobs/seed-pool.ts",
     "draw:prizes": "tsx jobs/draw-prizes.ts",
-    "gen:tips": "tsx jobs/gen-tips.ts"
+    "gen:tips": "tsx jobs/gen-tips.ts",
+    "daemon:generate-media": "tsx jobs/generate-media-daemon.ts"
   },
   "dependencies": {
     "@aiornot/db": "workspace:*",
-    "@aiornot/seed": "workspace:*"
-  },
-  "devDependencies": {
+    "@aiornot/seed": "workspace:*",
     "dotenv": "^16.4.7",
     "tsx": "^4.19.2"
   }

@@ -6,6 +6,10 @@ export const PAGE_SIZE = 24;
 
 export type MediaTag = { slug: string; name: string; isAnswerSpoiler: boolean; membersOnly: boolean };
 
+export function hasMembersOnlyTag(media: { tags: Array<Pick<MediaTag, "membersOnly">> }): boolean {
+  return media.tags.some((t) => t.membersOnly);
+}
+
 export type MediaStatsView = {
   aiGuesses: number;
   notAiGuesses: number;
@@ -261,12 +265,17 @@ export async function getRelatedMedia(
   mediaId: string,
   tagSlugs: string[],
   limit = 6,
+  opts?: { includeMembersOnly?: boolean },
 ): Promise<MediaCard[]> {
   if (tagSlugs.length === 0) return [];
   const placeholders = tagSlugs.map(() => "?").join(",");
+  const memberFilter = opts?.includeMembersOnly
+    ? ""
+    : "AND m.id NOT IN (SELECT mt.media_id FROM media_tags mt JOIN tags t ON t.id = mt.tag_id WHERE t.members_only = 1)";
   const res = await sqlClient.execute({
     sql: `${SELECT_CARD}
           WHERE m.status = 'approved' AND m.id != ?
+            ${memberFilter}
             AND m.id IN (
               SELECT mt.media_id FROM media_tags mt JOIN tags t ON t.id = mt.tag_id
               WHERE t.slug IN (${placeholders}) AND t.is_answer_spoiler = 0

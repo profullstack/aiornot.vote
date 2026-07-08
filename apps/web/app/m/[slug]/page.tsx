@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getMediaBySlug, getRelatedMedia } from "@/lib/queries";
+import { getMediaBySlug, getRelatedMedia, hasMembersOnlyTag } from "@/lib/queries";
 import { getCurrentUser, canParticipate } from "@/lib/session";
 import { toClientCard } from "@/lib/serialize";
 import { DetailVote } from "@/components/DetailVote";
@@ -21,6 +21,15 @@ export async function generateMetadata({
   const { slug } = await params;
   const m = await getMediaBySlug(slug);
   if (!m) return { title: "Not found" };
+  if (hasMembersOnlyTag(m)) {
+    return {
+      title: "Members-only content",
+      description: "This AIorNot.vote item is available to lifetime members.",
+      robots: { index: false, follow: false },
+      openGraph: { title: "Members-only content", type: "article" },
+      twitter: { card: "summary" },
+    };
+  }
   const img = m.thumbnailUrl || m.mediaUrl;
   return {
     title: m.title,
@@ -42,7 +51,7 @@ export default async function MediaDetailPage({
   if (!m) notFound();
 
   // Members-only media (e.g. #nsfw): non-members get an upsell, not the content.
-  if (m.tags.some((t) => t.membersOnly) && !user?.isMember) {
+  if (hasMembersOnlyTag(m) && !user?.isMember) {
     return (
       <div className="container-narrow" style={{ paddingTop: 24 }}>
         <div className="form-card">
@@ -64,7 +73,7 @@ export default async function MediaDetailPage({
   }
 
   const relatedTagSlugs = m.tags.filter((t) => !t.isAnswerSpoiler).map((t) => t.slug);
-  const related = await getRelatedMedia(m.id, relatedTagSlugs, 6);
+  const related = await getRelatedMedia(m.id, relatedTagSlugs, 6, { includeMembersOnly: !!user?.isMember });
   const rewardState = user ? await getMediaRewardState(user.id, m.id).catch(() => null) : null;
 
   // Provenance is revealed after the user guesses (client-controlled).

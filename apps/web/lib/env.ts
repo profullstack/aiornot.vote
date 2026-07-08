@@ -66,6 +66,15 @@ export const env = {
   pricePlayPassUsd: Number(process.env.PRICE_PLAY_PASS_USD || 1),
   cronSecret: process.env.CRON_SECRET || "",
 
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY || "",
+    privateKey: process.env.VAPID_PRIVATE_KEY || "",
+    subject: process.env.VAPID_SUBJECT || "mailto:hello@aiornot.vote",
+  },
+  get pushConfigured() {
+    return !!(this.vapid.publicKey && this.vapid.privateKey);
+  },
+
   hasResend: bool(process.env.RESEND_API_KEY ? "1" : "0"),
 };
 

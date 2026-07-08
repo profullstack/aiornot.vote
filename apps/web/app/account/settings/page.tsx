@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { LogoutButton, ResendVerification } from "@/components/AuthForms";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 export const metadata = { title: "Account settings" };
 export const dynamic = "force-dynamic";
@@ -23,6 +24,16 @@ export default async function SettingsPage() {
         <label>Status</label>
         <input value={`${user.status}${user.emailVerified ? " · verified" : " · unverified"}`} readOnly />
       </div>
+      <div className="divider" />
+      {user.emailVerified ? (
+        <NotificationSettings />
+      ) : (
+        <div className="field">
+          <label>Notifications</label>
+          <div className="muted-sm">Verify your email to turn on play reminders.</div>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
         {!user.emailVerified && <ResendVerification />}
         <LogoutButton />

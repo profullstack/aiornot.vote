@@ -46,9 +46,13 @@ export function SiteFooter() {
             Profullstack, Inc.
           </a>
         </span>
-        <a href="https://github.com/profullstack/aiornot.vote" target="_blank" rel="noreferrer">
-          Source on GitHub ↗
-        </a>
+        <span style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
+          <a href="https://github.com/profullstack/aiornot.vote" target="_blank" rel="noreferrer">
+            Source on GitHub ↗
+          </a>
+        </span>
       </div>
     </footer>
   );

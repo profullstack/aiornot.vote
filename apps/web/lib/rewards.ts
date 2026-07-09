@@ -133,7 +133,7 @@ async function canUsePowerupOnMedia(userId: string, mediaId: string): Promise<{ 
 }
 
 /** Spend a power-up on a media item (or return the already-unlocked result). */
-export async function usePowerup(userId: string, mediaId: string, kind: PowerupKind): Promise<UseResult> {
+export async function spendPowerup(userId: string, mediaId: string, kind: PowerupKind): Promise<UseResult> {
   const allowed = await canUsePowerupOnMedia(userId, mediaId);
   if (!allowed.ok) return allowed;
 

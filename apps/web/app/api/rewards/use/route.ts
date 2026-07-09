@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
-import { usePowerup, type PowerupKind } from "@/lib/rewards";
+import { spendPowerup, type PowerupKind } from "@/lib/rewards";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   if (!mediaId || !KINDS.includes(kind)) {
     return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
   }
-  const result = await usePowerup(user.id, mediaId, kind);
+  const result = await spendPowerup(user.id, mediaId, kind);
   if (!result.ok) return NextResponse.json(result, { status: 400 });
   return NextResponse.json(result);
 }

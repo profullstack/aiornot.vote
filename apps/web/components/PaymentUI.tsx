@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CopyButton } from "./CopyButton";
-
-const COINS = ["SOL", "POL", "ETH", "BTC", "USDC_ETH", "USDC_POL", "DOGE", "BCH", "BNB", "ADA"];
+import { COINPAY_BLOCKCHAINS, coinpayBlockchainLabel } from "@/lib/coinpay-blockchains";
 
 export function BuyButton({
   purpose,
@@ -51,7 +50,7 @@ export function BuyButton({
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <select value={coin} onChange={(e) => setCoin(e.target.value)} disabled={busy}
           style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }}>
-          {COINS.map((c) => <option key={c} value={c}>{c.replace("_", " ")}</option>)}
+          {COINPAY_BLOCKCHAINS.map((c) => <option key={c} value={c}>{coinpayBlockchainLabel(c)}</option>)}
         </select>
         <input
           value={promo}

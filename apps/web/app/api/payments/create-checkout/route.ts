@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { newId } from "@aiornot/db";
 import { sqlClient } from "@/lib/db";
 import { createCoinpayPayment } from "@/lib/coinpay";
+import { normalizeCoinpayBlockchain } from "@/lib/coinpay-blockchains";
 import { quotePromo, grantPurpose, recordPromoRedemption } from "@/lib/entitlements";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -27,9 +28,10 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const purpose = String(body.purpose || "");
-  const blockchain = String(body.blockchain || "SOL").toUpperCase();
+  const blockchain = normalizeCoinpayBlockchain(body.blockchain);
   const spec = PURPOSES[purpose];
   if (!spec) return NextResponse.json({ ok: false, error: "Unknown purpose." }, { status: 400 });
+  if (!blockchain) return NextResponse.json({ ok: false, error: "Unsupported payment network." }, { status: 400 });
 
   if (purpose === "lifetime_membership" && user.isMember) {
     return NextResponse.json({ ok: false, error: "You're already a lifetime member." }, { status: 400 });

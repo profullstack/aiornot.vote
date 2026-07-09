@@ -14,8 +14,28 @@ export default async function MembershipPage() {
         <h1>Get <span className="ai">access</span></h1>
         <p>
           <strong>Playing is free</strong> — just <Link href="/login">sign in</Link> and verify your
-          email, then vote on every image, video and post. Go lifetime for members-only extras.
+          email, then vote on every image, video and post. Get submit access to add new items,
+          or go lifetime for members-only extras.
         </p>
+      </div>
+
+      <div className="form-card" style={{ marginBottom: 14 }}>
+        <div className="section-head" style={{ marginTop: 0 }}>
+          <h2>Submit pass — ${env.pricePlayPassUsd}</h2>
+        </div>
+        <ul className="muted" style={{ lineHeight: 1.9 }}>
+          <li>📝 Submit images, videos and post links for review</li>
+          <li>🛡️ One-time anti-spam pass — playing and voting stay free</li>
+        </ul>
+        <div style={{ marginTop: 16 }}>
+          {!user ? (
+            <Link href="/login" className="btn btn-primary">Sign in to get a submit pass</Link>
+          ) : user.canSubmit ? (
+            <div className="form-ok">You already have submit access.</div>
+          ) : (
+            <BuyButton purpose="play_pass" priceUsd={env.pricePlayPassUsd} label="Get submit access" />
+          )}
+        </div>
       </div>
 
       {/* Lifetime membership */}

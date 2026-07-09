@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function SubmitForm({ canPlay }: { canPlay: boolean }) {
+export function SubmitForm({ canSubmit }: { canSubmit: boolean }) {
   const router = useRouter();
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -62,12 +62,12 @@ export function SubmitForm({ canPlay }: { canPlay: boolean }) {
       </div>
       {err && <div className="form-error">{err}</div>}
       {ok && <div className="form-ok">Submitted for review — thanks! Redirecting…</div>}
-      <button className="btn btn-primary" type="submit" disabled={busy || !canPlay}>
+      <button className="btn btn-primary" type="submit" disabled={busy || !canSubmit}>
         {busy ? "Submitting…" : "Submit for review"}
       </button>
-      {!canPlay && (
+      {!canSubmit && (
         <div className="notice warn">
-          🎮 A one-time $1 play pass is required to submit. <Link href="/membership">Get access →</Link>
+          🎮 A one-time submit pass or lifetime membership is required to submit. <Link href="/membership">Get access →</Link>
         </div>
       )}
     </form>

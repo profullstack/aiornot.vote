@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "AIorNot.vote is free to play. Optional $2 lifetime membership adds perks, and $1 one-off API access is available for developers.",
+    "AIorNot.vote is free to play. Optional submit access, lifetime membership, and one-off API access are available via crypto.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -22,6 +22,7 @@ export default function PricingPage() {
             description: "Crowd-sourced AI-vs-real detection game and API.",
             offers: [
               { "@type": "Offer", name: "Play", price: "0", priceCurrency: "USD", url: `${env.appUrl}/play` },
+              { "@type": "Offer", name: "Submit pass", price: String(env.pricePlayPassUsd), priceCurrency: "USD", url: `${env.appUrl}/membership` },
               { "@type": "Offer", name: "Lifetime membership", price: String(env.priceLifetimeUsd), priceCurrency: "USD", url: `${env.appUrl}/membership` },
               { "@type": "Offer", name: "API access", price: String(env.priceApiAccessUsd), priceCurrency: "USD", url: `${env.appUrl}/api` },
             ],
@@ -33,6 +34,7 @@ export default function PricingPage() {
 
       <div className="stat-tiles" style={{ marginTop: 16 }}>
         <div className="tile"><div className="val human">Free</div><div className="lbl">Play, streaks, leaderboards</div></div>
+        <div className="tile"><div className="val">${env.pricePlayPassUsd}</div><div className="lbl">Submit pass</div></div>
         <div className="tile"><div className="val">${env.priceLifetimeUsd}</div><div className="lbl">Lifetime membership</div></div>
         <div className="tile"><div className="val">${env.priceApiAccessUsd}</div><div className="lbl">API access (one-off)</div></div>
       </div>
@@ -40,6 +42,7 @@ export default function PricingPage() {
       <h2>What&apos;s included</h2>
       <ul>
         <li><strong>Free</strong> — play every image, video, and post; build streaks; earn power-ups; appear on the leaderboard. A free account keeps your progress.</li>
+        <li><strong>Submit pass (${env.pricePlayPassUsd})</strong> — a one-time anti-spam pass for submitting new media and post links.</li>
         <li><strong>Lifetime membership (${env.priceLifetimeUsd})</strong> — members-only collection, a lifetime badge, and free API keys. Pay once, forever.</li>
         <li><strong>API access (${env.priceApiAccessUsd})</strong> — a one-off key for the <Link href="/api">Crowd-detection API</Link> if you don&apos;t need membership.</li>
       </ul>

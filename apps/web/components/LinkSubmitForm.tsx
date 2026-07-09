@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export function LinkSubmitForm({ canPlay }: { canPlay: boolean }) {
+export function LinkSubmitForm({ canSubmit }: { canSubmit: boolean }) {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,15 +49,15 @@ export function LinkSubmitForm({ canPlay }: { canPlay: boolean }) {
         style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "12px 14px", color: "var(--text)" }}
       />
       <div>
-        <button className="btn btn-primary" disabled={busy || !url.trim() || !canPlay}>
+        <button className="btn btn-primary" disabled={busy || !url.trim() || !canSubmit}>
           {busy ? "Fetching…" : "Submit for the crowd to judge"}
         </button>
       </div>
-      {!canPlay && (
-        <div className="notice warn">🎮 A one-time $1 play pass is required to submit. <Link href="/membership">Get access →</Link></div>
+      {!canSubmit && (
+        <div className="notice warn">🎮 A one-time submit pass or lifetime membership is required to submit. <Link href="/membership">Get access →</Link></div>
       )}
       {needsPass && (
-        <div className="notice warn">🎮 A one-time $1 play pass is required to submit. <Link href="/membership">Get access →</Link></div>
+        <div className="notice warn">🎮 A one-time submit pass or lifetime membership is required to submit. <Link href="/membership">Get access →</Link></div>
       )}
       {err && <div className="form-error">{err}</div>}
     </form>

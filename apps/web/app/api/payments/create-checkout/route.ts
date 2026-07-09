@@ -36,8 +36,8 @@ export async function POST(req: Request) {
   if (purpose === "lifetime_membership" && user.isMember) {
     return NextResponse.json({ ok: false, error: "You're already a lifetime member." }, { status: 400 });
   }
-  if (purpose === "play_pass" && user.canPlay) {
-    return NextResponse.json({ ok: false, error: "You already have play access." }, { status: 400 });
+  if (purpose === "play_pass" && user.canSubmit) {
+    return NextResponse.json({ ok: false, error: "You already have submit access." }, { status: 400 });
   }
 
   // Optional promo code — validate + compute the discounted price.

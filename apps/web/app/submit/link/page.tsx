@@ -27,7 +27,7 @@ export default async function SubmitLinkPage() {
           Verify your email on your <Link href="/account">account</Link> before submitting.
         </div>
       ) : (
-        <LinkSubmitForm canPlay={user.canPlay} />
+        <LinkSubmitForm canSubmit={user.canSubmit} />
       )}
       <p className="muted-sm" style={{ marginTop: 14 }}>
         Got an image or video instead? <Link href="/submit">Submit media →</Link>

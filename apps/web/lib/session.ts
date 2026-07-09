@@ -4,6 +4,7 @@ import { sqlClient } from "./db";
 import { ids } from "@aiornot/db";
 import { randomToken, hashSessionToken, hashIp, hashUserAgent } from "./crypto";
 import { isAdminEmail } from "./env";
+import { hasSubmitEntitlement } from "./access";
 
 const COOKIE = "aon_session";
 const SESSION_TTL_DAYS = 30;
@@ -17,8 +18,11 @@ export type SessionUser = {
   emailVerified: boolean;
   isAdmin: boolean;
   isMember: boolean;
+  hasPlayPass: boolean;
   /** May play (vote/guess). Play is free — any verified, active account can play. */
   canPlay: boolean;
+  /** May submit new media/post links. This is the paid anti-spam gate. */
+  canSubmit: boolean;
 };
 
 function isoInDays(days: number): string {
@@ -87,6 +91,8 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (row.status === "deleted" || row.status === "suspended") return null;
 
   const email = row.email as string;
+  const isMember = Number(row.is_lifetime_member ?? 0) === 1;
+  const hasPlayPass = row.play_pass_at != null;
   return {
     id: row.id as string,
     email,
@@ -95,9 +101,11 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     role: row.role as string,
     emailVerified: row.email_verified_at != null,
     isAdmin: row.role === "admin" || isAdminEmail(email),
-    isMember: Number(row.is_lifetime_member ?? 0) === 1,
+    isMember,
+    hasPlayPass,
     // Play is free: no $1 pass required. Membership/play_pass still tracked for history.
     canPlay: true,
+    canSubmit: hasSubmitEntitlement({ isMember, hasPlayPass }),
   };
 }
 

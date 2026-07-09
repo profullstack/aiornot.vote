@@ -25,10 +25,10 @@ export async function POST(req: Request) {
   if (!canParticipate(user)) {
     return NextResponse.json({ ok: false, error: "Verify your email before submitting." }, { status: 403 });
   }
-  // Site-wide play pass gates media submissions too (keeps AI bots out).
-  if (!user.canPlay) {
+  // Paid submit access gates new media submissions (keeps AI bots out).
+  if (!user.canSubmit) {
     return NextResponse.json(
-      { ok: false, error: "A one-time $1 play pass is required to submit.", code: "needs_pass" },
+      { ok: false, error: "A one-time submit pass or lifetime membership is required to submit.", code: "needs_pass" },
       { status: 402 },
     );
   }

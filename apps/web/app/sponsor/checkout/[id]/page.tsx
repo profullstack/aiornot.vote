@@ -10,7 +10,7 @@ export default async function SponsorCheckoutPage({ params }: { params: Promise<
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const s = await getSponsorship(id);
+  const s = await getSponsorship(id, user.id);
   if (!s) notFound();
 
   return (

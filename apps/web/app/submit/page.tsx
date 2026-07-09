@@ -27,7 +27,7 @@ export default async function SubmitPage() {
           Verify your email on your <Link href="/account">account</Link> before submitting.
         </div>
       ) : (
-        <SubmitForm />
+        <SubmitForm canPlay={user.canPlay} />
       )}
     </div>
   );

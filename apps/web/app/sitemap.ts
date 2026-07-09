@@ -17,7 +17,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ].map((p) => ({ url: `${base}${p}`, changeFrequency: "daily", priority: p === "" ? 1 : 0.6 }));
 
   const media = await sqlClient.execute(
-    "SELECT slug, updated_at FROM media WHERE status = 'approved' ORDER BY created_at DESC LIMIT 5000",
+    `SELECT m.slug, m.updated_at
+     FROM media m
+     WHERE m.status = 'approved'
+       AND NOT EXISTS (
+         SELECT 1
+         FROM media_tags mt JOIN tags t ON t.id = mt.tag_id
+         WHERE mt.media_id = m.id AND t.members_only = 1
+       )
+     ORDER BY m.created_at DESC LIMIT 5000`,
   );
   const mediaRoutes: MetadataRoute.Sitemap = media.rows.map((r) => ({
     url: `${base}/m/${r.slug as string}`,

@@ -5,6 +5,7 @@ import { env } from "./env";
 import { createCoinpayPayment, getCoinpayPayment, isPaymentPaid } from "./coinpay";
 import { currentWeekStart } from "./prizes";
 import { sendEmail } from "./email";
+import { escapeHtml } from "./html";
 
 export const MIN_SPONSOR_USD = 5;
 
@@ -103,11 +104,13 @@ export async function checkSponsorship(id: string): Promise<{ status: string } |
     args: [id],
   });
   if (flip.rowsAffected > 0) {
+    const sponsorNameHtml = escapeHtml(row.sponsor_name);
+    const prizeLabelHtml = escapeHtml(row.prize_label);
     for (const admin of env.adminEmails) {
       await sendEmail({
         to: admin,
         subject: "New prize sponsorship — AIorNot.vote",
-        html: `<p><strong>${row.sponsor_name}</strong> sponsored this week's prize: <strong>${row.prize_label}</strong> ($${Number(row.amount_usd)}).</p>`,
+        html: `<p><strong>${sponsorNameHtml}</strong> sponsored this week's prize: <strong>${prizeLabelHtml}</strong> ($${Number(row.amount_usd)}).</p>`,
         text: `${row.sponsor_name} sponsored: ${row.prize_label} ($${Number(row.amount_usd)}).`,
       }).catch(() => {});
     }

@@ -14,12 +14,25 @@ export type ScrapedPost = {
 const UA = "Mozilla/5.0 (compatible; AIorNotBot/1.0; +https://aiornot.vote)";
 const MAX_BYTES = 600_000;
 const TIMEOUT_MS = 9000;
+const MAX_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
-async function fetchText(url: string, headers: Record<string, string> = {}): Promise<string> {
+async function fetchText(url: string, headers: Record<string, string> = {}, redirects = 0): Promise<string> {
+  const guard = validateExternalUrl(url);
+  if (!guard.ok) throw new Error(guard.error);
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url, { headers: { "User-Agent": UA, ...headers }, signal: ctrl.signal, redirect: "follow" });
+    const res = await fetch(guard.url.toString(), { headers: { "User-Agent": UA, ...headers }, signal: ctrl.signal, redirect: "manual" });
+    if (REDIRECT_STATUSES.has(res.status)) {
+      if (redirects >= MAX_REDIRECTS) throw new Error("Too many redirects.");
+      const location = res.headers.get("location");
+      if (!location) throw new Error(`Fetch failed (${res.status}).`);
+      const nextUrl = new URL(location, guard.url).toString();
+      const nextGuard = validateExternalUrl(nextUrl);
+      if (!nextGuard.ok) throw new Error(`Redirect URL: ${nextGuard.error}`);
+      return fetchText(nextGuard.url.toString(), headers, redirects + 1);
+    }
     if (!res.ok) throw new Error(`Fetch failed (${res.status}).`);
     const reader = res.body?.getReader();
     if (!reader) return (await res.text()).slice(0, MAX_BYTES);

@@ -31,6 +31,17 @@ async function readMediaStats(
   return { aiGuesses: ai, notAiGuesses: notAi, total, totalGuesses: total, aiPct: total > 0 ? Math.round((ai / total) * 100) : 0 };
 }
 
+async function isMembersOnlyMedia(mediaId: string): Promise<boolean> {
+  const res = await sqlClient.execute({
+    sql: `SELECT 1
+          FROM media_tags mt JOIN tags t ON t.id = mt.tag_id
+          WHERE mt.media_id = ? AND t.members_only = 1
+          LIMIT 1`,
+    args: [mediaId],
+  });
+  return res.rows.length > 0;
+}
+
 /**
  * Anonymous trial guess: computes correctness and returns the reveal + current
  * crowd stats WITHOUT persisting anything (no guess row, no stat change, no
@@ -46,6 +57,9 @@ export async function castGuessAnon(
   });
   const m = mres.rows[0];
   if (!m || m.status !== "approved") {
+    return { ok: false, error: "Media not found.", code: 404 };
+  }
+  if (await isMembersOnlyMedia(mediaId)) {
     return { ok: false, error: "Media not found.", code: 404 };
   }
   const truthLabel = m.truth_label as "ai" | "not_ai" | "unknown";
@@ -72,6 +86,7 @@ export async function castGuess(
   guess: "ai" | "not_ai",
   ipHash: string | null,
   uaHash: string | null,
+  isMember = false,
 ): Promise<CastGuessResult> {
   const mres = await sqlClient.execute({
     sql: `SELECT id, truth_label, is_score_eligible, reveal_status, status
@@ -80,6 +95,9 @@ export async function castGuess(
   });
   const m = mres.rows[0];
   if (!m || m.status !== "approved") {
+    return { ok: false, error: "Media not found.", code: 404 };
+  }
+  if (!isMember && await isMembersOnlyMedia(mediaId)) {
     return { ok: false, error: "Media not found.", code: 404 };
   }
   if (m.reveal_status === "locked") {

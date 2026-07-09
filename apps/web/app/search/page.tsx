@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { listMedia, PAGE_SIZE, type ListSort } from "@/lib/queries";
 import { toClientCard } from "@/lib/serialize";
 import { getCurrentUser, canParticipate } from "@/lib/session";
+import { normalizePage } from "@/lib/pagination";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
 import { Pagination } from "@/components/Pagination";
@@ -29,7 +30,7 @@ export default async function SearchPage({
   const mediaType = sp.media_type === "video" || sp.media_type === "image" ? sp.media_type : undefined;
   const sort = (SORTS.find((s) => s.key === sp.sort)?.key || "newest") as ListSort;
   const featuredOnly = sp.featured === "1";
-  const page = Math.max(1, Number(sp.page) || 1);
+  const page = normalizePage(sp.page);
 
   const user = await getCurrentUser();
   const { items, total } = await listMedia({

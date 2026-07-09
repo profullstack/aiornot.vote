@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getTagBySlug, listMedia, PAGE_SIZE } from "@/lib/queries";
 import { toClientCard } from "@/lib/serialize";
 import { getCurrentUser, canParticipate } from "@/lib/session";
+import { normalizePage } from "@/lib/pagination";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
 import { Pagination } from "@/components/Pagination";
@@ -34,7 +35,7 @@ export default async function TagPage({
 }) {
   const { tagSlug } = await params;
   const sp = await searchParams;
-  const page = Math.max(1, Number(sp.page) || 1);
+  const page = normalizePage(sp.page);
   const tag = await getTagBySlug(tagSlug);
   if (!tag) notFound();
 

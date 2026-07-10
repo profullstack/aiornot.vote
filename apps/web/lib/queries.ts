@@ -1,5 +1,6 @@
 import "server-only";
 import { sqlClient } from "./db";
+import { normalizePage } from "./pagination";
 import type { Row } from "@libsql/client";
 
 export const PAGE_SIZE = 24;
@@ -113,7 +114,7 @@ const SELECT_CARD = `
 `;
 
 export async function listMedia(args: ListArgs): Promise<{ items: MediaCard[]; total: number }> {
-  const page = Math.max(1, args.page ?? 1);
+  const page = normalizePage(args.page);
   const pageSize = args.pageSize ?? PAGE_SIZE;
   const where: string[] = ["m.status = 'approved'"];
   const params: unknown[] = [];

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   }
 
   const ipHash = ip ? hashIp(ip) : null;
-  const result = await castGuess(user.id, mediaId, guess as "ai" | "not_ai", ipHash, null);
+  const result = await castGuess(user.id, mediaId, guess as "ai" | "not_ai", ipHash, null, user.isMember);
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: result.code });
   }

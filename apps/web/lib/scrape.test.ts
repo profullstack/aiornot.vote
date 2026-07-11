@@ -60,7 +60,25 @@ describe("scrapeUrl redirect guard", () => {
 
     const post = await scrapeUrl("https://example.com/post");
 
-    expect(post.title).toBe("AI's ’test—case");
+    expect(post.title).toBe("AI's \u2019test\u2014case");
     expect(post.body).toBe("Tom &amp; Jerry   check");
+  });
+
+  it("reads valid meta tags with spaced attribute assignments", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        `<html><head>
+          <meta property = "og:title" content = "Spaced title">
+          <meta content = "Spaced description" name = "description">
+        </head></html>`,
+        { status: 200, headers: { "content-type": "text/html" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const post = await scrapeUrl("https://example.com/post");
+
+    expect(post.title).toBe("Spaced title");
+    expect(post.body).toBe("Spaced description");
   });
 });

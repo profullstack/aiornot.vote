@@ -18,7 +18,10 @@ export function coinpayBlockchainLabel(blockchain: CoinpayBlockchain): string {
 }
 
 export function normalizeCoinpayBlockchain(value: unknown): CoinpayBlockchain | null {
-  const normalized = String(value || "SOL").trim().toUpperCase();
+  if (value == null) return "SOL";
+  if (typeof value !== "string") return null;
+
+  const normalized = value.trim().toUpperCase() || "SOL";
   return (COINPAY_BLOCKCHAINS as readonly string[]).includes(normalized)
     ? (normalized as CoinpayBlockchain)
     : null;

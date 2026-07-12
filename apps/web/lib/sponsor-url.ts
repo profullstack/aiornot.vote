@@ -1,3 +1,5 @@
+import { validateExternalUrl } from "./url-guard";
+
 export type SponsorUrlResult =
   | { ok: true; url: string | null }
   | { ok: false; error: string };
@@ -9,16 +11,16 @@ export function normalizeSponsorUrl(raw: string | null | undefined): SponsorUrlR
     return { ok: false, error: "Sponsor link is too long." };
   }
 
-  let parsed: URL;
-  try {
-    parsed = new URL(trimmed);
-  } catch {
-    return { ok: false, error: "Sponsor link must be a valid URL." };
+  const externalUrl = validateExternalUrl(trimmed);
+  if (!externalUrl.ok) {
+    if (externalUrl.error === "Only http and https URLs are allowed.") {
+      return { ok: false, error: "Sponsor link must start with http:// or https://." };
+    }
+    if (externalUrl.error === "Enter a valid URL.") {
+      return { ok: false, error: "Sponsor link must be a valid URL." };
+    }
+    return { ok: false, error: "Sponsor link host is not allowed." };
   }
 
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return { ok: false, error: "Sponsor link must start with http:// or https://." };
-  }
-
-  return { ok: true, url: parsed.toString() };
+  return { ok: true, url: externalUrl.url.toString() };
 }

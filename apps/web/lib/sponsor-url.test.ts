@@ -18,6 +18,12 @@ describe("normalizeSponsorUrl", () => {
     expect(normalizeSponsorUrl("mailto:test@example.com").ok).toBe(false);
   });
 
+  it("rejects internal hosts", () => {
+    expect(normalizeSponsorUrl("http://localhost/sponsor").ok).toBe(false);
+    expect(normalizeSponsorUrl("http://10.0.0.5/sponsor").ok).toBe(false);
+    expect(normalizeSponsorUrl("http://[::1]/sponsor").ok).toBe(false);
+  });
+
   it("rejects invalid URLs", () => {
     expect(normalizeSponsorUrl("example dot com").ok).toBe(false);
   });

@@ -78,7 +78,34 @@ function metaContent(html: string, prop: string): string | null {
 }
 
 function decodeEntities(s: string): string {
-  return s.replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#x27;/g, "'");
+  const named: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    quot: '"',
+    lt: "<",
+    gt: ">",
+    nbsp: " ",
+  };
+
+  return s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, body: string) => {
+    const key = body.toLowerCase();
+    if (key.startsWith("#x")) {
+      return decodeEntityCodePoint(Number.parseInt(key.slice(2), 16), entity);
+    }
+    if (key.startsWith("#")) {
+      return decodeEntityCodePoint(Number.parseInt(key.slice(1), 10), entity);
+    }
+    return named[key] ?? entity;
+  });
+}
+
+function decodeEntityCodePoint(value: number, fallback: string): string {
+  if (!Number.isInteger(value) || value < 0 || value > 0x10ffff) return fallback;
+  try {
+    return String.fromCodePoint(value);
+  } catch {
+    return fallback;
+  }
 }
 
 function detectPlatform(host: string): string {

@@ -19,6 +19,12 @@ describe("normalizeCoinpayBlockchain", () => {
     expect(normalizeCoinpayBlockchain("BASE")).toBeNull();
     expect(normalizeCoinpayBlockchain("javascript:alert(1)")).toBeNull();
   });
+
+  it("rejects non-string values instead of coercing them", () => {
+    expect(normalizeCoinpayBlockchain(["SOL"])).toBeNull();
+    expect(normalizeCoinpayBlockchain({ toString: () => "SOL" })).toBeNull();
+    expect(normalizeCoinpayBlockchain(0)).toBeNull();
+  });
 });
 
 describe("coinpayBlockchainLabel", () => {

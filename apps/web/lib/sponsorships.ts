@@ -7,8 +7,9 @@ import { currentWeekStart } from "./prizes";
 import { sendEmail } from "./email";
 import { escapeHtml } from "./html";
 import { normalizeSponsorUrl } from "./sponsor-url";
+import { MIN_SPONSOR_USD, normalizeSponsorAmountUsd } from "./sponsor-amount";
 
-export const MIN_SPONSOR_USD = 5;
+export { MIN_SPONSOR_USD };
 
 export type Sponsorship = {
   id: string;
@@ -46,7 +47,7 @@ export type CreateSponsorInput = {
   sponsorUrl?: string | null;
   prizeLabel: string;
   message?: string | null;
-  amountUsd: number;
+  amountUsd: unknown;
   blockchain: string;
 };
 
@@ -60,8 +61,9 @@ export async function createSponsorship(
   if (!prize) return { ok: false, error: "Describe the prize you're offering." };
   const sponsorUrl = normalizeSponsorUrl(input.sponsorUrl);
   if (!sponsorUrl.ok) return sponsorUrl;
-  const amount = Math.round(Number(input.amountUsd) * 100) / 100;
-  if (!(amount >= MIN_SPONSOR_USD)) return { ok: false, error: `Minimum sponsorship is $${MIN_SPONSOR_USD}.` };
+  const sponsorAmount = normalizeSponsorAmountUsd(input.amountUsd);
+  if (!sponsorAmount.ok) return sponsorAmount;
+  const amount = sponsorAmount.amount;
 
   const id = newId("spo");
   const period = currentWeekStart();

@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     sponsorUrl: body.sponsorUrl ? String(body.sponsorUrl) : null,
     prizeLabel: String(body.prizeLabel || ""),
     message: body.message ? String(body.message) : null,
-    amountUsd: Number(body.amountUsd),
+    amountUsd: body.amountUsd,
     blockchain,
   });
   if (!result.ok) return NextResponse.json(result, { status: 400 });

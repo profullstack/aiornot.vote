@@ -4,6 +4,7 @@ import { listMedia, PAGE_SIZE, type ListSort } from "@/lib/queries";
 import { toClientCard } from "@/lib/serialize";
 import { getCurrentUser, canParticipate } from "@/lib/session";
 import { normalizePage } from "@/lib/pagination";
+import { searchFeedParams } from "@/lib/search-feed";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
 import { Pagination } from "@/components/Pagination";
@@ -50,9 +51,7 @@ export default async function SearchPage({
   if (sort !== "newest") baseQuery.set("sort", sort);
   if (featuredOnly) baseQuery.set("featured", "1");
 
-  const rssQuery = new URLSearchParams();
-  if (q) rssQuery.set("q", q);
-  if (tag) rssQuery.set("tag", tag);
+  const rssQuery = searchFeedParams({ q, tag, mediaType, sort, featuredOnly });
   const rssFeed = `/rss/search.xml${rssQuery.toString() ? `?${rssQuery.toString()}` : ""}`;
 
   const title = q ? `Results for “${q}”` : featuredOnly ? "Featured" : `Explore · ${sort}`;

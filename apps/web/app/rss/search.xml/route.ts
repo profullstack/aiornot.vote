@@ -1,7 +1,8 @@
-import { listMedia, type ListSort } from "@/lib/queries";
+import { listMedia } from "@/lib/queries";
 import { mediaCardsToFeed } from "@/lib/rss";
 import { rssResponse } from "@/lib/rss-response";
 import { env } from "@/lib/env";
+import { normalizeSearchMediaType, normalizeSearchSort, searchFeedParams, searchPagePathFromParams } from "@/lib/search-feed";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,17 +11,19 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") || "").trim();
   const tag = url.searchParams.get("tag") || undefined;
-  const sort = (url.searchParams.get("sort") || "newest") as ListSort;
-  const { items } = await listMedia({ q, tagSlug: tag, sort, pageSize: 50 });
+  const mediaType = normalizeSearchMediaType(url.searchParams.get("media_type"));
+  const sort = normalizeSearchSort(url.searchParams.get("sort"));
+  const featuredOnly = url.searchParams.get("featured") === "1";
+  const { items } = await listMedia({ q, tagSlug: tag, mediaType, sort, featuredOnly, pageSize: 50 });
 
   const feedUrl = new URL(`${env.appUrl}/rss/search.xml`);
-  if (q) feedUrl.searchParams.set("q", q);
-  if (tag) feedUrl.searchParams.set("tag", tag);
+  const params = searchFeedParams({ q, tag, mediaType, sort, featuredOnly });
+  params.forEach((value, key) => feedUrl.searchParams.set(key, value));
 
   const label = q ? `“${q}”` : tag ? `#${tag}` : "all media";
   const xml = mediaCardsToFeed(items, {
     title: `AIorNot.vote — Search: ${label}`,
-    link: `${env.appUrl}/search?${feedUrl.searchParams.toString()}`,
+    link: `${env.appUrl}${searchPagePathFromParams(params)}`,
     feedUrl: feedUrl.toString(),
     description: `Media matching ${label}.`,
   });

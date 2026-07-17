@@ -30,8 +30,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       '@profullstack/stack':
-        specifier: ^0.1.0
-        version: 0.1.0(next@15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+        specifier: ^0.1.3
+        version: 0.1.3(next@15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       drizzle-orm:
         specifier: ^0.38.4
         version: 0.38.4(@libsql/client@0.15.15)(@types/react@19.2.17)(react@19.2.7)
@@ -666,8 +666,8 @@ packages:
       react:
         optional: true
 
-  '@profullstack/stack@0.1.0':
-    resolution: {integrity: sha512-351fCM4if1CtEU34nE/jYNEKVMfkQT5tEPfqx5DyyfafSUCf7DNvyoBdopRRP00bhnWwSjp8SkPiVUwXbHmf/Q==}
+  '@profullstack/stack@0.1.3':
+    resolution: {integrity: sha512-NOseYE5cWMwH75/luUE46kJLyAd1xD+DSgGgwhxvgNMoJYfZ9W9vKmqdcGA/4Lgahzf7hWfjNvmLtVIzAqwhJw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@supabase/ssr': '>=0.5.0'
@@ -1744,7 +1744,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.7
 
-  '@profullstack/stack@0.1.0(next@15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+  '@profullstack/stack@0.1.3(next@15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@profullstack/emailer': 1.0.1
       '@profullstack/referrals': 0.1.0(react@19.2.7)

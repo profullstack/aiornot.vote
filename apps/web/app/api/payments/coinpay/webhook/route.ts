@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { verifyCoinPayWebhook } from "@profullstack/stack/coinpay";
 import { sqlClient } from "@/lib/db";
-import { verifyWebhookSignature, isPaymentPaid } from "@/lib/coinpay";
+import { isPaymentPaid } from "@/lib/coinpay";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -14,7 +16,11 @@ export const runtime = "nodejs";
  */
 export async function POST(req: Request) {
   const raw = await req.text();
-  if (!verifyWebhookSignature(req.headers.get("x-coinpay-signature"), raw)) {
+  if (!verifyCoinPayWebhook({
+    signature: req.headers.get("x-coinpay-signature"),
+    rawBody: raw,
+    secret: env.coinpay.webhookSecret,
+  })) {
     return NextResponse.json({ ok: false, error: "Invalid signature." }, { status: 401 });
   }
   let evt: { type?: string; data?: { id?: string; status?: string; metadata?: Record<string, unknown> } };

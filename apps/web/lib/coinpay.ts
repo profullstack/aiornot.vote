@@ -1,5 +1,4 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "./env";
 
 export type CoinpayPayment = {
@@ -75,21 +74,4 @@ export function isPaymentPaid(status: string | undefined): boolean {
     status === "completed" ||
     status === "paid"
   );
-}
-
-/** Verify an X-CoinPay-Signature: t=<ts>,v1=<hmac> header for webhooks. */
-export function verifyWebhookSignature(header: string | null, rawBody: string): boolean {
-  if (!env.coinpay.webhookSecret || !header) return false;
-  const parts = Object.fromEntries(
-    header.split(",").map((p) => p.split("=").map((s) => s.trim())),
-  ) as { t?: string; v1?: string };
-  if (!parts.t || !parts.v1) return false;
-  const expected = createHmac("sha256", env.coinpay.webhookSecret)
-    .update(`${parts.t}.${rawBody}`)
-    .digest("hex");
-  try {
-    return timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1));
-  } catch {
-    return false;
-  }
 }

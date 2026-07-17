@@ -89,7 +89,7 @@ export async function drawWeeklyPrizes(opts?: { period?: { start: string; end: s
   const period = opts?.period ?? prevCompletedWeek();
 
   const already = await sqlClient.execute({
-    sql: "SELECT 1 FROM prizes WHERE period_start = ? LIMIT 1",
+    sql: "SELECT 1 FROM prizes WHERE period_start = ? AND source = 'weekly' LIMIT 1",
     args: [period.start],
   });
   if (already.rows.length > 0) {
@@ -100,7 +100,7 @@ export async function drawWeeklyPrizes(opts?: { period?: { start: string; end: s
 
   // Rewards rolled over from expired / previously-unawarded prizes.
   const carry = await sqlClient.execute({
-    sql: "SELECT id, reward_kind, reward_label FROM prizes WHERE status = 'expired' ORDER BY created_at ASC",
+    sql: "SELECT id, reward_kind, reward_label FROM prizes WHERE status = 'expired' AND source = 'weekly' ORDER BY created_at ASC",
     args: [],
   });
   const carryRewards = carry.rows.map((r) => ({ kind: r.reward_kind as string, label: r.reward_label as string, sourceId: r.id as string }));
@@ -227,10 +227,10 @@ export async function getUserPrizes(userId: string): Promise<PrizeRow[]> {
 }
 
 export async function getLatestPack(): Promise<PrizeRow[]> {
-  const latest = await sqlClient.execute({ sql: "SELECT period_start FROM prizes ORDER BY period_start DESC LIMIT 1", args: [] });
+  const latest = await sqlClient.execute({ sql: "SELECT period_start FROM prizes WHERE source = 'weekly' ORDER BY period_start DESC LIMIT 1", args: [] });
   const period = latest.rows[0]?.period_start as string | undefined;
   if (!period) return [];
-  const res = await sqlClient.execute({ sql: "SELECT * FROM prizes WHERE period_start = ? ORDER BY rank ASC", args: [period] });
+  const res = await sqlClient.execute({ sql: "SELECT * FROM prizes WHERE period_start = ? AND source = 'weekly' ORDER BY rank ASC", args: [period] });
   return res.rows.map(rowToPrize);
 }
 
@@ -239,7 +239,7 @@ export async function getRecentWinners(limit = 12): Promise<Array<{ rank: number
     sql: `SELECT p.rank, p.reward_label, p.period_start, p.status,
                  COALESCE(NULLIF(u.display_name,''), 'anon-' || substr(u.id,-5)) AS display_name
           FROM prizes p JOIN users u ON u.id = p.user_id
-          WHERE p.user_id IS NOT NULL ORDER BY p.period_start DESC, p.rank ASC LIMIT ?`,
+          WHERE p.user_id IS NOT NULL AND p.source = 'weekly' ORDER BY p.period_start DESC, p.rank ASC LIMIT ?`,
     args: [limit],
   });
   return res.rows.map((r) => ({ rank: Number(r.rank), rewardLabel: r.reward_label as string, displayName: r.display_name as string, periodStart: r.period_start as string, status: r.status as string }));

@@ -5,6 +5,7 @@ import { hashPassword, verifyPassword } from "./password";
 import { randomToken, hmac } from "./crypto";
 import { env, isAdminEmail } from "./env";
 import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
+import { recordReferralOnSignup, rewardReferralOnVerify } from "./referrals";
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -44,6 +45,7 @@ export async function signup(
   emailRaw: string,
   password: string,
   displayName?: string,
+  referralCode?: string | null,
 ): Promise<SignupResult> {
   const email = emailRaw.trim();
   const normalized = normalizeEmail(email);
@@ -92,6 +94,11 @@ export async function signup(
   await sqlClient.execute({
     sql: "INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)",
     args: [userId],
+  });
+
+  // Attribute the referral (if any). Reward is granted later, on email verify.
+  await recordReferralOnSignup(userId, normalized, referralCode).catch((err) => {
+    console.error(`[referral] failed to record for ${userId}:`, (err as Error).message);
   });
 
   await issueVerification(userId, email);
@@ -166,6 +173,10 @@ export async function verifyEmailToken(token: string): Promise<VerifyResult> {
   await sqlClient.execute({
     sql: `UPDATE users SET email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP) WHERE id = ?`,
     args: [row.user_id],
+  });
+  // Email is now proven — pay out any pending referral for this user.
+  await rewardReferralOnVerify(row.user_id as string).catch((err) => {
+    console.error(`[referral] failed to reward on verify for ${row.user_id}:`, (err as Error).message);
   });
   return { ok: true, userId: row.user_id as string };
 }

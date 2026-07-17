@@ -31,6 +31,10 @@ export default async function PrizesPage() {
           Finish in the top 3 of the <Link href="/leaderboard/weekly">weekly leaderboard</Link> and win.
           Winners are notified and have <strong>7 days to claim</strong> — unclaimed prizes roll into a future pack.
         </p>
+        <p>
+          Not a top guesser? <Link href="/refer">Refer a friend</Link> — every friend who joins earns you a coupon
+          matching the 1st-place prize.
+        </p>
       </div>
 
       {claimable.length > 0 && (

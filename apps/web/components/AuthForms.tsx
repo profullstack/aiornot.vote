@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const ref = (searchParams.get("ref") || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 16);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -21,6 +23,7 @@ export function SignupForm() {
           email: fd.get("email"),
           password: fd.get("password"),
           displayName: fd.get("displayName"),
+          ref: ref || undefined,
         }),
       });
       const data = await res.json();
@@ -41,6 +44,11 @@ export function SignupForm() {
     <div className="form-card container-narrow">
       <h1>Create your account</h1>
       <p className="muted">Verify your email to guess, upload, and appear on the leaderboard.</p>
+      {ref && (
+        <div className="form-ok" style={{ marginBottom: 12 }}>
+          🎁 A friend invited you! Verify your email after signing up and they&apos;ll earn a prize.
+        </div>
+      )}
       <form onSubmit={onSubmit}>
         <div className="field">
           <label htmlFor="displayName">Display name</label>

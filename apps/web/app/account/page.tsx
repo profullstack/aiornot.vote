@@ -28,6 +28,7 @@ export default async function AccountPage() {
           {user.isMember && <span className="badge-featured" style={{ position: "static", marginLeft: 10 }}>Member</span>}
         </h2>
         <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/refer" className="btn btn-sm">Refer &amp; earn</Link>
           <Link href="/account/history" className="btn btn-sm">History</Link>
           <Link href="/account/settings" className="btn btn-sm">Settings</Link>
           <LogoutButton />

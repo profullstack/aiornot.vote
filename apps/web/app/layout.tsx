@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { FeedbackWidget } from "@profullstack/stack/feedback";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -108,11 +109,7 @@ export default async function RootLayout({
         <main>{children}</main>
         <SiteFooter />
         {/* Profullstack feedback widget (feedback.profullstack.com) */}
-        <Script
-          src="https://feedback.profullstack.com/embed/profullstack-feedback.js"
-          data-property="aiornot.vote"
-          strategy="afterInteractive"
-        />
+        <FeedbackWidget property="aiornot.vote" />
         {/* CrawlProof analytics + ad network. Ad units are placed in the UI
             (see AdSlot in the footer); ad.js fills any [data-cp-ad] slot in a
             sandboxed iframe and never blocks page load. */}

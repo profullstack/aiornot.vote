@@ -44,6 +44,28 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
   });
 }
 
+export async function sendReferralInviteEmail(
+  to: string,
+  inviterName: string | null,
+  link: string,
+): Promise<void> {
+  const who = inviterName?.trim() ? inviterName.trim() : "A friend";
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <h1 style="font-size:20px">${who} invited you to AIorNot.vote 👀</h1>
+      <p>Can you tell AI-generated images from real ones? Play the daily game, climb the leaderboard, and win real weekly prizes — it's free.</p>
+      <p><a href="${link}" style="background:#FF3D8A;color:#08080C;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Join AIorNot.vote →</a></p>
+      <p style="color:#888;font-size:13px">Or paste this link: ${link}</p>
+      <p style="color:#888;font-size:13px">You're getting this because someone shared their referral link with you. No account is created until you sign up.</p>
+    </div>`;
+  await sendEmail({
+    to,
+    subject: `${who} invited you to AIorNot.vote`,
+    html,
+    text: `${who} invited you to AIorNot.vote — guess AI vs real and win weekly prizes. Join: ${link}`,
+  });
+}
+
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<void> {
   const html = `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">

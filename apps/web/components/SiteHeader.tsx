@@ -25,6 +25,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
         <Link href="/leaderboard">Leaderboard</Link>
         <Link href="/rewards">Rewards</Link>
         <Link href="/prizes">Prizes</Link>
+        <Link href="/refer">Refer</Link>
         <Link href="/feeds">Feeds</Link>
         <Link href="/api">API</Link>
         <Link href="/submit">Submit</Link>

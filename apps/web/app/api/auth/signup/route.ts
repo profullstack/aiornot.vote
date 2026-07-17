@@ -16,17 +16,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Try again soon." }, { status: 429 });
   }
 
-  let body: { email?: string; password?: string; displayName?: string };
+  let body: { email?: string; password?: string; displayName?: string; ref?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
   }
 
+  // Referral code: explicit from the form wins, else fall back to the cookie
+  // dropped by /r/<code>.
+  const cookieRef = req.headers
+    .get("cookie")
+    ?.split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith("aon_ref="))
+    ?.slice("aon_ref=".length);
+  const ref = (body.ref && String(body.ref)) || (cookieRef ? decodeURIComponent(cookieRef) : null);
+
   const result = await signup(
     String(body.email || ""),
     String(body.password || ""),
     body.displayName ? String(body.displayName) : undefined,
+    ref,
   );
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });

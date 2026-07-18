@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
+import { readBoundedInteger } from "@/lib/bounded-integer";
 import { generateContinuousBatch } from "@aiornot/seed";
 
 export const runtime = "nodejs";
@@ -17,7 +18,11 @@ export async function POST(req: Request) {
   if (!env.cronSecret || secret !== env.cronSecret) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-  const count = Math.min(10, Math.max(1, Number(new URL(req.url).searchParams.get("count")) || 3));
+  const count = readBoundedInteger(new URL(req.url).searchParams.get("count"), {
+    fallback: 3,
+    min: 1,
+    max: 10,
+  });
   try {
     const result = await generateContinuousBatch({ count });
     return NextResponse.json({ ok: true, ...result });

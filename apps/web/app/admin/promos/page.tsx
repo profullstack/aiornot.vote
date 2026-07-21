@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminPage } from "@/lib/admin";
 import { sqlClient } from "@/lib/db";
 import { listPromoCodes, setPromoActive } from "@/lib/entitlements";
+import { normalizePromoMaxUses, normalizePromoPercentOff } from "@/lib/promo-form";
 
 export const metadata = { title: "Admin · Promo codes" };
 export const dynamic = "force-dynamic";
@@ -20,12 +21,11 @@ async function createAction(formData: FormData) {
   "use server";
   await requireAdminPage();
   const code = String(formData.get("code") || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
-  const percentOff = Math.min(100, Math.max(1, Number(formData.get("percent_off") || 100)));
+  const percentOff = normalizePromoPercentOff(formData.get("percent_off"));
   const appliesTo = ["any", "play_pass", "lifetime_membership"].includes(String(formData.get("applies_to")))
     ? String(formData.get("applies_to"))
     : "any";
-  const maxRaw = String(formData.get("max_uses") || "").trim();
-  const maxUses = maxRaw ? Math.max(1, Number(maxRaw)) : null;
+  const maxUses = normalizePromoMaxUses(formData.get("max_uses"));
   if (code) {
     await sqlClient.execute({
       sql: "INSERT OR IGNORE INTO promo_codes (code, grants, percent_off, applies_to, active, max_uses, note) VALUES (?, 'membership', ?, ?, 1, ?, ?)",

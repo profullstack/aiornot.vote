@@ -2,6 +2,7 @@ import { getClient, ids } from "@aiornot/db";
 import type { Client } from "@libsql/client";
 import { SEED_CATEGORIES } from "./prompts";
 import { createAiVariant, slugify } from "./index";
+import { storeRemoteImage } from "./store-remote-image";
 
 async function tagId(client: Client, slug: string): Promise<string | null> {
   const r = await client.execute({ sql: "SELECT id FROM tags WHERE slug = ?", args: [slug] });
@@ -29,8 +30,15 @@ const REAL_SUBJECTS = ["portrait", "landscape", "street-photo", "architecture", 
 async function createRealPhoto(client: Client): Promise<void> {
   const subject = REAL_SUBJECTS[Math.floor(Math.random() * REAL_SUBJECTS.length)]!;
   const seed = Math.random().toString(36).slice(2, 12);
-  const mediaUrl = `https://picsum.photos/seed/${seed}/1000/1250`;
-  const thumbnailUrl = `https://picsum.photos/seed/${seed}/500/625`;
+  // Source the genuine photo from picsum, then copy it into OUR local pool
+  // server-side. Storing it locally (opaque filename, same pool as AI images)
+  // means the rendered <img> src no longer reveals real-vs-AI by its host/path,
+  // and play-time no longer depends on picsum being reachable. original_url
+  // keeps the picsum reference for server-side provenance only (never rendered).
+  const picsumUrl = `https://picsum.photos/seed/${seed}/1000/1250`;
+  const localUrl = await storeRemoteImage(picsumUrl);
+  const mediaUrl = localUrl;
+  const thumbnailUrl = localUrl;
   // Neutral title — same style as AI items so it never reveals the answer.
   const s = subject.replace(/-/g, " ");
   const title = `AI or Not: ${s.charAt(0).toUpperCase()}${s.slice(1)}`;
@@ -42,7 +50,7 @@ async function createRealPhoto(client: Client): Promise<void> {
        seed_source, truth_label, truth_confidence, reveal_status, status, width, height, approved_at)
       VALUES (?, ?, 'image', ?, ?, ?, ?, 'url', 'manual', 'not_ai', 'seeded',
               'hidden_until_guess', 'approved', 1000, 1250, CURRENT_TIMESTAMP)`,
-    args: [mediaId, slug, title, mediaUrl, thumbnailUrl, mediaUrl],
+    args: [mediaId, slug, title, mediaUrl, thumbnailUrl, picsumUrl],
   });
   await client.execute({ sql: "INSERT OR IGNORE INTO media_stats (media_id) VALUES (?)", args: [mediaId] });
   await attachTags(client, mediaId, [subject, "photorealistic", "human-made", "image"]);

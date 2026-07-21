@@ -2,6 +2,7 @@ import { getClient, ids } from "@aiornot/db";
 import type { Client } from "@libsql/client";
 import { buildVariantPrompt, promptSummary, SEED_CATEGORIES } from "./prompts";
 import { storeImage } from "./store-image";
+import { poolKey } from "./store-remote-image";
 
 export { SEED_CATEGORIES } from "./prompts";
 export { seedStorageConfigured } from "./storage";
@@ -9,6 +10,7 @@ export { mediaStorageDir } from "./media-dir";
 export { seedPool } from "./pool";
 export { generateContinuousBatch } from "./continuous";
 export { generateTips } from "./tips";
+export { poolKey, POOL_DIR } from "./store-remote-image";
 
 function slugify(s: string): string {
   return (
@@ -216,8 +218,10 @@ export async function createAiVariant(
   });
 
   const buf = await generateVariantImage(prompt, model);
-  const hash = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  const mediaUrl = await storeImage(`ai-variants/${hash}.png`, buf, "image/png");
+  // Store into the SAME neutral pool as real photos, with an opaque random
+  // filename. The old `ai-variants/<time>-<rand>` key leaked the label via the
+  // path (and its `mrt…` time prefix let files be clustered), so both are gone.
+  const mediaUrl = await storeImage(poolKey(), buf, "image/png");
 
   // Neutral title — must NOT reveal the answer (both AI and real items use the
   // same "AI or Not: <subject>" style).

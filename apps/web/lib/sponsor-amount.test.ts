@@ -23,4 +23,15 @@ describe("normalizeSponsorAmountUsd", () => {
       error: "Enter a valid sponsorship amount.",
     });
   });
+
+  it("rejects non-decimal amount strings before creating a payment", () => {
+    expect(normalizeSponsorAmountUsd("1e2")).toEqual({
+      ok: false,
+      error: "Enter a valid sponsorship amount.",
+    });
+    expect(normalizeSponsorAmountUsd("0x10")).toEqual({
+      ok: false,
+      error: "Enter a valid sponsorship amount.",
+    });
+  });
 });

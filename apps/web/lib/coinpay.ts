@@ -46,6 +46,7 @@ export async function createCoinpayPayment(args: {
     }
     return { ok: true, payment: data.payment };
   } catch (err) {
+    console.error(`[coinpay] create payment failed:`, (err as Error).message);
     return { ok: false, error: (err as Error).message };
   }
 }
@@ -57,10 +58,14 @@ export async function getCoinpayPayment(id: string): Promise<CoinpayPayment | nu
     const res = await fetch(`${env.coinpay.baseUrl}/payments/${id}`, {
       headers: { Authorization: `Bearer ${env.coinpay.apiKey}` },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[coinpay] status fetch failed for ${id}: HTTP ${res.status}`);
+      return null;
+    }
     const data = (await res.json()) as { payment?: CoinpayPayment } & CoinpayPayment;
     return data.payment ?? (data.id ? data : null);
-  } catch {
+  } catch (err) {
+    console.error(`[coinpay] status fetch error for ${id}:`, (err as Error).message);
     return null;
   }
 }

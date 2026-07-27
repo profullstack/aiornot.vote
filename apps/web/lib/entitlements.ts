@@ -123,26 +123,21 @@ export async function quotePromo(
   if (row.max_uses != null && Number(row.uses) >= Number(row.max_uses)) {
     return { ok: false, error: "This code has been fully redeemed." };
   }
-  const dup = await sqlClient.execute({
-    sql: "SELECT 1 FROM promo_redemptions WHERE code = ? AND user_id = ? LIMIT 1",
-    args: [code, userId],
-  });
-  if (dup.rows[0]) return { ok: false, error: "You've already used this code." };
-
   const percentOff = Math.min(100, Math.max(1, Number(row.percent_off ?? 100)));
   const finalUsd = round2(baseUsd * (1 - percentOff / 100));
   return { ok: true, code, percentOff, baseUsd, finalUsd, free: finalUsd <= 0 };
 }
 
-/** Record a promo redemption (idempotent). Call once the discount is actually granted. */
-export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<void> {
+/** Record a promo redemption (idempotent). Returns true if newly recorded. */
+export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<boolean> {
   const code = codeRaw.trim().toUpperCase();
-  if (!code) return;
+  if (!code) return false;
   try {
     await sqlClient.execute({ sql: "INSERT INTO promo_redemptions (code, user_id) VALUES (?, ?)", args: [code, userId] });
     await sqlClient.execute({ sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ?", args: [code] });
+    return true;
   } catch {
-    /* already recorded — composite PK makes this a no-op */
+    return false;
   }
 }
 

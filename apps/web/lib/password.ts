@@ -1,9 +1,9 @@
 import { hash, verify } from "@node-rs/argon2";
 
-// Argon2id parameters — reasonable defaults for interactive auth.
+// Argon2id parameters — OWASP recommended minimums for production.
 const opts = {
-  memoryCost: 19456,
-  timeCost: 2,
+  memoryCost: 47104,
+  timeCost: 3,
   parallelism: 1,
 } as const;
 

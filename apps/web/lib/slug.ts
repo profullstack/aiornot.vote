@@ -6,8 +6,12 @@ export function slugify(input: string): string {
       .toLowerCase()
       .normalize("NFKD")
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
-      .slice(0, 60) || "media"
+      // Strip a leading separator first, then truncate, then strip any
+      // trailing separator. Trimming before slicing meant a 60-char cut could
+      // fall right after a "-" and re-introduce a trailing separator.
+      .replace(/^-+/, "")
+      .slice(0, 60)
+      .replace(/-+$/, "") || "media"
   );
 }
 

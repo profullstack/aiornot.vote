@@ -21,7 +21,8 @@ export const env = {
   sessionSecret:
     (() => {
       const val = process.env.SESSION_SECRET;
-      if (!val && process.env.NODE_ENV === "production") {
+      const building = process.env.NEXT_PHASE === "phase-production-build";
+      if (!val && process.env.NODE_ENV === "production" && !building) {
         throw new Error("SESSION_SECRET must be set in production");
       }
       return val || "dev-only-insecure-change-me-0000000000000000";

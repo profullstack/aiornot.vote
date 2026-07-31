@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageCount } from "@/lib/pagination";
 
 export function Pagination({
   page,
@@ -13,7 +14,7 @@ export function Pagination({
   basePath: string; // e.g. "/page" or "/search"
   query?: string; // extra query string without leading ?
 }) {
-  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const pages = pageCount(total, pageSize);
   if (pages <= 1) return null;
   const mk = (p: number) => {
     if (basePath === "/page") return p <= 1 ? `/` : `/page/${p}`;

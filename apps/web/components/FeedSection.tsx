@@ -6,6 +6,8 @@ import { listMedia, type ListSort } from "@/lib/queries";
 import { toClientCard } from "@/lib/serialize";
 import { getCurrentUser, canParticipate } from "@/lib/session";
 import { PAGE_SIZE } from "@/lib/queries";
+import { pageCount } from "@/lib/pagination";
+import { notFound } from "next/navigation";
 
 const TABS: { label: string; href: string; sort?: ListSort }[] = [
   { label: "Newest", href: "/" },
@@ -21,6 +23,8 @@ export async function FeedSection({ page }: { page: number }) {
     page,
     userId: user?.id ?? null,
   });
+  const totalPages = pageCount(total, PAGE_SIZE);
+  if (page > totalPages) notFound();
 
   return (
     <>

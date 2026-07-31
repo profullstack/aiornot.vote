@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePage } from "./pagination";
+import { normalizePage, pageCount } from "./pagination";
 
 describe("normalizePage", () => {
   it("accepts positive numeric page values", () => {
@@ -22,5 +22,16 @@ describe("normalizePage", () => {
   it("falls back for zero and negative page values", () => {
     expect(normalizePage("0")).toBe(1);
     expect(normalizePage("-2")).toBe(1);
+  });
+});
+
+describe("pageCount", () => {
+  it("keeps an empty feed on its first page", () => {
+    expect(pageCount(0, 24)).toBe(1);
+  });
+
+  it("rounds partial pages up", () => {
+    expect(pageCount(24, 24)).toBe(1);
+    expect(pageCount(25, 24)).toBe(2);
   });
 });

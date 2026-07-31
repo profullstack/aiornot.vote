@@ -141,14 +141,21 @@ export async function quotePromo(
 }
 
 /** Record a promo redemption (idempotent). Call once the discount is actually granted. */
-export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<void> {
+export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<boolean> {
   const code = codeRaw.trim().toUpperCase();
-  if (!code) return;
+  if (!code) return false;
   try {
-    await sqlClient.execute({ sql: "INSERT INTO promo_redemptions (code, user_id) VALUES (?, ?)", args: [code, userId] });
-    await sqlClient.execute({ sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ?", args: [code] });
+    const res = await sqlClient.execute({
+      sql: "INSERT INTO promo_redemptions (code, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
+      args: [code, userId],
+    });
+    if (res.rowsAffected && res.rowsAffected > 0) {
+      await sqlClient.execute({ sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ?", args: [code] });
+      return true;
+    }
+    return false;
   } catch {
-    /* already recorded — composite PK makes this a no-op */
+    return false;
   }
 }
 

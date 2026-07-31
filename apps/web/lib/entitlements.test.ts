@@ -1,7 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
-const execute = vi.fn();
+// vi.mock factories are hoisted above top-level consts — create the mock fn
+// via vi.hoisted() to avoid a temporal-dead-zone ReferenceError.
+const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
 vi.mock("./db", () => ({
   sqlClient: { execute },
 }));

@@ -22,6 +22,15 @@ export function rateLimit(
   return { ok, remaining: Math.max(0, limit - b.count), resetAt: b.resetAt };
 }
 
+/** Reset rate limit buckets for a specific key or all keys. Useful for testing and admin resets. */
+export function clearRateLimit(key?: string): void {
+  if (key) {
+    buckets.delete(key);
+  } else {
+    buckets.clear();
+  }
+}
+
 // Occasional cleanup to bound memory.
 if (typeof setInterval !== "undefined") {
   setInterval(() => {

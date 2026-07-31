@@ -15,6 +15,11 @@ export type ApiKeyRow = {
   createdAt: string;
 };
 
+export function normalizeApiKeyLabel(label?: string): string | null {
+  const trimmed = label?.trim().replace(/\s+/g, " ");
+  return trimmed ? trimmed.slice(0, 60) : null;
+}
+
 /** Create an API key. The plaintext is returned once and never stored. */
 export async function createApiKey(
   userId: string,
@@ -27,7 +32,7 @@ export async function createApiKey(
   await sqlClient.execute({
     sql: `INSERT INTO api_keys (id, user_id, key_hash, key_prefix, label)
           VALUES (?, ?, ?, ?, ?)`,
-    args: [id, userId, hmac(plaintext, API_KEY_SALT), prefix, label?.slice(0, 60) || null],
+    args: [id, userId, hmac(plaintext, API_KEY_SALT), prefix, normalizeApiKeyLabel(label)],
   });
   return { plaintext, id, prefix };
 }

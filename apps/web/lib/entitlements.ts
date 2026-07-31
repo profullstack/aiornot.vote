@@ -2,6 +2,7 @@ import "server-only";
 import { sqlClient } from "./db";
 import { newId } from "@aiornot/db";
 import { randomToken, hmac } from "./crypto";
+import { normalizePromoPercentOff } from "./promo-form";
 
 const API_KEY_SALT = "aiornot-api-key";
 
@@ -134,7 +135,7 @@ export async function quotePromo(
   });
   if (dup.rows[0]) return { ok: false, error: "You've already used this code." };
 
-  const percentOff = Math.min(100, Math.max(1, Number(row.percent_off ?? 100)));
+  const percentOff = normalizePromoPercentOff(row.percent_off);
   const finalUsd = round2(baseUsd * (1 - percentOff / 100));
   return { ok: true, code, percentOff, baseUsd, finalUsd, free: finalUsd <= 0 };
 }
@@ -172,7 +173,7 @@ export async function listPromoCodes(): Promise<PromoCode[]> {
   );
   return r.rows.map((x) => ({
     code: x.code as string,
-    percentOff: Number(x.percent_off ?? 100),
+    percentOff: normalizePromoPercentOff(x.percent_off),
     appliesTo: (x.applies_to as string) || "any",
     active: Number(x.active) === 1,
     maxUses: x.max_uses == null ? null : Number(x.max_uses),

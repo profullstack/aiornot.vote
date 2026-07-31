@@ -4,12 +4,14 @@ import { normalizePromoMaxUses, normalizePromoPercentOff } from "./promo-form";
 describe("promo form normalization", () => {
   it("clamps decimal percent discounts to the allowed range", () => {
     expect(normalizePromoPercentOff("25")).toBe(25);
+    expect(normalizePromoPercentOff(25)).toBe(25);
     expect(normalizePromoPercentOff("0")).toBe(1);
     expect(normalizePromoPercentOff("150")).toBe(100);
   });
 
   it("falls back for invalid percent discounts", () => {
     expect(normalizePromoPercentOff("")).toBe(100);
+    expect(normalizePromoPercentOff("12.5")).toBe(100);
     expect(normalizePromoPercentOff("1e2")).toBe(100);
     expect(normalizePromoPercentOff("0x10")).toBe(100);
     expect(normalizePromoPercentOff("NaN")).toBe(100);

@@ -19,6 +19,34 @@ function abs(url: string): string {
   return url.startsWith("/") ? `${env.appUrl}${url}` : url;
 }
 
+function imageMimeType(url: string): string | null {
+  let path = url;
+  try {
+    path = new URL(url, env.appUrl).pathname;
+  } catch {
+    path = url.split(/[?#]/, 1)[0] ?? "";
+  }
+
+  const extension = path.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    case "avif":
+      return "image/avif";
+    case "svg":
+      return "image/svg+xml";
+    default:
+      return null;
+  }
+}
+
 export type FeedItem = {
   title: string;
   link: string;
@@ -101,15 +129,18 @@ export function mediaCardsToFeed(
 ): string {
   return buildRss({
     ...channel,
-    items: cards.map((m) => ({
-      title: m.title,
-      link: `${env.appUrl}/m/${m.slug}`,
-      guid: `media:${m.id}`,
-      pubDate: m.approvedAt || m.createdAt,
-      descriptionHtml: mediaItemDescription(m),
-      categories: m.tags.filter((t) => !t.isAnswerSpoiler).map((t) => t.slug),
-      enclosure: m.mediaType === "image" ? { url: abs(m.mediaUrl), type: "image/webp" } : undefined,
-    })),
+    items: cards.map((m) => {
+      const enclosureType = m.mediaType === "image" ? imageMimeType(m.mediaUrl) : null;
+      return {
+        title: m.title,
+        link: `${env.appUrl}/m/${m.slug}`,
+        guid: `media:${m.id}`,
+        pubDate: m.approvedAt || m.createdAt,
+        descriptionHtml: mediaItemDescription(m),
+        categories: m.tags.filter((t) => !t.isAnswerSpoiler).map((t) => t.slug),
+        enclosure: enclosureType ? { url: abs(m.mediaUrl), type: enclosureType } : undefined,
+      };
+    }),
   });
 }
 

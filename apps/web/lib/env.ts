@@ -27,8 +27,15 @@ export const env = {
   get isProd() {
     return this.nodeEnv === "production";
   },
-  sessionSecret:
-    process.env.SESSION_SECRET || "dev-only-insecure-change-me-0000000000000000",
+  get sessionSecret(): string {
+    const val = process.env.SESSION_SECRET;
+    if (!val && this.isProd) {
+      throw new Error(
+        "SESSION_SECRET must be set in production (env.ts)"
+      );
+    }
+    return val || "dev-only-insecure-change-me-0000000000000000";
+  },
   adminEmails: (process.env.ADMIN_EMAILS || "anthony@profullstack.com")
     .split(",")
     .map((e) => e.trim().toLowerCase())

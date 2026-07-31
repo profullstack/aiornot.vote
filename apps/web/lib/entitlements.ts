@@ -140,16 +140,29 @@ export async function quotePromo(
   return { ok: true, code, percentOff, baseUsd, finalUsd, free: finalUsd <= 0 };
 }
 
-/** Record a promo redemption (idempotent). Call once the discount is actually granted. */
-export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<void> {
+/**
+ * Record a promo redemption. Returns true if this call newly recorded the
+ * redemption, false if it was already recorded for this user+code.
+ *
+ * Uses INSERT OR IGNORE + a rowsAffected check so the duplicate guard is a
+ * single atomic statement instead of the separate check-then-record pair in
+ * quotePromo()/recordPromoRedemption() (fixes #92, TOCTOU). The composite PK
+ * (code, user_id) makes the INSERT itself the source of truth.
+ */
+export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<boolean> {
   const code = codeRaw.trim().toUpperCase();
-  if (!code) return;
-  try {
-    await sqlClient.execute({ sql: "INSERT INTO promo_redemptions (code, user_id) VALUES (?, ?)", args: [code, userId] });
-    await sqlClient.execute({ sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ?", args: [code] });
-  } catch {
-    /* already recorded — composite PK makes this a no-op */
-  }
+  if (!code) return false;
+  const res = await sqlClient.execute({
+    sql: "INSERT OR IGNORE INTO promo_redemptions (code, user_id) VALUES (?, ?)",
+    args: [code, userId],
+  });
+  if (Number(res.rowsAffected) !== 1) return false; // already recorded
+  // Atomic capped increment (also covered by #106): never over-redeem past max_uses.
+  await sqlClient.execute({
+    sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ? AND (max_uses IS NULL OR uses < max_uses)",
+    args: [code],
+  });
+  return true;
 }
 
 /** Apply the entitlement for a purpose directly (used for 100%-off comps). */

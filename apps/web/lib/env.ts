@@ -8,8 +8,17 @@ function bool(v: string | undefined, def = false): boolean {
 }
 
 function int(v: string | undefined, def: number): number {
+  if (v == null || v.trim() === "") return def;
+  if (!/^\d+$/.test(v.trim())) return def;
   const n = Number(v);
-  return Number.isFinite(n) ? n : def;
+  return Number.isSafeInteger(n) && n > 0 ? n : def;
+}
+
+function usd(v: string | undefined, def: number): number {
+  if (v == null || v.trim() === "") return def;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(v.trim())) return def;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : def;
 }
 
 export const env = {
@@ -61,9 +70,9 @@ export const env = {
   get coinpayConfigured() {
     return !!(this.coinpay.apiKey && this.coinpay.businessId);
   },
-  priceApiAccessUsd: Number(process.env.PRICE_API_ACCESS_USD || 1),
-  priceLifetimeUsd: Number(process.env.PRICE_LIFETIME_USD || 2),
-  pricePlayPassUsd: Number(process.env.PRICE_PLAY_PASS_USD || 1),
+  priceApiAccessUsd: usd(process.env.PRICE_API_ACCESS_USD, 1),
+  priceLifetimeUsd: usd(process.env.PRICE_LIFETIME_USD, 2),
+  pricePlayPassUsd: usd(process.env.PRICE_PLAY_PASS_USD, 1),
   cronSecret: process.env.CRON_SECRET || "",
 
   vapid: {

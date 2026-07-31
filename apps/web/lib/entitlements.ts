@@ -146,7 +146,12 @@ export async function recordPromoRedemption(codeRaw: string, userId: string): Pr
   if (!code) return;
   try {
     await sqlClient.execute({ sql: "INSERT INTO promo_redemptions (code, user_id) VALUES (?, ?)", args: [code, userId] });
-    await sqlClient.execute({ sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ?", args: [code] });
+    // Atomic capped increment: only bump uses while under max_uses so two
+    // concurrent redemptions cannot both pass the quote-time check (#92).
+    await sqlClient.execute({
+      sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ? AND (max_uses IS NULL OR uses < max_uses)",
+      args: [code],
+    });
   } catch {
     /* already recorded — composite PK makes this a no-op */
   }

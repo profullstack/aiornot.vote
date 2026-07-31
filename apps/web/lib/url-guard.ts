@@ -15,6 +15,7 @@ function isBlockedHost(host: string): boolean {
   const ipv4 = ipv4FromMappedIPv6(host) ?? host;
   return (
     ipv4 === "localhost" ||
+    ipv4.endsWith(".localhost") ||
     ipv4 === "0.0.0.0" ||
     ipv4 === "::1" ||
     ipv4 === "::" ||
@@ -42,7 +43,7 @@ export function validateExternalUrl(raw: string): { ok: true; url: URL } | { ok:
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     return { ok: false, error: "Only http and https URLs are allowed." };
   }
-  const host = url.hostname.toLowerCase().replace(/^\[(.*)\]$/, "$1");
+  const host = url.hostname.toLowerCase().replace(/^\[(.*)\]$/, "$1").replace(/\.+$/, "");
   if (isBlockedHost(host)) {
     return { ok: false, error: "That host is not allowed." };
   }

@@ -8,6 +8,11 @@ describe("validateExternalUrl (SSRF guard)", () => {
   it("blocks localhost", () => {
     expect(validateExternalUrl("http://localhost/x").ok).toBe(false);
   });
+  it("blocks internal hostnames with DNS root dots", () => {
+    expect(validateExternalUrl("http://localhost./x").ok).toBe(false);
+    expect(validateExternalUrl("http://app.localhost./x").ok).toBe(false);
+    expect(validateExternalUrl("http://metadata.google.internal./x").ok).toBe(false);
+  });
   it("blocks private 10.x", () => {
     expect(validateExternalUrl("http://10.0.0.5/x").ok).toBe(false);
   });

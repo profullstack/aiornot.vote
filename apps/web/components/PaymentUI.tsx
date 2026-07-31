@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CopyButton } from "./CopyButton";
 import { COINPAY_BLOCKCHAINS, coinpayBlockchainLabel } from "@/lib/coinpay-blockchains";
+import { paymentSuccessContent } from "@/lib/payment-success";
 
 export function BuyButton({
   purpose,
@@ -89,6 +90,7 @@ export function CheckoutPoller({
 }) {
   const [status, setStatus] = useState("pending");
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const success = paymentSuccessContent(purpose);
 
   useEffect(() => {
     if (status === "granted") return;
@@ -108,9 +110,7 @@ export function CheckoutPoller({
     return (
       <div className="form-card container-narrow">
         <h1>Payment confirmed ✓</h1>
-        {purpose === "lifetime_membership" ? (
-          <div className="form-ok">You&apos;re now a lifetime member. Enjoy your badge and free API keys.</div>
-        ) : apiKey ? (
+        {purpose === "api_access" && apiKey ? (
           <>
             <div className="form-ok">API access granted. Here&apos;s your API key — copy it now, it won&apos;t be shown again:</div>
             <div className="field">
@@ -119,11 +119,11 @@ export function CheckoutPoller({
             <CopyButton text={apiKey} label="Copy API key" />
           </>
         ) : (
-          <div className="form-ok">API access granted. Manage your keys in your account.</div>
+          <div className="form-ok">{success.message}</div>
         )}
         <p style={{ marginTop: 16 }}>
-          <Link href="/account" className="btn btn-primary">Go to account →</Link>
-          {purpose === "api_access" && <> · <Link href="/api">API docs</Link></>}
+          <Link href={success.primaryHref} className="btn btn-primary">{success.primaryLabel}</Link>
+          {success.showApiDocs && <> · <Link href="/api">API docs</Link></>}
         </p>
       </div>
     );

@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
     "local";
-  const rl = rateLimit(`resend:${hashIp(ip)}`, 3, 5 * 60_000);
+  const rl = await rateLimit(`resend:${hashIp(ip)}`, 3, 5 * 60_000);
   if (!rl.ok) {
     return NextResponse.json({ ok: false, error: "Please wait before requesting again." }, { status: 429 });
   }

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   if (!auth) {
     return NextResponse.json({ error: "Invalid or missing API key." }, { status: 401 });
   }
-  if (!rateLimit(`v1:${auth.keyId}`, 60, 60_000).ok) {
+  if (!(await rateLimit(`v1:${auth.keyId}`, 60, 60_000)).ok) {
     return NextResponse.json({ error: "Rate limit exceeded." }, { status: 429 });
   }
 

@@ -6,6 +6,9 @@ export function normalizeSponsorAmountUsd(
   if (typeof value === "string" && !/^\d+(?:\.\d+)?$/.test(value.trim())) {
     return { ok: false, error: "Enter a valid sponsorship amount." };
   }
+  if (typeof value !== "string" && typeof value !== "number") {
+    return { ok: false, error: "Enter a valid sponsorship amount." };
+  }
 
   const amount = Math.round(Number(value) * 100) / 100;
   if (!Number.isFinite(amount)) {

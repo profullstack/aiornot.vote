@@ -34,4 +34,19 @@ describe("normalizeSponsorAmountUsd", () => {
       error: "Enter a valid sponsorship amount.",
     });
   });
+
+  it("rejects non-string and non-number values before numeric coercion", () => {
+    expect(normalizeSponsorAmountUsd([5])).toEqual({
+      ok: false,
+      error: "Enter a valid sponsorship amount.",
+    });
+    expect(normalizeSponsorAmountUsd({ valueOf: () => 5 })).toEqual({
+      ok: false,
+      error: "Enter a valid sponsorship amount.",
+    });
+    expect(normalizeSponsorAmountUsd(true)).toEqual({
+      ok: false,
+      error: "Enter a valid sponsorship amount.",
+    });
+  });
 });

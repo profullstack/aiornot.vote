@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { internalReturnPath } from "@/lib/internal-return-path";
 
 export function SignupForm() {
   const router = useRouter();
@@ -76,6 +77,8 @@ export function SignupForm() {
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = internalReturnPath(searchParams.get("next"));
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -95,7 +98,7 @@ export function LoginForm() {
         setErr(data.error || "Could not sign in.");
         return;
       }
-      router.push("/account");
+      router.push(nextPath);
       router.refresh();
     } catch {
       setErr("Network error — please try again.");

@@ -3,12 +3,18 @@
  * obvious private / internal hosts. DNS-rebinding is out of scope for the MVP.
  */
 function ipv4FromMappedIPv6(host: string): string | null {
-  const match = host.match(/^::ffff:(?:0:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
-  if (!match) return null;
-  const high = Number.parseInt(match[1]!, 16);
-  const low = Number.parseInt(match[2]!, 16);
-  if (high > 0xffff || low > 0xffff) return null;
-  return `${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`;
+  // Hex format: ::ffff:xxxx:xxxx (two 16-bit hex groups)
+  let match = host.match(/^::ffff:(?:0:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  if (match) {
+    const high = Number.parseInt(match[1]!, 16);
+    const low = Number.parseInt(match[2]!, 16);
+    if (high > 0xffff || low > 0xffff) return null;
+    return `${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`;
+  }
+  // Dotted-quad format: ::ffff:192.168.1.1
+  match = host.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i);
+  if (match) return match[1];
+  return null;
 }
 
 function isBlockedHost(host: string): boolean {

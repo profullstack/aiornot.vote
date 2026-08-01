@@ -62,4 +62,23 @@ describe("recordPromoRedemption (atomic duplicate guard, #92)", () => {
     expect(ok).toBe(false);
     expect(execute).not.toHaveBeenCalled();
   });
+
+  // The grant (and its one-time API key) is already issued by the time we get
+  // here, so a DB blip must not escape and 500 the caller's response.
+  it("swallows a failing INSERT and returns false", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    execute.mockRejectedValueOnce(new Error("db unreachable"));
+    await expect(recordPromoRedemption("SUMMER25", "user_1")).resolves.toBe(false);
+    expect(err).toHaveBeenCalled();
+    err.mockRestore();
+  });
+
+  it("swallows a failing uses increment but still reports the recorded row", async () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    execute.mockResolvedValueOnce({ rows: [], rowsAffected: 1 }); // INSERT OR IGNORE landed
+    execute.mockRejectedValueOnce(new Error("db unreachable")); // UPDATE uses blew up
+    await expect(recordPromoRedemption("SUMMER25", "user_1")).resolves.toBe(true);
+    expect(err).toHaveBeenCalled();
+    err.mockRestore();
+  });
 });

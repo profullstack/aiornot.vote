@@ -61,6 +61,7 @@ export const env = {
   maxVideoDurationSeconds: int(process.env.MAX_VIDEO_DURATION_SECONDS, 30),
 
   rssCacheSeconds: int(process.env.RSS_CACHE_SECONDS, 300),
+  prizeMinScored: int(process.env.PRIZE_MIN_SCORED, 3),
   voteSalt: process.env.VOTE_SALT || "dev-vote-salt",
   submissionSalt: process.env.SUBMISSION_SALT || "dev-submission-salt",
   rateLimitSalt: process.env.RATE_LIMIT_SALT || "dev-rate-limit-salt",

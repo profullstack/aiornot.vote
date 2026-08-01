@@ -16,6 +16,7 @@ function isBlockedHost(host: string): boolean {
   return (
     ipv4 === "localhost" ||
     ipv4.endsWith(".localhost") ||
+    ipv4 === "0" ||              // "0" resolves to 0.0.0.0
     ipv4 === "0.0.0.0" ||
     ipv4 === "::1" ||
     ipv4 === "::" ||

@@ -51,23 +51,43 @@ export async function createCoinpayPayment(args: {
   }
 }
 
-/** Fetch current payment status from CoinPay. */
-export async function getCoinpayPayment(id: string): Promise<CoinpayPayment | null> {
-  if (!env.coinpayConfigured) return null;
+export type CoinpayFetchResult =
+  | { ok: true; payment: CoinpayPayment }
+  | { ok: false; error: string };
+
+/** Fetch current payment status from CoinPay with detailed error reporting. */
+export async function getCoinpayPaymentDetailed(id: string): Promise<CoinpayFetchResult> {
+  if (!env.coinpayConfigured) {
+    return { ok: false, error: "CoinPay payments are not configured on this server." };
+  }
   try {
     const res = await fetch(`${env.coinpay.baseUrl}/payments/${id}`, {
       headers: { Authorization: `Bearer ${env.coinpay.apiKey}` },
     });
     if (!res.ok) {
-      console.error(`[coinpay] status fetch failed for ${id}: HTTP ${res.status}`);
-      return null;
+      const errText = `CoinPay status fetch failed for payment ${id}: HTTP ${res.status}`;
+      console.error(`[coinpay] ${errText}`);
+      return { ok: false, error: errText };
     }
     const data = (await res.json()) as { payment?: CoinpayPayment } & CoinpayPayment;
-    return data.payment ?? (data.id ? data : null);
+    const payment = data.payment ?? (data.id ? data : null);
+    if (!payment) {
+      const payloadErr = `CoinPay payment ${id} returned invalid or empty payment payload.`;
+      console.error(`[coinpay] ${payloadErr}`);
+      return { ok: false, error: payloadErr };
+    }
+    return { ok: true, payment };
   } catch (err) {
-    console.error(`[coinpay] status fetch error for ${id}:`, (err as Error).message);
-    return null;
+    const msg = (err as Error).message;
+    console.error(`[coinpay] status fetch error for ${id}:`, msg);
+    return { ok: false, error: msg };
   }
+}
+
+/** Fetch current payment status from CoinPay (returns null on failure/unconfigured). */
+export async function getCoinpayPayment(id: string): Promise<CoinpayPayment | null> {
+  const result = await getCoinpayPaymentDetailed(id);
+  return result.ok ? result.payment : null;
 }
 
 /** CoinPay marks a payment done via these statuses. */

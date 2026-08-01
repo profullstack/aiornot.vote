@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { createApiKey, listApiKeys, revokeApiKey } from "@/lib/entitlements";
+import { readApiKeyRequest } from "@/lib/api-key-request";
 
 export const runtime = "nodejs";
 
@@ -20,8 +21,11 @@ export async function POST(req: Request) {
       { status: 402 },
     );
   }
-  const body = await req.json().catch(() => ({}));
-  const created = await createApiKey(user.id, String(body.label || "API key"));
+  const body = await readApiKeyRequest(req);
+  if (!body.ok) {
+    return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
+  }
+  const created = await createApiKey(user.id, body.label);
   return NextResponse.json({ ok: true, apiKey: created.plaintext, prefix: created.prefix });
 }
 

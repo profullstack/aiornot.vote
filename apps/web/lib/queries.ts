@@ -299,14 +299,23 @@ export type TagRow = {
   mediaCount: number;
 };
 
+// Public tag pages use the default media feed, which excludes anything carrying
+// a members-only tag. Keep their displayed counts aligned with that feed while
+// still counting all approved media on the members-only collection itself.
+const TAG_MEDIA_COUNT_SQL = `(SELECT COUNT(*) FROM media_tags mt JOIN media m ON m.id = mt.media_id
+  WHERE mt.tag_id = t.id AND m.status = 'approved'
+    AND (t.members_only = 1 OR NOT EXISTS (
+      SELECT 1 FROM media_tags gated_mt JOIN tags gated_t ON gated_t.id = gated_mt.tag_id
+      WHERE gated_mt.media_id = m.id AND gated_t.members_only = 1
+    )))`;
+
 export async function listTags(opts?: { defaultsOnly?: boolean; hideSpoilers?: boolean }): Promise<TagRow[]> {
   const where: string[] = ["t.is_visible = 1"];
   if (opts?.defaultsOnly) where.push("t.is_default = 1");
   if (opts?.hideSpoilers) where.push("t.is_answer_spoiler = 0");
   const res = await sqlClient.execute(
     `SELECT t.slug, t.name, t.description, t.is_default, t.is_answer_spoiler, t.members_only,
-            (SELECT COUNT(*) FROM media_tags mt JOIN media m ON m.id = mt.media_id
-             WHERE mt.tag_id = t.id AND m.status = 'approved') AS media_count
+            ${TAG_MEDIA_COUNT_SQL} AS media_count
      FROM tags t WHERE ${where.join(" AND ")}
      ORDER BY media_count DESC, t.name ASC`,
   );
@@ -324,8 +333,7 @@ export async function listTags(opts?: { defaultsOnly?: boolean; hideSpoilers?: b
 export async function getTagBySlug(slug: string): Promise<TagRow | null> {
   const res = await sqlClient.execute({
     sql: `SELECT t.slug, t.name, t.description, t.is_default, t.is_answer_spoiler, t.members_only,
-            (SELECT COUNT(*) FROM media_tags mt JOIN media m ON m.id = mt.media_id
-             WHERE mt.tag_id = t.id AND m.status = 'approved') AS media_count
+            ${TAG_MEDIA_COUNT_SQL} AS media_count
           FROM tags t WHERE t.slug = ? LIMIT 1`,
     args: [slug],
   });

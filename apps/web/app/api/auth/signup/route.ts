@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Try again soon." }, { status: 429 });
   }
 
-  let body: { email?: string; password?: string; displayName?: string; ref?: string };
+  let body: { email?: string; password?: string; displayName?: unknown; ref?: string };
   try {
     body = await req.json();
   } catch {
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const result = await signup(
     String(body.email || ""),
     String(body.password || ""),
-    body.displayName ? String(body.displayName) : undefined,
+    body.displayName,
     ref,
   );
   if (!result.ok) {

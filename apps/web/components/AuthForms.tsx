@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { internalReturnPath } from "@/lib/internal-return-path";
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/profile";
 
 export function SignupForm() {
   const router = useRouter();
@@ -53,7 +54,12 @@ export function SignupForm() {
       <form onSubmit={onSubmit}>
         <div className="field">
           <label htmlFor="displayName">Display name</label>
-          <input id="displayName" name="displayName" placeholder="How you appear on leaderboards" />
+          <input
+            id="displayName"
+            name="displayName"
+            maxLength={DISPLAY_NAME_MAX_LENGTH}
+            placeholder="How you appear on leaderboards"
+          />
         </div>
         <div className="field">
           <label htmlFor="email">Email</label>

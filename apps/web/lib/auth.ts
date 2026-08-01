@@ -6,6 +6,7 @@ import { randomToken, hmac } from "./crypto";
 import { env, isAdminEmail } from "./env";
 import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
 import { recordReferralOnSignup, rewardReferralOnVerify } from "./referrals";
+import { normalizeDisplayName } from "./profile";
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -44,7 +45,7 @@ export type SignupResult =
 export async function signup(
   emailRaw: string,
   password: string,
-  displayName?: string,
+  displayName?: unknown,
   referralCode?: string | null,
 ): Promise<SignupResult> {
   const email = emailRaw.trim();
@@ -54,6 +55,10 @@ export async function signup(
   }
   if (password.length < 8) {
     return { ok: false, error: "Password must be at least 8 characters." };
+  }
+  const normalizedDisplayName = normalizeDisplayName(displayName ?? "");
+  if (!normalizedDisplayName.ok) {
+    return normalizedDisplayName;
   }
 
   const existing = await sqlClient.execute({
@@ -81,14 +86,14 @@ export async function signup(
                 status = 'pending_email_verification', email_verified_at = NULL,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
-      args: [pw, displayName?.trim() || null, role, userId],
+      args: [pw, normalizedDisplayName.displayName, role, userId],
     });
   } else {
     userId = ids.user();
     await sqlClient.execute({
       sql: `INSERT INTO users (id, email, email_normalized, password_hash, display_name, status, role)
             VALUES (?, ?, ?, ?, ?, 'pending_email_verification', ?)`,
-      args: [userId, email, normalized, pw, displayName?.trim() || null, role],
+      args: [userId, email, normalized, pw, normalizedDisplayName.displayName, role],
     });
   }
   await sqlClient.execute({

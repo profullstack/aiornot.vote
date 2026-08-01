@@ -71,10 +71,13 @@ export type FollowRankRow = { rank: number; userId: string; displayName: string;
 async function followRanking(kind: "followers" | "following", limit: number): Promise<FollowRankRow[]> {
   // followers = ranked by inbound edges (followee_id); following = outbound (follower_id).
   const groupCol = kind === "followers" ? "followee_id" : "follower_id";
+  const countedCol = kind === "followers" ? "follower_id" : "followee_id";
   const r = await sqlClient.execute({
-    sql: `SELECT f.${groupCol} AS uid, COUNT(*) AS c, u.display_name AS name
-          FROM follows f JOIN users u ON u.id = f.${groupCol}
-          WHERE u.status = 'active'
+    sql: `SELECT f.${groupCol} AS uid, COUNT(*) AS c, ranked.display_name AS name
+          FROM follows f
+          JOIN users ranked ON ranked.id = f.${groupCol}
+          JOIN users counted ON counted.id = f.${countedCol}
+          WHERE ranked.status = 'active' AND counted.status = 'active'
           GROUP BY f.${groupCol}
           ORDER BY c DESC, name ASC
           LIMIT ?`,

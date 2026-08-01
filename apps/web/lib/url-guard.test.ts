@@ -31,8 +31,12 @@ describe("validateExternalUrl (SSRF guard)", () => {
     expect(validateExternalUrl("http://[::ffff:192.168.1.1]/x").ok).toBe(false);
     expect(validateExternalUrl("http://[::ffff:169.254.169.254]/x").ok).toBe(false);
   });
-  it("allows IPv4-mapped IPv6 public literals", () => {
+  it("blocks IPv4-mapped IPv6 public literals", () => {
     expect(validateExternalUrl("http://[::ffff:93.184.216.34]/x").ok).toBe(true);
+  });
+  it("blocks hostname '0' (resolves to 0.0.0.0)", () => {
+    expect(validateExternalUrl("http://0/").ok).toBe(false);
+    expect(validateExternalUrl("http://0:8080/").ok).toBe(false);
   });
   it("blocks non-http schemes", () => {
     expect(validateExternalUrl("file:///etc/passwd").ok).toBe(false);

@@ -148,21 +148,34 @@ export async function quotePromo(
  * single atomic statement instead of the separate check-then-record pair in
  * quotePromo()/recordPromoRedemption() (fixes #92, TOCTOU). The composite PK
  * (code, user_id) makes the INSERT itself the source of truth.
+ *
+ * Never throws. Callers grant the entitlement BEFORE recording the redemption,
+ * and the grant response carries the one-time API key plaintext — letting a DB
+ * blip escape here would 500 that response and lose the key for good. Log and
+ * report "not newly recorded" instead.
  */
 export async function recordPromoRedemption(codeRaw: string, userId: string): Promise<boolean> {
   const code = codeRaw.trim().toUpperCase();
   if (!code) return false;
-  const res = await sqlClient.execute({
-    sql: "INSERT OR IGNORE INTO promo_redemptions (code, user_id) VALUES (?, ?)",
-    args: [code, userId],
-  });
-  if (Number(res.rowsAffected) !== 1) return false; // already recorded
-  // Atomic capped increment (also covered by #106): never over-redeem past max_uses.
-  await sqlClient.execute({
-    sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ? AND (max_uses IS NULL OR uses < max_uses)",
-    args: [code],
-  });
-  return true;
+  // Tracked outside the try so a failed counter bump still reports the
+  // redemption that did land, rather than claiming it never happened.
+  let recorded = false;
+  try {
+    const res = await sqlClient.execute({
+      sql: "INSERT OR IGNORE INTO promo_redemptions (code, user_id) VALUES (?, ?)",
+      args: [code, userId],
+    });
+    if (Number(res.rowsAffected) !== 1) return false; // already recorded
+    recorded = true;
+    // Atomic capped increment (also covered by #106): never over-redeem past max_uses.
+    await sqlClient.execute({
+      sql: "UPDATE promo_codes SET uses = uses + 1 WHERE code = ? AND (max_uses IS NULL OR uses < max_uses)",
+      args: [code],
+    });
+  } catch (err) {
+    console.error(`[promo] failed to record redemption of ${code}:`, (err as Error).message);
+  }
+  return recorded;
 }
 
 /** Apply the entitlement for a purpose directly (used for 100%-off comps). */

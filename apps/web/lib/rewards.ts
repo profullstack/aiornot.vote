@@ -105,6 +105,14 @@ async function resultText(mediaId: string, kind: PowerupKind): Promise<string> {
 
 export type UseResult = { ok: true; kind: PowerupKind; text: string; balances: Balances } | { ok: false; error: string };
 
+async function hasPowerupUse(userId: string, mediaId: string, kind: PowerupKind): Promise<boolean> {
+  const use = await sqlClient.execute({
+    sql: "SELECT 1 FROM powerup_uses WHERE user_id = ? AND media_id = ? AND kind = ? LIMIT 1",
+    args: [userId, mediaId, kind],
+  });
+  return use.rows.length > 0;
+}
+
 async function canUsePowerupOnMedia(userId: string, mediaId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const media = await sqlClient.execute({
     sql: "SELECT status FROM media WHERE id = ? LIMIT 1",
@@ -137,17 +145,51 @@ export async function spendPowerup(userId: string, mediaId: string, kind: Poweru
   const allowed = await canUsePowerupOnMedia(userId, mediaId);
   if (!allowed.ok) return allowed;
 
-  const already = await sqlClient.execute({ sql: "SELECT 1 FROM powerup_uses WHERE user_id = ? AND media_id = ? AND kind = ? LIMIT 1", args: [userId, mediaId, kind] });
-  if (already.rows.length > 0) {
+  if (await hasPowerupUse(userId, mediaId, kind)) {
     return { ok: true, kind, text: await resultText(mediaId, kind), balances: await getBalances(userId) };
   }
   await ensureRow(userId);
-  // Atomically consume one, only if available.
-  const dec = await sqlClient.execute({ sql: `UPDATE user_powerups SET ${COL[kind]} = ${COL[kind]} - 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND ${COL[kind]} > 0`, args: [userId] });
-  if (dec.rowsAffected === 0) {
+
+  const useId = newId("pwu");
+  // Claim this user/media/kind tuple and debit its balance in one transaction.
+  // The unique use row elects a single winner when duplicate requests race;
+  // only that request's generated id is allowed to decrement the balance.
+  const [claim, dec] = await sqlClient.batch(
+    [
+      {
+        sql: `INSERT OR IGNORE INTO powerup_uses (id, user_id, media_id, kind)
+              SELECT ?, ?, ?, ?
+              WHERE EXISTS (
+                SELECT 1 FROM user_powerups WHERE user_id = ? AND ${COL[kind]} > 0
+              )`,
+        args: [useId, userId, mediaId, kind, userId],
+      },
+      {
+        sql: `UPDATE user_powerups
+              SET ${COL[kind]} = ${COL[kind]} - 1, updated_at = CURRENT_TIMESTAMP
+              WHERE user_id = ? AND ${COL[kind]} > 0
+                AND EXISTS (SELECT 1 FROM powerup_uses WHERE id = ?)`,
+        args: [userId, useId],
+      },
+    ],
+    "write",
+  );
+
+  if (claim.rowsAffected === 0) {
+    // A concurrent request may have claimed the same unlock first. Preserve
+    // the existing idempotent behavior instead of reporting a false shortage.
+    if (await hasPowerupUse(userId, mediaId, kind)) {
+      return { ok: true, kind, text: await resultText(mediaId, kind), balances: await getBalances(userId) };
+    }
     return { ok: false, error: "You don't have that reward yet — build a streak to earn it." };
   }
-  await sqlClient.execute({ sql: "INSERT OR IGNORE INTO powerup_uses (id, user_id, media_id, kind) VALUES (?, ?, ?, ?)", args: [newId("pwu"), userId, mediaId, kind] });
+  if (dec.rowsAffected === 0) {
+    // Defensive cleanup: the balance predicate should make this unreachable,
+    // but never leave an uncharged unlock behind if the debit did not land.
+    await sqlClient.execute({ sql: "DELETE FROM powerup_uses WHERE id = ?", args: [useId] });
+    return { ok: false, error: "You don't have that reward yet — build a streak to earn it." };
+  }
+
   try {
     const text = await resultText(mediaId, kind);
     return { ok: true, kind, text, balances: await getBalances(userId) };

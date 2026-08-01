@@ -29,8 +29,14 @@ export async function isFollowing(followerId: string, followeeId: string): Promi
 export async function getFollowCounts(userId: string): Promise<FollowCounts> {
   const r = await sqlClient.execute({
     sql: `SELECT
-            (SELECT COUNT(*) FROM follows WHERE followee_id = ?) AS followers,
-            (SELECT COUNT(*) FROM follows WHERE follower_id = ?) AS following`,
+            (SELECT COUNT(*)
+             FROM follows f
+             JOIN users u ON u.id = f.follower_id
+             WHERE f.followee_id = ? AND u.status = 'active') AS followers,
+            (SELECT COUNT(*)
+             FROM follows f
+             JOIN users u ON u.id = f.followee_id
+             WHERE f.follower_id = ? AND u.status = 'active') AS following`,
     args: [userId, userId],
   });
   const row = r.rows[0];

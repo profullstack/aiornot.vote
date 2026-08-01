@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { validateExternalUrl, domainOf } from "./url-guard";
+import { ipv4FromMappedIPv6, validateExternalUrl, domainOf } from "./url-guard";
+
+describe("ipv4FromMappedIPv6", () => {
+  it("converts dotted-quad IPv4-mapped IPv6 literals", () => {
+    expect(ipv4FromMappedIPv6("::ffff:192.168.1.1")).toBe("192.168.1.1");
+    expect(ipv4FromMappedIPv6("::ffff:0:169.254.169.254")).toBe("169.254.169.254");
+  });
+  it("rejects dotted-quad octets outside the IPv4 range", () => {
+    expect(ipv4FromMappedIPv6("::ffff:256.0.0.1")).toBe(null);
+  });
+});
 
 describe("validateExternalUrl (SSRF guard)", () => {
   it("allows public https URLs", () => {

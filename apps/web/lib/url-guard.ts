@@ -2,7 +2,14 @@
  * Basic SSRF guard for user-provided media URLs. Blocks non-http(s) schemes and
  * obvious private / internal hosts. DNS-rebinding is out of scope for the MVP.
  */
-function ipv4FromMappedIPv6(host: string): string | null {
+export function ipv4FromMappedIPv6(host: string): string | null {
+  const dotted = host.match(/^::ffff:(?:0:)?(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/i);
+  if (dotted) {
+    const octets = dotted.slice(1).map(Number);
+    if (octets.some((octet) => octet > 255)) return null;
+    return octets.join(".");
+  }
+
   const match = host.match(/^::ffff:(?:0:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
   if (!match) return null;
   const high = Number.parseInt(match[1]!, 16);

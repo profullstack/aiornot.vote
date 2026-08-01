@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { LogoutButton, ResendVerification } from "@/components/AuthForms";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { ProfileSettings } from "@/components/ProfileSettings";
 
 export const metadata = { title: "Account settings" };
 export const dynamic = "force-dynamic";
@@ -16,10 +17,7 @@ export default async function SettingsPage() {
         <label>Email</label>
         <input value={user.email} readOnly />
       </div>
-      <div className="field">
-        <label>Display name</label>
-        <input value={user.displayName || ""} readOnly placeholder="(not set)" />
-      </div>
+      <ProfileSettings initialDisplayName={user.displayName} />
       <div className="field">
         <label>Status</label>
         <input value={`${user.status}${user.emailVerified ? " · verified" : " · unverified"}`} readOnly />

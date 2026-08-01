@@ -2,13 +2,20 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { sqlClient } from "@/lib/db";
 import { getBalances } from "@/lib/rewards";
+import { hashIp } from "@/lib/crypto";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Returns a batch of approved media the signed-in user hasn't guessed yet. */
-export async function GET() {
+export async function GET(req: Request) {
   const user = await getCurrentUser();
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const rateLimitKey = user ? `play-queue:${user.id}` : `play-queue-anon:${hashIp(ip)}`;
+  if (!rateLimit(rateLimitKey, 30, 60_000).ok) {
+    return NextResponse.json({ ok: false, error: "Too many requests." }, { status: 429 });
+  }
   const args: unknown[] = [];
   let notGuessed = "";
   if (user) {

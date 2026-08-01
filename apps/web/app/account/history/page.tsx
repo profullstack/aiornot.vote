@@ -27,6 +27,11 @@ export default async function HistoryPage({
     tag: sp.tag,
     mediaType: sp.media_type,
   });
+  const exportParams = new URLSearchParams();
+  if (result) exportParams.set("result", result);
+  if (sp.tag) exportParams.set("tag", sp.tag);
+  if (sp.media_type) exportParams.set("media_type", sp.media_type);
+  const exportHref = `/api/account/history/export${exportParams.size ? `?${exportParams.toString()}` : ""}`;
 
   return (
     <div className="container" style={{ padding: "32px 24px" }}>
@@ -42,6 +47,7 @@ export default async function HistoryPage({
               </Link>
             );
           })}
+          <a href={exportHref}>Export CSV</a>
         </div>
       </div>
 

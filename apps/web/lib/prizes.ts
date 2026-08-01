@@ -12,7 +12,6 @@ export const BASE_REWARDS: Array<{ kind: string; label: string }> = [
   { kind: "crawlproof_25", label: "25% off CrawlProof.com fill-ups" },
 ];
 
-const PRIZE_MIN_SCORED = Number(process.env.PRIZE_MIN_SCORED || 3);
 const CLAIM_WINDOW_DAYS = 7;
 
 export type PrizeRow = {
@@ -64,7 +63,7 @@ async function winnersForPeriod(startISO: string, endISO: string, limit: number)
           HAVING scored >= ?
           ORDER BY correct DESC, (CAST(correct AS REAL) / scored) DESC, scored DESC, last DESC
           LIMIT ?`,
-    args: [startISO, endISO, PRIZE_MIN_SCORED, limit],
+    args: [startISO, endISO, env.prizeMinScored, limit],
   });
   return res.rows.map((r) => ({ userId: r.user_id as string, correct: Number(r.correct), scored: Number(r.scored) }));
 }

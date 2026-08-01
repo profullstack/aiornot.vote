@@ -145,6 +145,21 @@ export async function castGuess(
   });
   const s = stored.rows[0]!;
 
+  // If a concurrent request inserted a different guess, return the stored vote
+  // with alreadyVoted=true to signal the conflict.
+  if (s.guess !== guess) {
+    return {
+      ok: true,
+      guess: s.guess as "ai" | "not_ai",
+      scored: Number(s.is_scored) === 1,
+      isCorrect: s.is_correct == null ? null : Number(s.is_correct) === 1,
+      truthLabel,
+      revealTruth: truthLabel !== "unknown",
+      alreadyVoted: true,
+      stats: await readMediaStats(mediaId),
+    };
+  }
+
   const stats = await recomputeMediaStats(mediaId, truthLabel);
   await recomputeUserStats(userId);
 

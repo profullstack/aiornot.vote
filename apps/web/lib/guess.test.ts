@@ -120,4 +120,50 @@ describe("guess members-only access", () => {
       expect.objectContaining({ sql: expect.stringContaining("FROM media_tags mt JOIN tags") }),
     );
   });
+
+  it("handles race condition: concurrent votes return stored guess with alreadyVoted=true", async () => {
+    mocks.execute.mockImplementation(async (query: unknown) => {
+      const sql = sqlText(query);
+      if (sql.includes("FROM media WHERE id = ?")) {
+        return {
+          rows: [{
+            id: "media_1",
+            truth_label: "ai",
+            is_score_eligible: 1,
+            reveal_status: "hidden_until_guess",
+            status: "approved",
+          }],
+        };
+      }
+      if (sql.includes("FROM media_tags mt JOIN tags")) {
+        return { rows: [] };
+      }
+      if (sql.includes("FROM guesses WHERE media_id = ? AND user_id = ?")) {
+        // First call: no existing vote, second call (after INSERT): return the other guess
+        return { rows: [] };
+      }
+      if (sql.includes("INSERT INTO guesses")) {
+        // Simulate DO NOTHING - no rows affected
+        return { rows: [], rowsAffected: 0 };
+      }
+      if (sql.includes("SELECT guess, is_correct, is_scored FROM guesses")) {
+        // Return a different guess than requested (simulating race winner)
+        return { rows: [{ guess: "not_ai", is_correct: 0, is_scored: 1 }] };
+      }
+      if (sql.includes("FROM media_stats")) {
+        return { rows: [{ ai_guesses: 3, not_ai_guesses: 1, total_guesses: 4 }] };
+      }
+      if (sql.includes("FROM user_stats")) {
+        return { rows: [{ current_streak: 0 }] };
+      }
+      throw new Error(`Unexpected query: ${sql}`);
+    });
+
+    // User requests "ai" but race winner was "not_ai"
+    const result = await castGuess("user_1", "media_1", "ai", null, null, true);
+    expect(result.ok).toBe(true);
+    expect(result.guess).toBe("not_ai"); // Returns the race winner's guess
+    expect(result.alreadyVoted).toBe(true); // Signals conflict
+    expect(result.alreadyVoted).not.toBe(false);
+  });
 });

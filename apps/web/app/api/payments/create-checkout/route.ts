@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   if (!env.coinpayConfigured) {
     return NextResponse.json({ ok: false, error: "Payments are not configured." }, { status: 400 });
   }
-  if (!rateLimit(`checkout:${user.id}`, 10, 5 * 60_000).ok) {
+  if (!(await rateLimit(`checkout:${user.id}`, 10, 5 * 60_000)).ok) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Try again soon." }, { status: 429 });
   }
 

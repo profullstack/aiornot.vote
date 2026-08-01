@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   if (!user.emailVerified) {
     return NextResponse.json({ ok: false, error: "Verify your email before inviting friends." }, { status: 403 });
   }
-  const rl = rateLimit(`invite:${user.id}`, 5, 60_000);
+  const rl = await rateLimit(`invite:${user.id}`, 5, 60_000);
   if (!rl.ok) {
     return NextResponse.json({ ok: false, error: "Slow down — try again in a minute." }, { status: 429 });
   }

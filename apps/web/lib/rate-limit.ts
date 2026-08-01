@@ -1,31 +1,53 @@
-/**
- * Minimal in-memory fixed-window rate limiter. Good enough for the MVP on a
- * single Railway instance; swap for Upstash/Redis when horizontally scaled.
- */
-type Bucket = { count: number; resetAt: number };
-const buckets = new Map<string, Bucket>();
+import "server-only";
+import { sqlClient } from "./db";
 
-export function rateLimit(
+export type RateLimitResult = { ok: boolean; remaining: number; resetAt: number };
+
+let lastCleanup = 0;
+
+/**
+ * Fixed-window rate limiter backed by the database so limits hold across
+ * multiple app instances (fixes #91). Each bucket row is updated atomically
+ * via an upsert; expired windows reset in place. Call sites must `await`.
+ */
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number,
-): { ok: boolean; remaining: number; resetAt: number } {
+): Promise<RateLimitResult> {
   const now = Date.now();
-  const b = buckets.get(key);
-  if (!b || b.resetAt < now) {
-    const resetAt = now + windowMs;
-    buckets.set(key, { count: 1, resetAt });
-    return { ok: true, remaining: limit - 1, resetAt };
-  }
-  b.count++;
-  const ok = b.count <= limit;
-  return { ok, remaining: Math.max(0, limit - b.count), resetAt: b.resetAt };
-}
+  const resetAt = now + windowMs;
 
-// Occasional cleanup to bound memory.
-if (typeof setInterval !== "undefined") {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [k, v] of buckets) if (v.resetAt < now) buckets.delete(k);
-  }, 60_000).unref?.();
+  await sqlClient.execute({
+    sql: `INSERT INTO rate_limits (bucket_key, bucket_count, reset_at)
+          VALUES (?, 1, ?)
+          ON CONFLICT(bucket_key) DO UPDATE SET
+            bucket_count = CASE WHEN rate_limits.reset_at <= ? THEN 1 ELSE rate_limits.bucket_count + 1 END,
+            reset_at     = CASE WHEN rate_limits.reset_at <= ? THEN ? ELSE rate_limits.reset_at END`,
+    args: [key, resetAt, now, now, resetAt],
+  });
+
+  const r = await sqlClient.execute({
+    sql: "SELECT bucket_count, reset_at FROM rate_limits WHERE bucket_key = ?",
+    args: [key],
+  });
+  const row = r.rows[0];
+  const count = Number(row?.bucket_count ?? 1);
+  const effectiveResetAt = Number(row?.reset_at ?? resetAt);
+
+  // Opportunistic cleanup (at most once a minute) so expired buckets don't
+  // accumulate forever. Best-effort — never fail a request over cleanup.
+  if (now - lastCleanup > 60_000) {
+    lastCleanup = now;
+    try {
+      await sqlClient.execute({
+        sql: "DELETE FROM rate_limits WHERE reset_at < ?",
+        args: [now - 86_400_000],
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return { ok: count <= limit, remaining: Math.max(0, limit - count), resetAt: effectiveResetAt };
 }

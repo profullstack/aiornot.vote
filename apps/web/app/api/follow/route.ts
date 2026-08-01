@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!canParticipate(user)) {
     return NextResponse.json({ ok: false, error: "Verify your email first." }, { status: 403 });
   }
-  if (!rateLimit(`follow:${user.id}`, 60, 60_000).ok) {
+  if (!(await rateLimit(`follow:${user.id}`, 60, 60_000)).ok) {
     return NextResponse.json({ ok: false, error: "Slow down a moment." }, { status: 429 });
   }
   const body = await req.json().catch(() => ({}));

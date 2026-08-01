@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false, error: "Sign in to sponsor a prize." }, { status: 401 });
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (!rateLimit(`sponsor:${user.id}:${hashIp(ip)}`, 8, 10 * 60_000).ok) {
+  if (!(await rateLimit(`sponsor:${user.id}:${hashIp(ip)}`, 8, 10 * 60_000)).ok) {
     return NextResponse.json({ ok: false, error: "Too many attempts. Try again soon." }, { status: 429 });
   }
 

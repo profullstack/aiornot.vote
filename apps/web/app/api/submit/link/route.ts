@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       { status: 402 },
     );
   }
-  if (!rateLimit(`submitlink:${user.id}`, 10, 10 * 60_000).ok) {
+  if (!(await rateLimit(`submitlink:${user.id}`, 10, 10 * 60_000)).ok) {
     return NextResponse.json({ ok: false, error: "Too many submissions. Try again soon." }, { status: 429 });
   }
 

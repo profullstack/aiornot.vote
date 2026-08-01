@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     );
   }
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (!rateLimit(`submit:${user.id}:${hashIp(ip)}`, 10, 10 * 60_000).ok) {
+  if (!(await rateLimit(`submit:${user.id}:${hashIp(ip)}`, 10, 10 * 60_000)).ok) {
     return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });
   }
 

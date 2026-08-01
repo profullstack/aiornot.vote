@@ -257,25 +257,40 @@ export async function resetPassword(token: string, newPassword: string): Promise
 
   const userId = row.user_id as string;
   const pw = await hashPassword(newPassword);
-  await sqlClient.execute({
-    sql: `UPDATE users
-          SET password_hash = ?,
-              email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP),
-              status = CASE WHEN status = 'pending_email_verification' THEN 'active' ELSE status END,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?`,
-    args: [pw, userId],
-  });
-  await sqlClient.execute({
-    sql: "UPDATE password_reset_tokens SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?",
-    args: [row.id],
-  });
-  // Invalidate any other outstanding reset tokens + all sessions for this user.
-  await sqlClient.execute({
-    sql: "UPDATE password_reset_tokens SET consumed_at = CURRENT_TIMESTAMP WHERE user_id = ? AND consumed_at IS NULL",
-    args: [userId],
-  });
-  await sqlClient.execute({ sql: "DELETE FROM sessions WHERE user_id = ?", args: [userId] });
+  const transaction = await sqlClient.transaction("write");
+  try {
+    const claim = await transaction.execute({
+      sql: `UPDATE password_reset_tokens
+            SET consumed_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND consumed_at IS NULL AND expires_at >= CURRENT_TIMESTAMP`,
+      args: [row.id],
+    });
+    if (claim.rowsAffected !== 1) {
+      await transaction.rollback();
+      return { ok: false, error: "This reset link was already used." };
+    }
+
+    await transaction.execute({
+      sql: `UPDATE users
+            SET password_hash = ?,
+                email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP),
+                status = CASE WHEN status = 'pending_email_verification' THEN 'active' ELSE status END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,
+      args: [pw, userId],
+    });
+    await transaction.execute({
+      sql: "UPDATE password_reset_tokens SET consumed_at = CURRENT_TIMESTAMP WHERE user_id = ? AND consumed_at IS NULL",
+      args: [userId],
+    });
+    await transaction.execute({ sql: "DELETE FROM sessions WHERE user_id = ?", args: [userId] });
+    await transaction.commit();
+  } catch (error) {
+    if (!transaction.closed) await transaction.rollback();
+    throw error;
+  } finally {
+    transaction.close();
+  }
 
   return { ok: true, userId };
 }

@@ -9,6 +9,7 @@ import { validateExternalUrl } from "@/lib/url-guard";
 import { storageConfigured, uploadObject } from "@/lib/storage";
 import { createMedia } from "@/lib/media-create";
 import { env } from "@/lib/env";
+import { readSubmissionForm } from "@/lib/submission-form";
 
 export const runtime = "nodejs";
 
@@ -37,7 +38,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });
   }
 
-  const form = await req.formData();
+  const parsedForm = await readSubmissionForm(req);
+  if (!parsedForm.ok) {
+    return NextResponse.json({ ok: false, error: "Invalid form data." }, { status: 400 });
+  }
+  const form = parsedForm.form;
   const title = String(form.get("title") || "").trim();
   const externalUrl = String(form.get("mediaUrl") || "").trim();
   const sourceUrl = String(form.get("sourceUrl") || "").trim();

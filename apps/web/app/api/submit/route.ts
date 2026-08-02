@@ -37,7 +37,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Too many submissions. Try again later." }, { status: 429 });
   }
 
-  const form = await req.formData();
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Invalid form data. Use multipart/form-data or provide a valid form body." },
+      { status: 400 },
+    );
+  }
   const title = String(form.get("title") || "").trim();
   const externalUrl = String(form.get("mediaUrl") || "").trim();
   const sourceUrl = String(form.get("sourceUrl") || "").trim();
@@ -134,3 +142,4 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true, slug: media.slug });
 }
+

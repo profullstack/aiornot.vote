@@ -130,12 +130,13 @@ export async function castGuess(
   }
 
   // First vote wins even under a race: DO NOTHING on the unique (media,user) key.
-  await sqlClient.execute({
+  const inserted = await sqlClient.execute({
     sql: `INSERT INTO guesses (id, media_id, user_id, guess, is_correct, is_scored, ip_hash, user_agent_hash)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(media_id, user_id) DO NOTHING`,
     args: [ids.guess(), mediaId, userId, guess, isCorrect, scored ? 1 : 0, ipHash, uaHash],
   });
+  const insertedFirst = Number(inserted.rowsAffected ?? 0) > 0;
 
   // Read back the authoritative stored vote (handles the race where another
   // request inserted first).
@@ -162,7 +163,7 @@ export async function castGuess(
     isCorrect: s.is_correct == null ? null : Number(s.is_correct) === 1,
     truthLabel,
     revealTruth: truthLabel !== "unknown",
-    alreadyVoted: false,
+    alreadyVoted: !insertedFirst,
     earned,
     stats,
   };

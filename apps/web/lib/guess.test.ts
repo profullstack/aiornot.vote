@@ -120,4 +120,32 @@ describe("guess members-only access", () => {
       expect.objectContaining({ sql: expect.stringContaining("FROM media_tags mt JOIN tags") }),
     );
   });
+
+  it("reports an ignored concurrent insert as an existing vote", async () => {
+    mocks.execute
+      .mockResolvedValueOnce({
+        rows: [{
+          id: "media_1",
+          truth_label: "ai",
+          is_score_eligible: 1,
+          reveal_status: "hidden_until_guess",
+          status: "approved",
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowsAffected: 0 })
+      .mockResolvedValueOnce({ rows: [{ guess: "ai", is_correct: 1, is_scored: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ ai_guesses: 1, not_ai_guesses: 0, total_guesses: 1 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ current_streak: 1 }] });
+
+    await expect(castGuess("user_1", "media_1", "not_ai", null, null, false)).resolves.toMatchObject({
+      ok: true,
+      guess: "ai",
+      alreadyVoted: true,
+    });
+  });
 });

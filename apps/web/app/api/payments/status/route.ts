@@ -49,11 +49,25 @@ export async function GET(req: Request) {
   if (flip.rowsAffected === 0) {
     return NextResponse.json({ ok: true, status: "granted", purpose: p.purpose });
   }
-  const grant = await grantForPayment({
-    id: id,
-    userId: user.id,
-    purpose: p.purpose as string,
-  });
+  let grant: Awaited<ReturnType<typeof grantForPayment>>;
+  try {
+    grant = await grantForPayment({
+      id: id,
+      userId: user.id,
+      purpose: p.purpose as string,
+    });
+  } catch (err) {
+    await sqlClient.execute({
+      sql: `UPDATE payments SET status = 'confirmed', granted_at = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND status = 'granted'`,
+      args: [id],
+    });
+    console.error(`[payments] failed to grant ${id}:`, (err as Error).message);
+    return NextResponse.json(
+      { ok: false, error: "Could not grant purchase. Please retry." },
+      { status: 500 },
+    );
+  }
   // A discounted (non-free) promo payment records its redemption on grant.
   if (p.promo_code) await recordPromoRedemption(p.promo_code as string, user.id);
   return NextResponse.json({

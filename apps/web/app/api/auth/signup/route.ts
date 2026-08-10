@@ -31,7 +31,14 @@ export async function POST(req: Request) {
     .map((c) => c.trim())
     .find((c) => c.startsWith("aon_ref="))
     ?.slice("aon_ref=".length);
-  const ref = (body.ref && String(body.ref)) || (cookieRef ? decodeURIComponent(cookieRef) : null);
+  let ref = (body.ref && String(body.ref)) || null;
+  if (!ref && cookieRef) {
+    try {
+      ref = decodeURIComponent(cookieRef);
+    } catch {
+      ref = null;
+    }
+  }
 
   const result = await signup(
     String(body.email || ""),

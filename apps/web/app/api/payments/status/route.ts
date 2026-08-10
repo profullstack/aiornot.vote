@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { sqlClient } from "@/lib/db";
 import { getCoinpayPayment, isPaymentPaid } from "@/lib/coinpay";
-import { grantForPayment, recordPromoRedemption } from "@/lib/entitlements";
+import { recordPromoRedemption } from "@/lib/entitlements";
+import { grantPaymentInTransaction } from "@/lib/payment-grant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,40 +41,33 @@ export async function GET(req: Request) {
     }
   }
 
-  // Paid — grant once. Atomically flip the local payment to granted so
-  // concurrent polls don't double-grant.
-  const flip = await sqlClient.execute({
-    sql: "UPDATE payments SET status = 'granted', granted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status != 'granted'",
-    args: [id],
-  });
-  if (flip.rowsAffected === 0) {
-    return NextResponse.json({ ok: true, status: "granted", purpose: p.purpose });
-  }
-  let grant: Awaited<ReturnType<typeof grantForPayment>>;
+  // Paid — claim and grant in one write transaction. If entitlement delivery
+  // fails, the status claim rolls back so a later poll can retry.
+  const tx = await sqlClient.transaction("write");
   try {
-    grant = await grantForPayment({
-      id: id,
+    const grant = await grantPaymentInTransaction({
+      tx,
+      paymentId: id,
       userId: user.id,
       purpose: p.purpose as string,
     });
-  } catch (err) {
-    await sqlClient.execute({
-      sql: `UPDATE payments SET status = 'confirmed', granted_at = NULL, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ? AND status = 'granted'`,
-      args: [id],
+    tx.close();
+    if (!grant) return NextResponse.json({ ok: true, status: "granted", purpose: p.purpose });
+    // A discounted (non-free) promo payment records its redemption on grant.
+    if (p.promo_code) await recordPromoRedemption(p.promo_code as string, user.id);
+    return NextResponse.json({
+      ok: true,
+      status: "granted",
+      purpose: p.purpose,
+      apiKey: grant.apiKeyPlaintext, // shown exactly once
     });
-    console.error(`[payments] failed to grant ${id}:`, (err as Error).message);
+  } catch (error) {
+    // grantPaymentInTransaction owns rollback so the payment remains retryable.
+    tx.close();
+    console.error("Payment entitlement grant failed; leaving payment retryable", { id, error });
     return NextResponse.json(
-      { ok: false, error: "Could not grant purchase. Please retry." },
-      { status: 500 },
+      { ok: false, status: "confirmed", error: "Payment confirmed, but entitlement delivery failed. Retry the status check." },
+      { status: 503 },
     );
   }
-  // A discounted (non-free) promo payment records its redemption on grant.
-  if (p.promo_code) await recordPromoRedemption(p.promo_code as string, user.id);
-  return NextResponse.json({
-    ok: true,
-    status: "granted",
-    purpose: p.purpose,
-    apiKey: grant.apiKeyPlaintext, // shown exactly once
-  });
 }

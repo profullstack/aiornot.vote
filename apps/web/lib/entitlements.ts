@@ -1,8 +1,11 @@
 import "server-only";
+import type { Client } from "@libsql/client";
 import { sqlClient } from "./db";
 import { newId } from "@aiornot/db";
 import { randomToken, hmac } from "./crypto";
 import { normalizePromoPercentOff } from "./promo-form";
+
+type SqlExecutor = Pick<Client, "execute">;
 
 const API_KEY_SALT = "aiornot-api-key";
 
@@ -25,12 +28,13 @@ export function normalizeApiKeyLabel(label?: string): string | null {
 export async function createApiKey(
   userId: string,
   label?: string,
+  db: SqlExecutor = sqlClient,
 ): Promise<{ plaintext: string; id: string; prefix: string }> {
   const secret = randomToken(24);
   const plaintext = `aion_live_${secret}`;
   const prefix = plaintext.slice(0, 16);
   const id = newId("key");
-  await sqlClient.execute({
+  await db.execute({
     sql: `INSERT INTO api_keys (id, user_id, key_hash, key_prefix, label)
           VALUES (?, ?, ?, ?, ?)`,
     args: [id, userId, hmac(plaintext, API_KEY_SALT), prefix, normalizeApiKeyLabel(label)],
@@ -80,16 +84,16 @@ export async function verifyApiKey(
   return { userId: row.user_id as string, keyId: row.id as string };
 }
 
-export async function grantMembership(userId: string): Promise<void> {
-  await sqlClient.execute({
+export async function grantMembership(userId: string, db: SqlExecutor = sqlClient): Promise<void> {
+  await db.execute({
     sql: "UPDATE users SET is_lifetime_member = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     args: [userId],
   });
 }
 
 /** Grant the one-time play pass (idempotent — first grant wins the timestamp). */
-export async function grantPlayPass(userId: string): Promise<void> {
-  await sqlClient.execute({
+export async function grantPlayPass(userId: string, db: SqlExecutor = sqlClient): Promise<void> {
+  await db.execute({
     sql: "UPDATE users SET play_pass_at = COALESCE(play_pass_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     args: [userId],
   });
@@ -223,17 +227,17 @@ export async function grantForPayment(payment: {
   id: string;
   userId: string;
   purpose: string;
-}): Promise<GrantResult> {
+}, db: SqlExecutor = sqlClient): Promise<GrantResult> {
   if (payment.purpose === "lifetime_membership") {
-    await grantMembership(payment.userId);
+    await grantMembership(payment.userId, db);
     return {};
   }
   if (payment.purpose === "play_pass") {
-    await grantPlayPass(payment.userId);
+    await grantPlayPass(payment.userId, db);
     return {};
   }
   if (payment.purpose === "api_access") {
-    const key = await createApiKey(payment.userId, "API access");
+    const key = await createApiKey(payment.userId, "API access", db);
     return { apiKeyPlaintext: key.plaintext };
   }
   return {};

@@ -30,7 +30,7 @@ describe("POST /api/auth/signup", () => {
         },
         body: JSON.stringify({
           email: "player@example.com",
-          password: "password123",
+          password: "x".repeat(12),
         }),
       }),
     );
@@ -39,7 +39,7 @@ describe("POST /api/auth/signup", () => {
     expect(await response.json()).toEqual({ ok: true, needsVerification: true });
     expect(mocks.signup).toHaveBeenCalledWith(
       "player@example.com",
-      "password123",
+      "x".repeat(12),
       undefined,
       null,
     );

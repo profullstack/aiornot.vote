@@ -1,4 +1,5 @@
 import "server-only";
+import type { Client } from "@libsql/client";
 import { sqlClient } from "./db";
 import { newId } from "@aiornot/db";
 import { env } from "./env";
@@ -13,6 +14,21 @@ export const BASE_REWARDS: Array<{ kind: string; label: string }> = [
 ];
 
 const CLAIM_WINDOW_DAYS = 7;
+const PRIZE_DRAW_TX_RETRIES = 5;
+type SqlExecutor = Pick<Client, "execute">;
+
+async function beginPrizeDrawTransaction(): Promise<Awaited<ReturnType<Client["transaction"]>>> {
+  for (let attempt = 0; attempt < PRIZE_DRAW_TX_RETRIES; attempt++) {
+    try {
+      return await sqlClient.transaction("write");
+    } catch (error) {
+      const code = (error as { code?: unknown }).code;
+      if (code !== "SQLITE_BUSY" || attempt === PRIZE_DRAW_TX_RETRIES - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+    }
+  }
+  throw new Error("Could not start prize draw transaction.");
+}
 
 export type PrizeRow = {
   id: string;
@@ -51,8 +67,13 @@ export function currentWeekStart(now = new Date()): string {
 }
 
 /** Ranked winners for an arbitrary [start, end) window. */
-async function winnersForPeriod(startISO: string, endISO: string, limit: number): Promise<Array<{ userId: string; correct: number; scored: number }>> {
-  const res = await sqlClient.execute({
+async function winnersForPeriod(
+  startISO: string,
+  endISO: string,
+  limit: number,
+  executor: SqlExecutor = sqlClient,
+): Promise<Array<{ userId: string; correct: number; scored: number }>> {
+  const res = await executor.execute({
     sql: `SELECT u.id AS user_id,
                  SUM(CASE WHEN g.is_correct = 1 THEN 1 ELSE 0 END) AS correct,
                  COUNT(*) AS scored, MAX(g.created_at) AS last
@@ -69,8 +90,8 @@ async function winnersForPeriod(startISO: string, endISO: string, limit: number)
 }
 
 /** Mark unclaimed prizes past their deadline as expired (their reward rolls over). */
-export async function expirePrizes(): Promise<number> {
-  const r = await sqlClient.execute({
+export async function expirePrizes(executor: SqlExecutor = sqlClient): Promise<number> {
+  const r = await executor.execute({
     sql: "UPDATE prizes SET status = 'expired' WHERE status = 'unclaimed' AND claim_deadline < ?",
     args: [new Date().toISOString()],
   });
@@ -86,76 +107,98 @@ export type DrawResult = { drawn: boolean; reason?: string; awarded: number; car
  */
 export async function drawWeeklyPrizes(opts?: { period?: { start: string; end: string } }): Promise<DrawResult> {
   const period = opts?.period ?? prevCompletedWeek();
-
-  const already = await sqlClient.execute({
-    sql: "SELECT 1 FROM prizes WHERE period_start = ? AND source = 'weekly' LIMIT 1",
-    args: [period.start],
-  });
-  if (already.rows.length > 0) {
-    return { drawn: false, reason: "already drawn for this period", awarded: 0, carriedIn: 0, period };
-  }
-
-  await expirePrizes();
-
-  // Rewards rolled over from expired / previously-unawarded prizes.
-  const carry = await sqlClient.execute({
-    sql: "SELECT id, reward_kind, reward_label FROM prizes WHERE status = 'expired' AND source = 'weekly' ORDER BY created_at ASC",
-    args: [],
-  });
-  const carryRewards = carry.rows.map((r) => ({ kind: r.reward_kind as string, label: r.reward_label as string, sourceId: r.id as string }));
-
-  // Sponsor-funded prizes for the drawn week (marked fulfilled below).
-  const sponsors = await sqlClient.execute({
-    sql: "SELECT id, prize_label, sponsor_name FROM prize_sponsorships WHERE period_start = ? AND status = 'active' ORDER BY created_at ASC",
-    args: [period.start],
-  });
-  const sponsorRewards = sponsors.rows.map((r) => ({
-    kind: "sponsored",
-    label: `${r.prize_label as string} — sponsored by ${r.sponsor_name as string}`,
-    sponsorshipId: r.id as string,
-  }));
-
-  const pack = [
-    ...sponsorRewards.map((r) => ({ kind: r.kind, label: r.label, carried: false, sourceId: null as string | null })),
-    ...BASE_REWARDS.map((r) => ({ ...r, carried: false, sourceId: null as string | null })),
-    ...carryRewards.map((r) => ({ kind: r.kind, label: r.label, carried: true, sourceId: r.sourceId })),
-  ];
-
-  const winners = await winnersForPeriod(period.start, period.end, pack.length);
+  const transaction = await beginPrizeDrawTransaction();
+  let carryRewards: Array<{ kind: string; label: string; sourceId: string }> = [];
+  let sponsorRewards: Array<{ kind: string; label: string; sponsorshipId: string }> = [];
+  let pack: Array<{ kind: string; label: string; carried: boolean; sourceId: string | null }> = [];
+  let winners: Array<{ userId: string; correct: number; scored: number }> = [];
   const deadline = new Date(Date.now() + CLAIM_WINDOW_DAYS * 86400_000).toISOString();
 
-  // Mark carried-over sources as rolled so they aren't carried twice.
-  for (const c of carryRewards) {
-    await sqlClient.execute({ sql: "UPDATE prizes SET status = 'rolled' WHERE id = ?", args: [c.sourceId] });
-  }
-
-  let awarded = 0;
-  for (let i = 0; i < pack.length; i++) {
-    const reward = pack[i]!;
-    const winner = winners[i];
-    const id = newId("prz");
-    // Awarded to a player → unclaimed; no player for this slot → expired (rolls again).
-    const status = winner ? "unclaimed" : "expired";
-    await sqlClient.execute({
-      sql: `INSERT INTO prizes (id, period_start, period_end, rank, reward_kind, reward_label, user_id, status, claim_deadline, carried_over, notified_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, period.start, period.end, i + 1, reward.kind, reward.label, winner?.userId ?? null, status, deadline, reward.carried ? 1 : 0, winner ? new Date().toISOString() : null],
-    });
-    if (winner) {
-      awarded++;
-      await notifyWinner(winner.userId, reward.label, i + 1, deadline);
-    }
-  }
-
-  // Sponsorships for this week have now been placed into the pack.
-  if (sponsorRewards.length > 0) {
-    await sqlClient.execute({
-      sql: "UPDATE prize_sponsorships SET status = 'fulfilled' WHERE period_start = ? AND status = 'active'",
+  try {
+    const already = await transaction.execute({
+      sql: "SELECT 1 FROM prizes WHERE period_start = ? AND source = 'weekly' LIMIT 1",
       args: [period.start],
     });
+    if (already.rows.length > 0) {
+      await transaction.rollback();
+      return { drawn: false, reason: "already drawn for this period", awarded: 0, carriedIn: 0, period };
+    }
+
+    await expirePrizes(transaction);
+
+    // Rewards rolled over from expired / previously-unawarded prizes.
+    const carry = await transaction.execute({
+      sql: "SELECT id, reward_kind, reward_label FROM prizes WHERE status = 'expired' AND source = 'weekly' ORDER BY created_at ASC",
+      args: [],
+    });
+    carryRewards = carry.rows.map((row) => ({
+      kind: row.reward_kind as string,
+      label: row.reward_label as string,
+      sourceId: row.id as string,
+    }));
+
+    // Sponsor-funded prizes for the drawn week (marked fulfilled below).
+    const sponsors = await transaction.execute({
+      sql: "SELECT id, prize_label, sponsor_name FROM prize_sponsorships WHERE period_start = ? AND status = 'active' ORDER BY created_at ASC",
+      args: [period.start],
+    });
+    sponsorRewards = sponsors.rows.map((row) => ({
+      kind: "sponsored",
+      label: `${row.prize_label as string} — sponsored by ${row.sponsor_name as string}`,
+      sponsorshipId: row.id as string,
+    }));
+
+    pack = [
+      ...sponsorRewards.map((reward) => ({ kind: reward.kind, label: reward.label, carried: false, sourceId: null as string | null })),
+      ...BASE_REWARDS.map((reward) => ({ ...reward, carried: false, sourceId: null as string | null })),
+      ...carryRewards.map((reward) => ({ kind: reward.kind, label: reward.label, carried: true, sourceId: reward.sourceId })),
+    ];
+
+    winners = await winnersForPeriod(period.start, period.end, pack.length, transaction);
+
+    // Mark carried-over sources as rolled so they aren't carried twice.
+    for (const carryReward of carryRewards) {
+      await transaction.execute({
+        sql: "UPDATE prizes SET status = 'rolled' WHERE id = ?",
+        args: [carryReward.sourceId],
+      });
+    }
+
+    for (let index = 0; index < pack.length; index++) {
+      const reward = pack[index]!;
+      const winner = winners[index];
+      const id = newId("prz");
+      // Awarded to a player → unclaimed; no player for this slot → expired (rolls again).
+      const status = winner ? "unclaimed" : "expired";
+      await transaction.execute({
+        sql: `INSERT INTO prizes (id, period_start, period_end, rank, reward_kind, reward_label, user_id, status, claim_deadline, carried_over, notified_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [id, period.start, period.end, index + 1, reward.kind, reward.label, winner?.userId ?? null, status, deadline, reward.carried ? 1 : 0, winner ? new Date().toISOString() : null],
+      });
+    }
+
+    // Sponsorships for this week have now been placed into the pack.
+    if (sponsorRewards.length > 0) {
+      await transaction.execute({
+        sql: "UPDATE prize_sponsorships SET status = 'fulfilled' WHERE period_start = ? AND status = 'active'",
+        args: [period.start],
+      });
+    }
+
+    await transaction.commit();
+  } catch (error) {
+    if (!transaction.closed) await transaction.rollback();
+    throw error;
+  } finally {
+    transaction.close();
   }
 
-  return { drawn: true, awarded, carriedIn: carryRewards.length, sponsored: sponsorRewards.length, period };
+  for (let index = 0; index < winners.length; index++) {
+    const winner = winners[index]!;
+    await notifyWinner(winner.userId, pack[index]!.label, index + 1, deadline);
+  }
+
+  return { drawn: true, awarded: winners.length, carriedIn: carryRewards.length, sponsored: sponsorRewards.length, period };
 }
 
 async function notifyWinner(userId: string, rewardLabel: string, rank: number, deadline: string): Promise<void> {

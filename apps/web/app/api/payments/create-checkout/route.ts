@@ -5,7 +5,7 @@ import { newId } from "@aiornot/db";
 import { sqlClient } from "@/lib/db";
 import { createCoinpayPayment } from "@/lib/coinpay";
 import { normalizeCoinpayBlockchain } from "@/lib/coinpay-blockchains";
-import { quotePromo, grantPurpose, recordPromoRedemption } from "@/lib/entitlements";
+import { quotePromo, grantFreePromo } from "@/lib/entitlements";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -52,17 +52,26 @@ export async function POST(req: Request) {
     promoCode = quote.code;
     percentOff = quote.percentOff;
 
-    // 100% off (free comp): grant immediately, no crypto payment needed.
+    // 100% off (free comp): reserve the single-use redemption, grant the
+    // entitlement, and record the payment atomically.
     if (quote.free) {
       const paymentId = newId("pay");
-      const grant = await grantPurpose(user.id, purpose);
-      await recordPromoRedemption(quote.code, user.id);
-      await sqlClient.execute({
-        sql: `INSERT INTO payments (id, user_id, purpose, amount_usd, status, promo_code, granted_at)
-              VALUES (?, ?, ?, 0, 'granted', ?, CURRENT_TIMESTAMP)`,
-        args: [paymentId, user.id, purpose, quote.code],
+      const result = await grantFreePromo({
+        paymentId,
+        userId: user.id,
+        purpose,
+        code: quote.code,
       });
-      return NextResponse.json({ ok: true, granted: true, purpose, percentOff, apiKey: grant.apiKeyPlaintext ?? null });
+      if (!result.ok) {
+        return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
+      }
+      return NextResponse.json({
+        ok: true,
+        granted: true,
+        purpose,
+        percentOff,
+        apiKey: result.grant.apiKeyPlaintext ?? null,
+      });
     }
   }
 

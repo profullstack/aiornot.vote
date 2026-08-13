@@ -182,6 +182,63 @@ export async function recordPromoRedemption(codeRaw: string, userId: string): Pr
   return recorded;
 }
 
+export type FreePromoGrantResult =
+  | { ok: true; grant: GrantResult }
+  | { ok: false; error: string };
+
+export async function grantFreePromo({
+  paymentId,
+  userId,
+  purpose,
+  code: codeRaw,
+}: {
+  paymentId: string;
+  userId: string;
+  purpose: string;
+  code: string;
+}): Promise<FreePromoGrantResult> {
+  const code = codeRaw.trim().toUpperCase();
+  if (!code) return { ok: false, error: "That code is no longer available." };
+
+  const tx = await sqlClient.transaction("write");
+  try {
+    const claim = await tx.execute({
+      sql: "INSERT OR IGNORE INTO promo_redemptions (code, user_id) VALUES (?, ?)",
+      args: [code, userId],
+    });
+    if (claim.rowsAffected === 0) {
+      await tx.rollback();
+      return { ok: false, error: "That code is no longer available." };
+    }
+
+    const reserve = await tx.execute({
+      sql: `UPDATE promo_codes SET uses = uses + 1
+            WHERE code = ? AND active = 1 AND percent_off >= 100
+              AND (applies_to = 'any' OR applies_to = ?)
+              AND (max_uses IS NULL OR uses < max_uses)`,
+      args: [code, purpose],
+    });
+    if (reserve.rowsAffected === 0) {
+      await tx.rollback();
+      return { ok: false, error: "That code is no longer available." };
+    }
+
+    const grant = await grantForPayment({ id: paymentId, userId, purpose }, tx);
+    await tx.execute({
+      sql: `INSERT INTO payments (id, user_id, purpose, amount_usd, status, promo_code, granted_at)
+            VALUES (?, ?, ?, 0, 'granted', ?, CURRENT_TIMESTAMP)`,
+      args: [paymentId, userId, purpose, code],
+    });
+    await tx.commit();
+    return { ok: true, grant };
+  } catch (error) {
+    await tx.rollback();
+    throw error;
+  } finally {
+    tx.close();
+  }
+}
+
 /** Apply the entitlement for a purpose directly (used for 100%-off comps). */
 export async function grantPurpose(userId: string, purpose: string): Promise<GrantResult> {
   return grantForPayment({ id: newId("pay"), userId, purpose });

@@ -3,15 +3,22 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 vi.mock("server-only", () => ({}));
 // vi.mock factories are hoisted above top-level consts — create the mock fn
 // via vi.hoisted() to avoid a temporal-dead-zone ReferenceError.
-const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
+const { execute, transaction, txExecute, commit, rollback, close } = vi.hoisted(() => ({
+  execute: vi.fn(),
+  transaction: vi.fn(),
+  txExecute: vi.fn(),
+  commit: vi.fn(),
+  rollback: vi.fn(),
+  close: vi.fn(),
+}));
 vi.mock("./db", () => ({
-  sqlClient: { execute },
+  sqlClient: { execute, transaction },
 }));
 vi.mock("@aiornot/db", () => ({
   newId: () => "key_test",
 }));
 
-import { normalizeApiKeyLabel, recordPromoRedemption } from "./entitlements";
+import { grantFreePromo, normalizeApiKeyLabel, recordPromoRedemption } from "./entitlements";
 
 describe("normalizeApiKeyLabel", () => {
   it("trims and collapses labels before storing them", () => {
@@ -80,5 +87,59 @@ describe("recordPromoRedemption (atomic duplicate guard, #92)", () => {
     await expect(recordPromoRedemption("SUMMER25", "user_1")).resolves.toBe(true);
     expect(err).toHaveBeenCalled();
     err.mockRestore();
+  });
+});
+
+describe("grantFreePromo", () => {
+  beforeEach(() => {
+    transaction.mockReset();
+    txExecute.mockReset();
+    commit.mockReset();
+    rollback.mockReset();
+    close.mockReset();
+    transaction.mockResolvedValue({ execute: txExecute, commit, rollback, close });
+  });
+
+  it("claims the redemption and grants membership in one transaction", async () => {
+    txExecute
+      .mockResolvedValueOnce({ rows: [], rowsAffected: 1 })
+      .mockResolvedValueOnce({ rows: [], rowsAffected: 1 })
+      .mockResolvedValueOnce({ rows: [], rowsAffected: 1 })
+      .mockResolvedValueOnce({ rows: [], rowsAffected: 1 });
+
+    const result = await grantFreePromo({
+      paymentId: "pay_1",
+      userId: "user_1",
+      purpose: "lifetime_membership",
+      code: " free100 ",
+    });
+
+    expect(result).toEqual({ ok: true, grant: {} });
+    expect(transaction).toHaveBeenCalledWith("write");
+    expect(String(txExecute.mock.calls[0][0].sql)).toContain("INSERT OR IGNORE INTO promo_redemptions");
+    expect(txExecute.mock.calls[0][0].args).toEqual(["FREE100", "user_1"]);
+    expect(String(txExecute.mock.calls[1][0].sql)).toContain("percent_off >= 100");
+    expect(String(txExecute.mock.calls[2][0].sql)).toContain("UPDATE users SET is_lifetime_member = 1");
+    expect(String(txExecute.mock.calls[3][0].sql)).toContain("INSERT INTO payments");
+    expect(commit).toHaveBeenCalledOnce();
+    expect(rollback).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it("does not grant when another request already claimed the code", async () => {
+    txExecute.mockResolvedValueOnce({ rows: [], rowsAffected: 0 });
+
+    const result = await grantFreePromo({
+      paymentId: "pay_2",
+      userId: "user_1",
+      purpose: "api_access",
+      code: "FREE100",
+    });
+
+    expect(result).toEqual({ ok: false, error: "That code is no longer available." });
+    expect(txExecute).toHaveBeenCalledOnce();
+    expect(rollback).toHaveBeenCalledOnce();
+    expect(commit).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
   });
 });

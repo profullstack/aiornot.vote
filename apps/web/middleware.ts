@@ -1,3 +1,4 @@
+import { gate } from "@/lib/crawl-gateway";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -5,7 +6,13 @@ import type { NextRequest } from "next/server";
  * Canonical-host proxy: redirect www.* → apex (non-www) with a 308 so links,
  * cookies, and SEO consolidate on one hostname. Runs at the Next.js edge.
  */
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
+  // Crawl gateway first: AI training crawlers get 402 Payment Required (or the
+  // sales page at /crawl) unless they present a paid pass. People, Googlebot
+  // and retrieval crawlers fall through to everything below.
+  const answer = await gate(req);
+  if (answer) return answer;
+
   const host = req.headers.get("host") || "";
   if (host.startsWith("www.")) {
     const apex = host.slice(4);

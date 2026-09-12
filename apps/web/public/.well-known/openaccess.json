@@ -1,0 +1,29 @@
+{
+  "openaccess": "0.1",
+  "name": "aiornot.vote",
+  "url": "https://aiornot.vote",
+  "operator": "https://logicsrc.com/.well-known/openprofile.md",
+  "redirect_uris": [
+    "https://aiornot.vote/api/v1/openaccess/callback"
+  ],
+  "jwks": {
+    "keys": [
+      {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "kid": "76NUV33Y6bI2",
+        "x": "Kd1hFXROMJbYFcNcJY93Itm63Kc98Ybfij1A59AFSwQ",
+        "alg": "EdDSA",
+        "use": "sig"
+      }
+    ]
+  },
+  "scopes": {},
+  "honours": [
+    "profullstack.com/all-access"
+  ],
+  "webhooks": "https://aiornot.vote/api/v1/openaccess/events",
+  "hubs": [
+    "https://openaccess.logicsrc.com"
+  ]
+}

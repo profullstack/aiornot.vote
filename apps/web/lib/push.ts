@@ -1,5 +1,5 @@
 import "server-only";
-import webpush from "web-push";
+import { sendPush, vapidKeysFromEnv, type VapidKeys } from "@profullstack/notifications/server";
 import { sqlClient } from "./db";
 import { newId } from "@aiornot/db";
 import { env } from "./env";
@@ -16,14 +16,14 @@ export type BrowserSubscription = {
   keys: { p256dh: string; auth: string };
 };
 
-let vapidReady = false;
-function ensureVapid(): boolean {
-  if (!env.pushConfigured) return false;
-  if (!vapidReady) {
-    webpush.setVapidDetails(env.vapid.subject, env.vapid.publicKey, env.vapid.privateKey);
-    vapidReady = true;
-  }
-  return true;
+// VAPID keys, looked up at RUN time. Next replaces a literal
+// `process.env.NAME` at build time, so a key missing from the build would
+// compile in as empty and silently disable push; vapidKeysFromEnv reads the
+// names dynamically (VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY).
+let vapidKeys: VapidKeys | null = null;
+function ensureVapid(): VapidKeys | null {
+  vapidKeys ??= vapidKeysFromEnv(process.env);
+  return vapidKeys;
 }
 
 /** Store (or refresh) a browser push subscription for a user. Idempotent by endpoint. */
@@ -69,7 +69,11 @@ export async function removeSubscription(userId: string, endpoint: string): Prom
   }
 }
 
+// web-push's default TTL (4 weeks), kept so delivery behaves as before.
+const PUSH_TTL_SECONDS = 4 * 7 * 24 * 3600;
+
 async function deliver(
+  keys: VapidKeys,
   rows: Array<{ id: string; endpoint: string; p256dh: string; auth: string }>,
   payload: PushPayload,
 ): Promise<{ sent: number; failed: number; pruned: number }> {
@@ -82,22 +86,23 @@ async function deliver(
   const CONCURRENCY = 6;
   for (let i = 0; i < rows.length; i += CONCURRENCY) {
     const chunk = rows.slice(i, i + CONCURRENCY);
-    const results = await Promise.allSettled(
+    // sendPush never throws for a delivery failure; it reports it.
+    const results = await Promise.all(
       chunk.map((r) =>
-        webpush.sendNotification(
-          { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } },
-          json,
-        ),
+        sendPush({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, json, {
+          keys,
+          subject: env.vapid.subject,
+          ttl: PUSH_TTL_SECONDS,
+        }),
       ),
     );
     results.forEach((res, idx) => {
-      if (res.status === "fulfilled") {
+      if (res.sent) {
         sent++;
       } else {
         failed++;
-        const code = (res.reason as { statusCode?: number })?.statusCode;
         // 404/410 = subscription gone; prune so we stop retrying dead endpoints.
-        if (code === 404 || code === 410) stale.push(chunk[idx].endpoint);
+        if (res.gone) stale.push(chunk[idx].endpoint);
       }
     });
   }
@@ -113,22 +118,24 @@ async function deliver(
 
 /** Send a push to every subscription belonging to one user (all their devices). */
 export async function sendPushToUser(userId: string, payload: PushPayload) {
-  if (!ensureVapid()) return { sent: 0, failed: 0, pruned: 0 };
+  const keys = ensureVapid();
+  if (!keys) return { sent: 0, failed: 0, pruned: 0 };
   const res = await sqlClient.execute({
     sql: "SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?",
     args: [userId],
   });
-  return deliver(res.rows as never[], payload);
+  return deliver(keys, res.rows as never[], payload);
 }
 
 /** Broadcast a push to all subscriptions of users who haven't opted out. */
 export async function broadcastPush(payload: PushPayload) {
-  if (!ensureVapid()) return { sent: 0, failed: 0, pruned: 0 };
+  const keys = ensureVapid();
+  if (!keys) return { sent: 0, failed: 0, pruned: 0 };
   const res = await sqlClient.execute(
     `SELECT ps.id, ps.endpoint, ps.p256dh, ps.auth
      FROM push_subscriptions ps
      JOIN users u ON u.id = ps.user_id
      WHERE u.status = 'active' AND u.notifications_enabled = 1`,
   );
-  return deliver(res.rows as never[], payload);
+  return deliver(keys, res.rows as never[], payload);
 }

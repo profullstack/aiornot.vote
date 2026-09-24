@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { vapidKeysFromEnv } from "@profullstack/notifications/server";
 import { requireAdminPage } from "@/lib/admin";
 import { sqlClient } from "@/lib/db";
 import { PushBroadcast } from "@/components/PushBroadcast";
@@ -15,6 +16,7 @@ export default async function AdminNotifications() {
   );
   const users = Number(r.rows[0]?.users ?? 0);
   const devices = Number(r.rows[0]?.devices ?? 0);
+  const configured = vapidKeysFromEnv(process.env) !== null;
   return (
     <div className="container-narrow" style={{ paddingTop: 24 }}>
       <div className="section-head">
@@ -25,6 +27,11 @@ export default async function AdminNotifications() {
         Blast a web-push to all subscribed users — <strong>{users}</strong> user(s) across{" "}
         <strong>{devices}</strong> device(s). Great for &quot;new rounds live&quot; or comeback nudges.
       </p>
+      {!configured && (
+        <div className="notice warn" style={{ marginTop: 10 }}>
+          Push is not configured: set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY on the server. Broadcasts send nothing until then.
+        </div>
+      )}
       <div className="form-card" style={{ marginTop: 10 }}>
         <PushBroadcast />
       </div>

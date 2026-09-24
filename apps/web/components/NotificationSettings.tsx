@@ -1,15 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-
-function urlBase64ToBuffer(base64String: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const buffer = new ArrayBuffer(raw.length);
-  const out = new Uint8Array(buffer);
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return buffer;
-}
+import {
+  PushError,
+  getSubscription,
+  pushSupport,
+  subscribe,
+  unsubscribe,
+} from "@profullstack/notifications/client";
 
 type State = "loading" | "unsupported" | "blocked" | "on" | "off";
 
@@ -17,24 +14,23 @@ export function NotificationSettings() {
   const [state, setState] = useState<State>("loading");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-
-  const supported =
-    typeof window !== "undefined" &&
-    "serviceWorker" in navigator &&
-    "PushManager" in window &&
-    "Notification" in window;
+  // Why push can't work here, as a sentence to show (not HTTPS, iPhone without
+  // the site on the Home Screen, no service workers, ...).
+  const [unsupportedReason, setUnsupportedReason] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!supported) return setState("unsupported");
-    if (Notification.permission === "denied") return setState("blocked");
+    const support = pushSupport();
+    if (support.reason === "denied") return setState("blocked");
+    if (!support.supported) {
+      setUnsupportedReason(support.message);
+      return setState("unsupported");
+    }
     try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = reg ? await reg.pushManager.getSubscription() : null;
-      setState(sub ? "on" : "off");
+      setState((await getSubscription()) ? "on" : "off");
     } catch {
       setState("off");
     }
-  }, [supported]);
+  }, []);
 
   useEffect(() => {
     refresh();
@@ -44,32 +40,31 @@ export function NotificationSettings() {
     setBusy(true);
     setMsg(null);
     try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") {
-        setState(perm === "denied" ? "blocked" : "off");
-        setMsg(perm === "denied" ? "Notifications are blocked in your browser settings." : null);
-        return;
-      }
-      const keyRes = await fetch("/api/notifications/vapid").then((r) => r.json());
-      if (!keyRes.publicKey) throw new Error("Push isn't configured on the server yet.");
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToBuffer(keyRes.publicKey),
-        });
-      }
-      const save = await fetch("/api/notifications/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: sub.toJSON() }),
-      }).then((r) => r.json());
-      if (!save.ok) throw new Error(save.error || "Could not save subscription.");
+      // Asks permission, fetches the VAPID key from the server at run time (so
+      // a build without it can't break push), registers /sw.js if needed, and
+      // replaces a subscription made with an old key.
+      await subscribe({
+        vapidKeyUrl: "/api/push/vapid-public-key",
+        serviceWorkerUrl: "/sw.js",
+        save: async (subscription) => {
+          const save = await fetch("/api/notifications/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subscription }),
+          }).then((r) => r.json());
+          if (!save.ok) throw new Error(save.error || "Could not save subscription.");
+        },
+      });
       setState("on");
       setMsg("Notifications enabled 🎉");
     } catch (err) {
+      if (err instanceof PushError && err.reason === "denied") {
+        // A dismissed prompt leaves the button; an explicit "Block" is blocked.
+        const blocked = Notification.permission === "denied";
+        setState(blocked ? "blocked" : "off");
+        setMsg(blocked ? "Notifications are blocked in your browser settings." : null);
+        return;
+      }
       setMsg((err as Error).message);
     } finally {
       setBusy(false);
@@ -80,15 +75,14 @@ export function NotificationSettings() {
     setBusy(true);
     setMsg(null);
     try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = reg ? await reg.pushManager.getSubscription() : null;
+      const sub = await getSubscription();
       if (sub) {
         await fetch("/api/notifications/unsubscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ endpoint: sub.endpoint }),
         });
-        await sub.unsubscribe();
+        await unsubscribe();
       }
       setState("off");
       setMsg("Notifications turned off.");
@@ -118,7 +112,7 @@ export function NotificationSettings() {
       {state === "loading" && <div className="muted-sm">Checking…</div>}
 
       {state === "unsupported" && (
-        <div className="muted-sm">This browser doesn&apos;t support web notifications.</div>
+        <div className="muted-sm">{unsupportedReason ?? "This browser doesn’t support web notifications."}</div>
       )}
 
       {state === "blocked" && (

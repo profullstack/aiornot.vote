@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dbDate } from "@/lib/db-date";
 import { requireAdminPage } from "@/lib/admin";
 import { sqlClient } from "@/lib/db";
 
@@ -34,7 +35,7 @@ export default async function AdminSubmissions() {
                 <td>{(r.submitter_claim as string) || "—"}</td>
                 <td className="muted-sm">{(r.email as string) || "—"}</td>
                 <td>{r.status as string}</td>
-                <td className="muted-sm">{new Date((r.created_at as string) + "Z").toLocaleDateString()}</td>
+                <td className="muted-sm">{dbDate(r.created_at as string).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>

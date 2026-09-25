@@ -1,8 +1,8 @@
 import "server-only";
 import type { Client } from "@libsql/client";
-import { getDb, getClient } from "@aiornot/db";
+import { getClient } from "@aiornot/db";
 
-export { getDb, getClient };
+export { getClient };
 export * as schema from "@aiornot/db/schema";
 
 /**

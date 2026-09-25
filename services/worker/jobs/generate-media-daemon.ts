@@ -4,7 +4,7 @@ import { generateContinuousBatch } from "@aiornot/seed";
 /**
  * Continuous media top-up daemon. Runs *alongside* the web app inside the same
  * Railway service (it needs the `/data` volume: the libSQL file at
- * TURSO_DATABASE_URL and the media files under MEDIA_STORAGE_DIR both live
+ * DATABASE_URL and the media files under MEDIA_STORAGE_DIR both live
  * there, and a Railway volume only mounts to one service). It replaces the old
  * standalone `aiornot-cron` service that curled POST /api/cron/generate-media —
  * here we call generateContinuousBatch in-process, so there is no HTTP hop and

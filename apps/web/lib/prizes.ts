@@ -279,7 +279,7 @@ export async function getLatestPack(): Promise<PrizeRow[]> {
 export async function getRecentWinners(limit = 12): Promise<Array<{ rank: number; rewardLabel: string; displayName: string; periodStart: string; status: string }>> {
   const res = await sqlClient.execute({
     sql: `SELECT p.rank, p.reward_label, p.period_start, p.status,
-                 COALESCE(NULLIF(u.display_name,''), 'anon-' || substr(u.id,-5)) AS display_name
+                 COALESCE(NULLIF(u.display_name,''), 'anon-' || substr(u.id, length(u.id) - 4)) AS display_name
           FROM prizes p JOIN users u ON u.id = p.user_id
           WHERE p.user_id IS NOT NULL AND p.source = 'weekly' ORDER BY p.period_start DESC, p.rank ASC LIMIT ?`,
     args: [limit],

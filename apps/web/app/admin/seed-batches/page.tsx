@@ -1,4 +1,5 @@
 import { requireAdminPage } from "@/lib/admin";
+import { dbDate } from "@/lib/db-date";
 import { sqlClient } from "@/lib/db";
 import { AdminSeedControls } from "@/components/AdminControls";
 
@@ -27,7 +28,7 @@ export default async function AdminSeedBatches() {
                 <td>{r.status as string}</td>
                 <td>{Number(r.total_imported)}</td>
                 <td>{Number(r.total_generated)}</td>
-                <td className="muted-sm">{new Date((r.created_at as string) + "Z").toLocaleString()}</td>
+                <td className="muted-sm">{dbDate(r.created_at as string).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

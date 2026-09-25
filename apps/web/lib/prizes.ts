@@ -73,6 +73,9 @@ async function winnersForPeriod(
   limit: number,
   executor: SqlExecutor = sqlClient,
 ): Promise<Array<{ userId: string; correct: number; scored: number }>> {
+  // HAVING and ORDER BY expressions spell the aggregates out: Postgres lets a
+  // select-list alias stand alone in ORDER BY but not in HAVING or inside an
+  // expression (SQLite allows both).
   const res = await executor.execute({
     sql: `SELECT u.id AS user_id,
                  SUM(CASE WHEN g.is_correct = 1 THEN 1 ELSE 0 END) AS correct,
@@ -81,8 +84,10 @@ async function winnersForPeriod(
           WHERE u.email_verified_at IS NOT NULL AND u.status = 'active' AND g.is_scored = 1
             AND g.created_at >= ? AND g.created_at < ?
           GROUP BY u.id
-          HAVING scored >= ?
-          ORDER BY correct DESC, (CAST(correct AS REAL) / scored) DESC, scored DESC, last DESC
+          HAVING COUNT(*) >= ?
+          ORDER BY correct DESC,
+                   (CAST(SUM(CASE WHEN g.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) / COUNT(*)) DESC,
+                   scored DESC, last DESC
           LIMIT ?`,
     args: [startISO, endISO, env.prizeMinScored, limit],
   });

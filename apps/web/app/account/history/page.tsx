@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dbDate } from "@/lib/db-date";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getUserHistory } from "@/lib/queries";
@@ -83,7 +84,7 @@ export default async function HistoryPage({
                     <span style={{ color: "var(--wrong)" }}>Incorrect</span>
                   )}
                 </td>
-                <td className="muted-sm">{new Date(r.createdAt + "Z").toLocaleDateString()}</td>
+                <td className="muted-sm">{dbDate(r.createdAt).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>

@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@aiornot/db": "workspace:*",
-    "@libsql/client": "^0.15.7",
     "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@libsql/client": "^0.15.7"
   }
 }

@@ -31,7 +31,9 @@ const SECURITY_HEADERS = [
 const nextConfig: NextConfig = {
   // @aiornot/db ships raw TS that Next must transpile.
   transpilePackages: ["@aiornot/db", "@aiornot/seed"],
-  serverExternalPackages: ["@libsql/client", "@node-rs/argon2", "libsql", "sharp"],
+  // The database drivers stay out of the bundle: pg (under @profullstack/libsql-pg)
+  // and, for local file: databases, the native libSQL client.
+  serverExternalPackages: ["@profullstack/libsql-pg", "pg", "@libsql/client", "@node-rs/argon2", "libsql", "sharp"],
   // Don't advertise the framework/version to attackers.
   poweredByHeader: false,
   images: {

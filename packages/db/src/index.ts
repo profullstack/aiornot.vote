@@ -1,6 +1,6 @@
 export * as schema from "./schema";
 export * from "./schema";
-export { getDb, getClient } from "./client";
+export { getClient, isPostgres, resolveUrl } from "./client";
 export { ids, newId } from "./ids";
 
 // Canonical default tag set (seeded by seed-tags.ts).

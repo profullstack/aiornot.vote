@@ -4,7 +4,7 @@ A photorealistic image/video guessing game. Verified users decide whether media
 is **AI-generated** or **real**, track a personal history, compete on
 leaderboards, and subscribe to every list by **RSS**.
 
-Built on the ProFullstack stack with **Turso (SQLite) + Drizzle**, **Next.js
+Built on the ProFullstack stack with **Postgres (via @profullstack/libsql-pg) + Drizzle schema**, **Next.js
 15**, custom email/password auth (**Argon2id**), S3/R2 object storage, and
 seeded from **Unsplash** (real photos) + **OpenAI image generation** (AI
 variants). Deploys to **Railway**.
@@ -13,7 +13,7 @@ variants). Deploys to **Railway**.
 
 ```
 apps/web            Next.js app: public pages, auth, guessing, RSS, admin
-packages/db         Drizzle schema, SQL migrations, Turso client, seeders
+packages/db         Drizzle schema, SQL migrations (SQLite + Postgres editions), database client, seeders
 packages/seed       Unsplash import + OpenAI variant generation (shared)
 services/worker     CLI jobs: seed:unsplash, seed:ai-variants, recalc, warm-feeds
 docs/               PRD, API, RSS, seed-data notes
@@ -38,7 +38,7 @@ immediately. Email verification links are printed to the server console when
 ## Environment
 
 See [`.env.example`](./.env.example). Nothing secret is committed. For
-production set `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`, `SESSION_SECRET`,
+production set `DATABASE_URL` (postgres://...), `SESSION_SECRET`,
 `RESEND_API_KEY`, the `R2_*` bucket vars, and (for seeding) `UNSPLASH_ACCESS_KEY`
 + `OPENAI_API_KEY`.
 

@@ -416,7 +416,7 @@ export async function getLeaderboard(args: LeaderboardArgs): Promise<Leaderboard
   const res = await sqlClient.execute({
     sql: `
       SELECT u.id AS user_id,
-             COALESCE(NULLIF(u.display_name,''), 'anon-' || substr(u.id, -5)) AS display_name,
+             COALESCE(NULLIF(u.display_name,''), 'anon-' || substr(u.id, length(u.id) - 4)) AS display_name,
              SUM(CASE WHEN g.is_correct = 1 THEN 1 ELSE 0 END) AS correct,
              COUNT(*) AS scored,
              COALESCE(us.current_streak, 0) AS current_streak,
@@ -509,7 +509,7 @@ export async function getMyStanding(
 export async function getStreakLeaderboard(limit = 100): Promise<LeaderboardRow[]> {
   const res = await sqlClient.execute({
     sql: `SELECT u.id AS user_id,
-                 COALESCE(NULLIF(u.display_name,''), 'anon-' || substr(u.id, -5)) AS display_name,
+                 COALESCE(NULLIF(u.display_name,''), 'anon-' || substr(u.id, length(u.id) - 4)) AS display_name,
                  us.correct_guesses AS correct, us.scored_guesses AS scored,
                  us.accuracy, us.current_streak, us.best_streak
           FROM user_stats us JOIN users u ON u.id = us.user_id

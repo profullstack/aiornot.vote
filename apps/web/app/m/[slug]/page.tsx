@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dbDate } from "@/lib/db-date";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getMediaBySlug, getRelatedMedia, hasMembersOnlyTag } from "@/lib/queries";
@@ -138,7 +139,7 @@ export default async function MediaDetailPage({
           <h1>{m.title}</h1>
           <div className="meta-row">
             {m.mediaType.toUpperCase()} · submitted{" "}
-            {new Date(m.createdAt + "Z").toLocaleDateString()}
+            {dbDate(m.createdAt).toLocaleDateString()}
           </div>
           {m.description && <p className="muted" style={{ marginTop: 8 }}>{m.description}</p>}
 

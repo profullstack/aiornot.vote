@@ -2,17 +2,21 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { config } from "dotenv";
-import { getClient } from "./src/client";
+import { getClient, isPostgres } from "./src/client";
 
 // Load env from the repo root and the package dir (repo root wins if both exist).
 config({ path: join(process.cwd(), ".env") });
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, "../../.env") });
 
-const migrationsDir = join(__dirname, "migrations");
-
 async function main() {
   const client = getClient();
+  // Two editions: migrations/ (SQLite) and migrations-pg/ (Postgres). The
+  // Postgres directory starts from 0000_init.sql, the whole schema as it stood
+  // when the data left Turso (generated with `npx libsql-pg convert-schema`),
+  // and its _migrations table was copied across with the data, so the SQLite
+  // history reads as applied there. Add every new migration to both.
+  const migrationsDir = join(__dirname, isPostgres(client) ? "migrations-pg" : "migrations");
 
   await client.execute(
     `CREATE TABLE IF NOT EXISTS _migrations (

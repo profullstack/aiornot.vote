@@ -413,6 +413,9 @@ export async function getLeaderboard(args: LeaderboardArgs): Promise<Leaderboard
     params.push(args.tagSlug);
   }
 
+  // Postgres rules the SQLite original did not meet: a select-list alias may
+  // stand alone in ORDER BY but not in HAVING or inside an expression, and
+  // every non-aggregated column (the user_stats ones) must be grouped.
   const res = await sqlClient.execute({
     sql: `
       SELECT u.id AS user_id,
@@ -427,9 +430,11 @@ export async function getLeaderboard(args: LeaderboardArgs): Promise<Leaderboard
       LEFT JOIN user_stats us ON us.user_id = u.id
       ${needMediaJoin ? "JOIN media m ON m.id = g.media_id" : ""}
       WHERE ${where.join(" AND ")}
-      GROUP BY u.id
-      HAVING scored >= ?
-      ORDER BY correct DESC, (CAST(correct AS REAL) / scored) DESC, scored DESC, last_activity DESC
+      GROUP BY u.id, us.current_streak, us.best_streak
+      HAVING COUNT(*) >= ?
+      ORDER BY correct DESC,
+               (CAST(SUM(CASE WHEN g.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) / COUNT(*)) DESC,
+               scored DESC, last_activity DESC
       LIMIT ?`,
     args: [...params, minScored, limit] as never[],
   });

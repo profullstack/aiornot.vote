@@ -1,5 +1,8 @@
 import { resolve } from "node:path";
-import type { NextConfig } from "next";
+
+// Plain JS, not next.config.ts: `next start` loads a .ts config through the
+// typescript package, a devDependency the production image does not install
+// (Next then tries to `npm install` it at boot and the container dies).
 
 // Content-Security-Policy — allows our own inline (Next hydration), Google Fonts,
 // and the two third-party scripts we load (CrawlProof analytics/ads + Profullstack
@@ -29,7 +32,8 @@ const SECURITY_HEADERS = [
   { key: "Content-Security-Policy", value: CSP },
 ];
 
-const nextConfig: NextConfig = {
+/** @type {import("next").NextConfig} */
+const nextConfig = {
   // Pin the workspace root (the dir holding bun.lock). Without it Next guesses
   // from the nearest lockfile above, which on a dev box can be a home-dir one.
   // build and start both run with cwd = apps/web.

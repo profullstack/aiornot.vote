@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import type { NextConfig } from "next";
 
 // Content-Security-Policy — allows our own inline (Next hydration), Google Fonts,
@@ -29,6 +30,10 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // Pin the workspace root (the dir holding bun.lock). Without it Next guesses
+  // from the nearest lockfile above, which on a dev box can be a home-dir one.
+  // build and start both run with cwd = apps/web.
+  outputFileTracingRoot: resolve(process.cwd(), "../.."),
   // @aiornot/db ships raw TS that Next must transpile.
   transpilePackages: ["@aiornot/db", "@aiornot/seed"],
   // The database drivers stay out of the bundle: pg (under @profullstack/libsql-pg)

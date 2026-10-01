@@ -22,12 +22,12 @@ docs/               PRD, API, RSS, seed-data notes
 ## Quick start (local, no external keys needed)
 
 ```bash
-pnpm install
+bun install
 cp .env.example .env            # local defaults use a file: SQLite db at repo root
-pnpm migrate                    # apply schema
-pnpm seed:tags                  # 22 default tags
-pnpm seed:demo                  # 12 demo media (placeholder images) + admin user
-pnpm dev                        # http://localhost:3000
+bun run migrate                 # apply schema
+bun run seed:tags               # 22 default tags
+bun run seed:demo               # 12 demo media (placeholder images) + admin user
+bun run dev                     # http://localhost:3000
 ```
 
 The demo seed creates media with `picsum.photos` placeholders so the app renders
@@ -46,24 +46,25 @@ production set `DATABASE_URL` (postgres://...), `SESSION_SECRET`,
 
 ```bash
 # Real photos from Unsplash (needs UNSPLASH_ACCESS_KEY)
-pnpm --filter @aiornot/worker seed:unsplash 100
+bun --filter @aiornot/worker seed:unsplash 100
 
 # Photorealistic AI variants (needs OPENAI_API_KEY + R2_* storage)
-pnpm --filter @aiornot/worker seed:ai-variants 100
+bun --filter @aiornot/worker seed:ai-variants 100
 
 # Recompute leaderboard/media stats from raw guesses (cron-safe)
-pnpm --filter @aiornot/worker recalc:leaderboards
+bun --filter @aiornot/worker recalc:leaderboards
 ```
 
 Admins can also trigger small seed batches from `/admin/seed-batches`.
 
-## Deploy (Railway)
+## Deploy (dev2)
 
-Two services share this repo (see [`railway.json`](./railway.json)):
-
-- **web** — `pnpm install --frozen-lockfile && pnpm build`, start
-  `pnpm --filter @aiornot/db migrate && pnpm --filter @aiornot/web start`.
-- **worker** — runs the seed/recalc CLIs on a schedule.
+Every merge to `master` deploys to dev2 (`.github/workflows/deploy-dev2.yml`),
+which builds `.nixpacks/Dockerfile` (a hand-written Bun image; the path is the
+one dev2's compose names). One container runs the migrations and seeds, then the
+media daemon (`services/worker`) in the background and the web app in front.
+The runtime is Bun: `bun install`, `bun run build`, and `bun <file>.ts` for the
+CLIs (no tsx).
 
 ## What's implemented
 

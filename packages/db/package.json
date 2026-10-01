@@ -10,9 +10,9 @@
     "./schema": "./src/schema.ts"
   },
   "scripts": {
-    "migrate": "tsx migrate.ts",
-    "seed:tags": "tsx seed-tags.ts",
-    "seed:demo": "tsx seed-demo.ts"
+    "migrate": "bun migrate.ts",
+    "seed:tags": "bun seed-tags.ts",
+    "seed:demo": "bun seed-demo.ts"
   },
   "dependencies": {
     "@profullstack/libsql-pg": "^0.1.3",

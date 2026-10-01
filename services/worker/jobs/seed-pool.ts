@@ -3,8 +3,8 @@ import { seedPool } from "@aiornot/seed";
 
 /**
  * Fill the media pool so users never wait on AI generation.
- * Usage: pnpm --filter @aiornot/worker seed:pool [realPerCategory] [aiPerCategory] [concurrency]
- * Example: pnpm --filter @aiornot/worker seed:pool 10 10 3
+ * Usage: bun --filter @aiornot/worker seed:pool [realPerCategory] [aiPerCategory] [concurrency]
+ * Example: bun --filter @aiornot/worker seed:pool 10 10 3
  *
  * Idempotent + resumable: existing approved media count toward the per-category
  * targets, so re-running only tops up the shortfall.

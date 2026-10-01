@@ -1,4 +1,4 @@
-# Based on the sh1pt Actions Fleet node-pnpm-test pack.
+# Based on the sh1pt Actions Fleet node-pnpm-test pack, moved to Bun.
 name: test
 
 on:
@@ -16,15 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
-          cache: pnpm
+          bun-version-file: package.json
 
-      - run: pnpm install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
-      - run: pnpm test
+      - run: bun run test
         env:
           CI: "true"

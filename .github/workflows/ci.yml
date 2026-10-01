@@ -1,5 +1,6 @@
-# Based on the sh1pt Actions Fleet node-pnpm-ci pack, wired to this monorepo's
-# real typecheck / test / build scripts.
+# Bun CI for this monorepo: install from bun.lock, typecheck, tests, build, then
+# boot the built app the way the dev2 image does (bun --bun next start) and
+# render a page plus an OG image.
 name: CI
 
 on:
@@ -21,20 +22,57 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # pnpm version is read from the "packageManager" field in package.json.
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      # Bun version is read from the "packageManager" field in package.json.
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
-          cache: pnpm
+          bun-version-file: package.json
 
-      - run: pnpm install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
-      - run: pnpm typecheck
+      - run: bun run typecheck
 
-      - run: pnpm test
+      # vitest stays the gate (its suite uses vi.hoisted/vi.stubEnv/vi.stubGlobal,
+      # which bun test lacks); it runs on the runner's Node.
+      - run: bun run test
 
-      - run: pnpm build
+      # The portable part of the same suite under Bun's runtime, so a Bun-only
+      # behaviour difference fails here and not in prod.
+      - name: bun test (portable subset)
+        working-directory: apps/web
+        run: |
+          files=$(grep -L -E 'vi\.(hoisted|stubEnv|unstubAllEnvs|stubGlobal|unstubAllGlobals|resetModules)' lib/*.test.ts | sed 's#^#./#')
+          bun test --conditions react-server $files
+
+      - run: bun run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Boot under Bun and render pages
+        env:
+          SESSION_SECRET: ci-only-0123456789abcdef0123456789abcdef
+        run: |
+          bun run migrate && bun run seed:tags && bun run seed:demo
+          cd apps/web
+          bun --bun next start -p 3000 > ../../server.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:3000/ && break
+            sleep 1
+          done
+          for p in / /leaderboard /rss.xml /opengraph-image; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:3000$p")
+            echo "$p $code"
+            [ "$code" = 200 ] || { cat ../../server.log; exit 1; }
+          done
+          curl -s http://127.0.0.1:3000/opengraph-image | head -c 8 | od -An -tx1 | grep -q '89 50 4e 47' || { echo "OG image is not a PNG"; exit 1; }
+
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun audit --audit-level=critical

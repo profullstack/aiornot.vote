@@ -1,0 +1,11 @@
+.git
+.github
+**/node_modules
+**/.next
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.example
+local.db*
+.media
+docs

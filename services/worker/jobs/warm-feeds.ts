@@ -2,7 +2,7 @@ import "./_env.js";
 
 /**
  * Pre-warm public RSS feeds by requesting them so downstream caches are hot.
- * Usage: pnpm --filter @aiornot/worker warm:feeds
+ * Usage: bun --filter @aiornot/worker warm:feeds
  */
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const FEEDS = [

@@ -3,7 +3,7 @@ import { generateAiVariantsBatch } from "@aiornot/seed";
 
 /**
  * Generate photorealistic AI variants inspired by imported Unsplash photos.
- * Usage: pnpm --filter @aiornot/worker seed:ai-variants [total] [batchSize]
+ * Usage: bun --filter @aiornot/worker seed:ai-variants [total] [batchSize]
  */
 async function main() {
   const total = Number(process.argv[2]) || 100;

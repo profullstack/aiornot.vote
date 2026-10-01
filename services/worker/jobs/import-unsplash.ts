@@ -3,7 +3,7 @@ import { importUnsplashBatch, SEED_CATEGORIES } from "@aiornot/seed";
 
 /**
  * Import real photos from Unsplash across the seed categories.
- * Usage: pnpm --filter @aiornot/worker seed:unsplash [totalTarget] [perCategory]
+ * Usage: bun --filter @aiornot/worker seed:unsplash [totalTarget] [perCategory]
  */
 async function main() {
   const total = Number(process.argv[2]) || 100;

@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-/** Walk up to the workspace root (dir containing pnpm-workspace.yaml). */
+/** Walk up to the workspace root (dir holding bun.lock). */
 function workspaceRoot(): string {
   let dir = process.cwd();
   for (let i = 0; i < 8; i++) {
-    if (existsSync(resolve(dir, "pnpm-workspace.yaml"))) return dir;
+    if (existsSync(resolve(dir, "bun.lock"))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;

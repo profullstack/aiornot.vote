@@ -9,11 +9,11 @@ let _client: Client | null = null;
 const POSTGRES_URL = /^postgres(ql)?:\/\//i;
 const require_ = createRequire(import.meta.url);
 
-/** Walk up from cwd to the workspace root (dir containing pnpm-workspace.yaml). */
+/** Walk up from cwd to the workspace root (dir holding bun.lock). */
 function workspaceRoot(): string {
   let dir = process.cwd();
   for (let i = 0; i < 8; i++) {
-    if (existsSync(resolve(dir, "pnpm-workspace.yaml"))) return dir;
+    if (existsSync(resolve(dir, "bun.lock"))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;

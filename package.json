@@ -1,38 +1,38 @@
 {
   "name": "aiornot.vote",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "engines": {
-    "node": ">=22"
-  },
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "bun@1.4.0",
   "scripts": {
-    "dev": "pnpm --filter @aiornot/web dev",
-    "build": "pnpm --filter @aiornot/web build",
-    "start": "pnpm --filter @aiornot/web start",
-    "lint": "pnpm --filter @aiornot/web lint",
-    "migrate": "pnpm --filter @aiornot/db migrate",
-    "seed:tags": "pnpm --filter @aiornot/db seed:tags",
-    "seed:demo": "pnpm --filter @aiornot/db seed:demo",
-    "seed:unsplash": "pnpm --filter @aiornot/worker seed:unsplash",
-    "seed:ai-variants": "pnpm --filter @aiornot/worker seed:ai-variants",
-    "recalc:leaderboards": "pnpm --filter @aiornot/worker recalc:leaderboards",
-    "seed:pool": "pnpm --filter @aiornot/worker seed:pool",
-    "draw:prizes": "pnpm --filter @aiornot/worker draw:prizes",
-    "gen:tips": "pnpm --filter @aiornot/worker gen:tips",
-    "test": "pnpm --filter @aiornot/web test",
-    "typecheck": "pnpm --filter @aiornot/web typecheck"
+    "dev": "bun --filter @aiornot/web dev",
+    "build": "bun --filter @aiornot/web build",
+    "start": "bun --filter @aiornot/web start",
+    "lint": "bun --filter @aiornot/web lint",
+    "migrate": "bun --filter @aiornot/db migrate",
+    "seed:tags": "bun --filter @aiornot/db seed:tags",
+    "seed:demo": "bun --filter @aiornot/db seed:demo",
+    "seed:unsplash": "bun --filter @aiornot/worker seed:unsplash",
+    "seed:ai-variants": "bun --filter @aiornot/worker seed:ai-variants",
+    "recalc:leaderboards": "bun --filter @aiornot/worker recalc:leaderboards",
+    "seed:pool": "bun --filter @aiornot/worker seed:pool",
+    "draw:prizes": "bun --filter @aiornot/worker draw:prizes",
+    "gen:tips": "bun --filter @aiornot/worker gen:tips",
+    "test": "bun --filter @aiornot/web test",
+    "typecheck": "bun --filter @aiornot/web typecheck"
   },
   "devDependencies": {
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "sharp",
-      "esbuild",
-      "@node-rs/argon2"
-    ]
-  }
+  "trustedDependencies": [
+    "sharp",
+    "esbuild",
+    "@node-rs/argon2"
+  ],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ]
 }

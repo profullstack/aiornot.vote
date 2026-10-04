@@ -17,7 +17,7 @@ const CSP = [
   "media-src 'self' blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "script-src 'self' 'unsafe-inline' https://crawlproof.com https://feedback.profullstack.com",
+  "script-src 'self' 'unsafe-inline' https://crawlproof.com",
   "connect-src 'self' https:",
   "frame-src 'self' https:",
   "upgrade-insecure-requests",

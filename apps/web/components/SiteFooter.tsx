@@ -47,6 +47,11 @@ export function SiteFooter() {
             Profullstack, Inc.
           </a>
         </span>
+        <nav className="webring" aria-label="Profullstack webring" style={{ display: "flex", gap: 8 }}>
+          <a href="https://rssamplifier.com/ring/profullstack/previous?from=https%3A%2F%2Faiornot.vote%2F" rel="prev">{"<<"}</a>
+          <a href="https://rssamplifier.com/ring/profullstack">Profullstack</a>
+          <a href="https://rssamplifier.com/ring/profullstack/next?from=https%3A%2F%2Faiornot.vote%2F" rel="next">{">>"}</a>
+        </nav>
         <span style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           <Link href="/terms">Terms</Link>
           <Link href="/privacy">Privacy</Link>

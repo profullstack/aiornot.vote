@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { Footer as ProfullstackFooter } from "@profullstack/footer/react";
 import { AdSlot } from "./AdSlot";
 
 const CRAWLPROOF_AD_SLOT = "38f34cb0-f9bd-4c68-a56f-9da6b7cc652f";
 
 export function SiteFooter() {
   return (
-    <footer className="site-footer">
+    <div className="site-footer">
+      <footer>
       <AdSlot slot={CRAWLPROOF_AD_SLOT} format="banner_300x250" />
       <div className="footer-grid">
         <div>
@@ -40,27 +42,16 @@ export function SiteFooter() {
           <Link href="/about">About</Link>
         </div>
       </div>
-      <div className="footer-bottom">
-        <span>
-          © {new Date().getFullYear()}{" "}
-          <a href="https://github.com/profullstack/aiornot.vote" target="_blank" rel="noreferrer">
-            Profullstack, Inc.
-          </a>
-        </span>
-        <nav className="webring" aria-label="Profullstack webring" style={{ display: "flex", gap: 8 }}>
-          <a href="https://rssamplifier.com/ring/profullstack/previous?from=https%3A%2F%2Faiornot.vote%2F" rel="prev">{"<<"}</a>
-          <a href="https://rssamplifier.com/ring/profullstack">Profullstack</a>
-          <a href="https://rssamplifier.com/ring/profullstack/next?from=https%3A%2F%2Faiornot.vote%2F" rel="next">{">>"}</a>
-          <a href="https://rssamplifier.com/ring/profullstack/random?from=https%3A%2F%2Faiornot.vote%2F" title="Random site" aria-label="Random site">{"⚄"}</a>
-        </nav>
-        <span style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <Link href="/terms">Terms</Link>
-          <Link href="/privacy">Privacy</Link>
-          <a href="https://github.com/profullstack/aiornot.vote" target="_blank" rel="noreferrer">
-            Source on GitHub ↗
-          </a>
-        </span>
-      </div>
-    </footer>
+      </footer>
+      {/* Copyright + Profullstack ring nav, rendered server-side from the shared @latest template. */}
+      <ProfullstackFooter
+        site="https://aiornot.vote/"
+        links={[
+          { label: "Terms", href: "/terms" },
+          { label: "Privacy", href: "/privacy" },
+          { label: "Source on GitHub ↗", href: "https://github.com/profullstack/aiornot.vote" },
+        ]}
+      />
+    </div>
   );
 }

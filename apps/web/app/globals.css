@@ -231,7 +231,7 @@ a:hover { color: var(--human); }
 .footer-grid h4 { font-family: var(--unbounded); font-size: 13px; color: var(--text); margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.08em; }
 .footer-grid a { display: block; color: var(--muted-2); margin: 5px 0; }
 .footer-grid a:hover { color: var(--ai); }
-.site-footer .pfs-footer { margin-top: 24px; }
+.site-footer .pfs-footer { margin-top: 24px; --pfs-footer-muted: var(--muted-2); }
 .site-footer .pfs-footer a:hover { color: var(--ai); }
 
 /* Notices */

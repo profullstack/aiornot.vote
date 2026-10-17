@@ -44,7 +44,7 @@ export default function PricingPage() {
         <li><strong>Free</strong> — play every image, video, and post; build streaks; earn power-ups; appear on the leaderboard. A free account keeps your progress.</li>
         <li><strong>Submit pass (${env.pricePlayPassUsd})</strong> — a one-time anti-spam pass for submitting new media and post links.</li>
         <li><strong>Lifetime membership (${env.priceLifetimeUsd})</strong> — members-only collection, a lifetime badge, and free API keys. Pay once, forever.</li>
-        <li><strong>API access (${env.priceApiAccessUsd})</strong> — a one-off key for the <Link href="/api">Crowd-detection API</Link> if you don&apos;t need membership.</li>
+        <li><strong>API access (${env.priceApiAccessUsd})</strong> — a one-off key for the <Link href="/api-docs">Crowd-detection API</Link> if you don&apos;t need membership.</li>
       </ul>
 
       <h2>How does payment work?</h2>

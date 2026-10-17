@@ -123,7 +123,7 @@ export function CheckoutPoller({
         )}
         <p style={{ marginTop: 16 }}>
           <Link href={success.primaryHref} className="btn btn-primary">{success.primaryLabel}</Link>
-          {success.showApiDocs && <> · <Link href="/api">API docs</Link></>}
+          {success.showApiDocs && <> · <Link href="/api-docs">API docs</Link></>}
         </p>
       </div>
     );
@@ -195,7 +195,7 @@ export function ApiKeysManager({
             {busy ? "Creating…" : "+ New key"}
           </button>
         ) : (
-          <Link href="/api" className="btn btn-sm">Get API access ($1)</Link>
+          <Link href="/api-docs" className="btn btn-sm">Get API access ($1)</Link>
         )}
       </div>
       {fresh && (

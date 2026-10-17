@@ -68,7 +68,7 @@ export default async function MembershipPage() {
       )}
 
       <p className="muted-sm" style={{ marginTop: 14 }}>
-        Just need programmatic access? Grab <Link href="/api">$1 API access</Link> instead.
+        Just need programmatic access? Grab <Link href="/api-docs">$1 API access</Link> instead.
       </p>
     </div>
   );

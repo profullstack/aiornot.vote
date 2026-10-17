@@ -80,6 +80,9 @@
     "sharp",
     "esbuild",
   ],
+  "overrides": {
+    "tinypool": "^2.1.2",
+  },
   "packages": {
     "@aiornot/db": ["@aiornot/db@workspace:packages/db"],
 
@@ -319,7 +322,7 @@
 
     "@profullstack/emailer": ["@profullstack/emailer@1.0.1", "", {}, "sha512-/uhHJJGH+1xSSz3mJn6X+m6aruYjMD3JOaRp/d4R/YWlzpy07H9z0/JUleIyRyBPNmaANSIwjTZ7aVjaukOEpg=="],
 
-    "@profullstack/footer": ["@profullstack/footer@0.2.1", "", { "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"], "bin": { "profullstack-footer": "bin/profullstack-footer.js" } }, "sha512-KHmKVwrlzCBrSAAJ4zobNFCxTg8VF0gvNMeAut00dX3+gbWCtk6eOwIR2AaqEC7smj6Aio6cIexzt/dUnv1McA=="],
+    "@profullstack/footer": ["@profullstack/footer@0.2.4", "", { "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"], "bin": { "profullstack-footer": "bin/profullstack-footer.js" } }, "sha512-2ErIzHJCDA2baP8aK6f7rCHohW4EX+wnp7D1mrVMQTUxRcyZwKzmho96hhEFJndXRBGgxT3H/78BHOeBfLxTzg=="],
 
     "@profullstack/keys": ["@profullstack/keys@0.1.0", "", {}, "sha512-Vys47LvS5ivhdZu4SYOxh9Le3DEmWhjP0+CtrU45RhXAbY0ZFG/2Dk9V1bIIUGDp8UWMJqctvUD21JrNjfh04w=="],
 
@@ -1029,7 +1032,7 @@
 
     "tinyglobby": ["tinyglobby@0.2.17", "", { "dependencies": { "fdir": "6.5.0", "picomatch": "4.0.5" } }, "sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g=="],
 
-    "tinypool": ["tinypool@1.1.1", "", {}, "sha512-Zba82s87IFq9A9XmjiX5uZA/ARWDrB03OHlq+Vw1fSdt0I+4/Kutwy8BP4Y/y/aORMo61FQ0vIb5j44vSo5Pkg=="],
+    "tinypool": ["tinypool@2.2.0", "", {}, "sha512-jBrmx4lYmaC9k/mgPbylxs7kBUxHtD8256up+HjLaDFfXScKJQyil+SWXSvhAtT7XHo+yTVlpB81PGmHP8oLSQ=="],
 
     "tinyrainbow": ["tinyrainbow@2.0.0", "", {}, "sha512-op4nsTR47R6p0vMUUoYl/a+ljLFVtlfaXkLQmqfLR1qHma1h/ysYk4hEXZ880bf2CYgTskvTa/e196Vd5dDQXw=="],
 

@@ -83,7 +83,7 @@ export default async function AccountPage() {
       {!user.isMember && (
         <p className="muted-sm" style={{ marginTop: 8 }}>
           <Link href="/membership">Become a lifetime member ($2)</Link> for free API keys + a badge, or{" "}
-          <Link href="/api">buy one-off API access ($1)</Link>.
+          <Link href="/api-docs">buy one-off API access ($1)</Link>.
         </p>
       )}
 

@@ -78,7 +78,7 @@ async function followRanking(kind: "followers" | "following", limit: number): Pr
           JOIN users ranked ON ranked.id = f.${groupCol}
           JOIN users counted ON counted.id = f.${countedCol}
           WHERE ranked.status = 'active' AND counted.status = 'active'
-          GROUP BY f.${groupCol}
+          GROUP BY f.${groupCol}, ranked.display_name
           ORDER BY c DESC, name ASC
           LIMIT ?`,
     args: [limit],

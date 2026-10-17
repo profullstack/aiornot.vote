@@ -27,7 +27,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
         <Link href="/prizes">Prizes</Link>
         <Link href="/refer">Refer</Link>
         <Link href="/feeds">Feeds</Link>
-        <Link href="/api">API</Link>
+        <Link href="/api-docs">API</Link>
         <Link href="/submit">Submit</Link>
       </nav>
       <div className="nav-auth">

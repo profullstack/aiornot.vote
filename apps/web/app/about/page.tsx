@@ -63,7 +63,7 @@ export default function AboutPage() {
       <ul>
         <li><strong>Play:</strong> guess AI vs. real one item at a time and build a streak.</li>
         <li><strong>Crowd verdict:</strong> every vote sharpens the community&apos;s AI-vs-real call.</li>
-        <li><strong>Get the data:</strong> read verdicts on the web, by <Link href="/feeds">RSS</Link>, or via the <Link href="/api">API</Link>.</li>
+        <li><strong>Get the data:</strong> read verdicts on the web, by <Link href="/feeds">RSS</Link>, or via the <Link href="/api-docs">API</Link>.</li>
       </ul>
 
       <h2>Frequently asked questions</h2>

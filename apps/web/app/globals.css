@@ -227,10 +227,12 @@ a:hover { color: var(--human); }
 
 /* Footer */
 .site-footer { border-top: 1px solid var(--border-1); margin-top: 48px; padding: 20px 24px; color: var(--muted-2); font-size: 13px; }
-.footer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; max-width: 1180px; margin: 0 auto; }
+.footer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 24px; max-width: 1180px; margin: 0 auto; }
 .footer-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .footer-links a { color: var(--muted-2); }
 .footer-links a:hover { color: var(--ai); }
+.site-footer .pfs-footer { margin-top: 12px; --pfs-footer-muted: var(--muted-2); }
+.site-footer .pfs-footer a:hover { color: var(--ai); }
 
 /* Notices */
 .notice { padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-2); background: var(--panel); font-size: 14px; margin: 16px 0; }

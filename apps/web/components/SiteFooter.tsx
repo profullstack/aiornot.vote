@@ -1,14 +1,10 @@
 import Link from "next/link";
 import { Footer as ProfullstackFooter } from "@profullstack/footer/react";
-import { AdSlot } from "./AdSlot";
-
-const CRAWLPROOF_AD_SLOT = "38f34cb0-f9bd-4c68-a56f-9da6b7cc652f";
 
 export function SiteFooter() {
   return (
     <div className="site-footer">
       <footer>
-      <AdSlot slot={CRAWLPROOF_AD_SLOT} format="banner_300x250" />
       <div className="footer-grid">
         <div>
           <h4>AIorNot.vote</h4>

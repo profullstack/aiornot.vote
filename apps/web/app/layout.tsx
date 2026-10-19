@@ -3,12 +3,15 @@ import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { AdSlot } from "@/components/AdSlot";
 import { WinBanner } from "@/components/PrizeUI";
 import { TipBar } from "@/components/TipBar";
 import { getCurrentUser } from "@/lib/session";
 import { getClaimablePrizes } from "@/lib/prizes";
 import { getRandomTip } from "@/lib/tips";
 import { env } from "@/lib/env";
+
+const CRAWLPROOF_AD_SLOT = "38f34cb0-f9bd-4c68-a56f-9da6b7cc652f";
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.appUrl),
@@ -105,10 +108,14 @@ export default async function RootLayout({
         <SiteHeader user={user} />
         <WinBanner prizes={claimable.map((p) => ({ id: p.id, rewardLabel: p.rewardLabel, claimDeadline: p.claimDeadline }))} />
         <TipBar tip={tip} />
-        <main>{children}</main>
+        <main>
+          {/* The site's one ad unit sits at the top of the page content, never in the footer. */}
+          <AdSlot slot={CRAWLPROOF_AD_SLOT} format="banner_300x250" className="ad-slot-top" />
+          {children}
+        </main>
         <SiteFooter />
         {/* CrawlProof analytics + ad network. Ad units are placed in the UI
-            (see AdSlot in the footer); ad.js fills any [data-cp-ad] slot in a
+            (see AdSlot at the top of <main>); ad.js fills any [data-cp-ad] slot in a
             sandboxed iframe and never blocks page load. */}
         <Script data-site="8ad2116a-ae39-434a-8e2e-216931f80f43" src="https://crawlproof.com/stats.js" strategy="afterInteractive" />
         <Script src="https://crawlproof.com/ad.js" strategy="afterInteractive" />

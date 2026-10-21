@@ -15,4 +15,5 @@ local.db-*
 .turbo/
 coverage/
 .media/
+.library-originals/
 *.tsbuildinfo

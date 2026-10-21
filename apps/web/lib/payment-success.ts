@@ -24,6 +24,15 @@ export function paymentSuccessContent(purpose: string): PaymentSuccessContent {
     };
   }
 
+  if (purpose === "library_pass") {
+    return {
+      message: "Your photo library pass is active. Download full-resolution originals, licensed for commercial use.",
+      primaryHref: "/library",
+      primaryLabel: "Browse the library →",
+      showApiDocs: false,
+    };
+  }
+
   if (purpose === "api_access") {
     return {
       message: "API access granted. Manage your keys in your account.",

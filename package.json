@@ -16,6 +16,7 @@
     "seed:ai-variants": "bun --filter @aiornot/worker seed:ai-variants",
     "recalc:leaderboards": "bun --filter @aiornot/worker recalc:leaderboards",
     "seed:pool": "bun --filter @aiornot/worker seed:pool",
+    "seed:library": "bun --filter @aiornot/worker seed:library",
     "draw:prizes": "bun --filter @aiornot/worker draw:prizes",
     "gen:tips": "bun --filter @aiornot/worker gen:tips",
     "test": "bun --filter @aiornot/web test",

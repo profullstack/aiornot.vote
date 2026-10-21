@@ -26,7 +26,8 @@ export default async function AdminMediaPage({
 
   const res = await sqlClient.execute({
     sql: `SELECT id, slug, title, status, truth_label, is_featured, is_score_eligible,
-                 thumbnail_url, media_url, source_provider
+                 thumbnail_url, media_url, source_provider, library_original_key,
+                 (SELECT lp.slug FROM library_photos lp WHERE lp.media_id = media.id AND lp.status = 'listed' LIMIT 1) AS library_slug
           FROM media ${whereSql} ORDER BY created_at DESC LIMIT 100`,
     args: args as never[],
   });
@@ -41,6 +42,8 @@ export default async function AdminMediaPage({
     thumbnailUrl: (r.thumbnail_url as string) ?? null,
     mediaUrl: r.media_url as string,
     provider: (r.source_provider as string) ?? null,
+    libraryOptIn: r.library_original_key != null,
+    librarySlug: (r.library_slug as string) ?? null,
   }));
 
   return (

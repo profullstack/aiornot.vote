@@ -57,6 +57,31 @@ bun --filter @aiornot/worker recalc:leaderboards
 
 Admins can also trigger small seed batches from `/admin/seed-batches`.
 
+## Photo library (`/library`)
+
+A paid repository of licensed photos, separate from the game's media table
+(library rows show provenance in the open; the game hides it until you guess).
+
+- **Pass:** `library_pass` is a CoinPay purpose like the others. It costs
+  `PRICE_LIBRARY_PASS_USD` (default 9) for `LIBRARY_PASS_DAYS` (default 30) of
+  full-resolution downloads, capped at `LIBRARY_DAILY_DOWNLOADS` (default 100) a
+  day. Buying again stacks the days. Promo codes with `applies_to = 'library_pass'` work.
+- **Sources:** contributors tick "License it for the photo library" on `/submit`
+  (uploaded JPEG/PNG/WebP, claimed not-AI). A moderator approves it, labels it
+  `not_ai`, then clicks **Add to library** in `/admin/media`. Listing takes the
+  item out of game scoring. The archive is public-domain (CC0) photographs from
+  The Met's Open Access API.
+- **Storage:** originals live in `LIBRARY_STORAGE_DIR` (default
+  `$MEDIA_STORAGE_DIR/../.library-originals`, so `/data/.library-originals` in
+  prod), which `/media` never serves. Pass holders get them from
+  `/api/library/<id>/download`. Public previews are 960px watermarked WebP.
+- **Unsplash/picsum photos are never listed:** their license forbids reselling them.
+
+```bash
+# Seed the archive with public-domain photographs from The Met
+bun --filter @aiornot/worker seed:library 500
+```
+
 ## Deploy (dev2)
 
 Every merge to `master` deploys to dev2 (`.github/workflows/deploy-dev2.yml`),

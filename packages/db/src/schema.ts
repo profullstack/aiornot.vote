@@ -25,6 +25,7 @@ export const users = sqliteTable(
     role: text("role").notNull().default("user"),
     isLifetimeMember: integer("is_lifetime_member").notNull().default(0),
     playPassAt: text("play_pass_at"),
+    libraryPassUntil: text("library_pass_until"),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
     lastLoginAt: text("last_login_at"),
@@ -145,6 +146,7 @@ export const media = sqliteTable(
     perceptualHash: text("perceptual_hash"),
     aiPromptSummary: text("ai_prompt_summary"),
     aiModel: text("ai_model"),
+    libraryOriginalKey: text("library_original_key"),
     createdAt: text("created_at").notNull().default(now),
     updatedAt: text("updated_at").notNull().default(now),
     approvedAt: text("approved_at"),
@@ -159,6 +161,49 @@ export const media = sqliteTable(
     index("idx_media_file_hash").on(t.fileHash),
     index("idx_media_perceptual_hash").on(t.perceptualHash),
   ],
+);
+
+export const libraryPhotos = sqliteTable(
+  "library_photos",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    description: text("description"),
+    photographer: text("photographer"),
+    photoDate: text("photo_date"),
+    creditUrl: text("credit_url"),
+    source: text("source").notNull(),
+    sourceId: text("source_id"),
+    license: text("license").notNull(),
+    contributorUserId: text("contributor_user_id"),
+    mediaId: text("media_id"),
+    previewUrl: text("preview_url").notNull(),
+    originalKey: text("original_key").notNull(),
+    mimeType: text("mime_type"),
+    width: integer("width"),
+    height: integer("height"),
+    fileSizeBytes: integer("file_size_bytes"),
+    tags: text("tags"),
+    status: text("status").notNull().default("listed"),
+    downloadCount: integer("download_count").notNull().default(0),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [
+    uniqueIndex("uq_library_source").on(t.source, t.sourceId),
+    index("idx_library_status_created").on(t.status, t.createdAt),
+  ],
+);
+
+export const libraryDownloads = sqliteTable(
+  "library_downloads",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    photoId: text("photo_id").notNull(),
+    createdAt: text("created_at").notNull().default(now),
+  },
+  (t) => [index("idx_library_downloads_user").on(t.userId, t.createdAt)],
 );
 
 export const unsplashPhotos = sqliteTable("unsplash_photos", {

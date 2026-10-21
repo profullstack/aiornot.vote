@@ -4,6 +4,8 @@ import { sqlClient } from "./db";
 import { newId } from "@aiornot/db";
 import { randomToken, hmac } from "./crypto";
 import { normalizePromoPercentOff } from "./promo-form";
+import { env } from "./env";
+import { extendLibraryPass } from "./library-pass";
 
 type SqlExecutor = Pick<Client, "execute">;
 
@@ -96,6 +98,19 @@ export async function grantPlayPass(userId: string, db: SqlExecutor = sqlClient)
   await db.execute({
     sql: "UPDATE users SET play_pass_at = COALESCE(play_pass_at, ?), updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     args: [new Date().toISOString(), userId],
+  });
+}
+
+/**
+ * Grant (or extend) the photo library pass. Buying again while a pass is live
+ * stacks the days on its end rather than wasting what is left.
+ */
+export async function grantLibraryPass(userId: string, db: SqlExecutor = sqlClient): Promise<void> {
+  const cur = await db.execute({ sql: "SELECT library_pass_until FROM users WHERE id = ? LIMIT 1", args: [userId] });
+  const until = extendLibraryPass((cur.rows[0]?.library_pass_until as string) ?? null, env.libraryPassDays);
+  await db.execute({
+    sql: "UPDATE users SET library_pass_until = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    args: [until, userId],
   });
 }
 
@@ -291,6 +306,10 @@ export async function grantForPayment(payment: {
   }
   if (payment.purpose === "play_pass") {
     await grantPlayPass(payment.userId, db);
+    return {};
+  }
+  if (payment.purpose === "library_pass") {
+    await grantLibraryPass(payment.userId, db);
     return {};
   }
   if (payment.purpose === "api_access") {

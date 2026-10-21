@@ -5,6 +5,7 @@ import { ids } from "@aiornot/db";
 import { randomToken, hashSessionToken, hashIp, hashUserAgent } from "./crypto";
 import { isAdminEmail } from "./env";
 import { hasSubmitEntitlement } from "./access";
+import { hasLibraryPass } from "./library-pass";
 
 const COOKIE = "aon_session";
 const SESSION_TTL_DAYS = 30;
@@ -23,6 +24,10 @@ export type SessionUser = {
   canPlay: boolean;
   /** May submit new media/post links. This is the paid anti-spam gate. */
   canSubmit: boolean;
+  /** ISO time the photo library pass runs until, if one was ever bought. */
+  libraryPassUntil: string | null;
+  /** May download library originals: a live pass, or an admin. */
+  hasLibraryAccess: boolean;
 };
 
 function isoInDays(days: number): string {
@@ -80,7 +85,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (!token) return null;
 
   const res = await sqlClient.execute({
-    sql: `SELECT u.id, u.email, u.display_name, u.status, u.role, u.email_verified_at, u.is_lifetime_member, u.play_pass_at
+    sql: `SELECT u.id, u.email, u.display_name, u.status, u.role, u.email_verified_at, u.is_lifetime_member, u.play_pass_at, u.library_pass_until
           FROM sessions s JOIN users u ON u.id = s.user_id
           WHERE s.session_token_hash = ? AND s.expires_at > ?
           LIMIT 1`,
@@ -93,6 +98,8 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const email = row.email as string;
   const isMember = Number(row.is_lifetime_member ?? 0) === 1;
   const hasPlayPass = row.play_pass_at != null;
+  const isAdmin = row.role === "admin" || isAdminEmail(email);
+  const libraryPassUntil = (row.library_pass_until as string) ?? null;
   return {
     id: row.id as string,
     email,
@@ -100,12 +107,14 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     status: row.status as string,
     role: row.role as string,
     emailVerified: row.email_verified_at != null,
-    isAdmin: row.role === "admin" || isAdminEmail(email),
+    isAdmin,
     isMember,
     hasPlayPass,
     // Play is free: no $1 pass required. Membership/play_pass still tracked for history.
     canPlay: true,
     canSubmit: hasSubmitEntitlement({ isMember, hasPlayPass }),
+    libraryPassUntil,
+    hasLibraryAccess: isAdmin || hasLibraryPass(libraryPassUntil),
   };
 }
 

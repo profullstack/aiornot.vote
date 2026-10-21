@@ -63,7 +63,7 @@ export type WebhookOutcome =
   | { handled: true; kind: "payment"; paymentRef: string; granted: boolean };
 
 /** Purposes with no secret to reveal, so the webhook can grant them outright. */
-const WEBHOOK_GRANTABLE = new Set(["lifetime_membership", "play_pass"]);
+const WEBHOOK_GRANTABLE = new Set(["lifetime_membership", "play_pass", "library_pass"]);
 
 /**
  * Settle one verified CoinPay webhook. Idempotent: every write is guarded by a

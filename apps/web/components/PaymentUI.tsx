@@ -10,7 +10,7 @@ export function BuyButton({
   priceUsd,
   label,
 }: {
-  purpose: "api_access" | "lifetime_membership" | "play_pass";
+  purpose: "api_access" | "lifetime_membership" | "play_pass" | "library_pass";
   priceUsd: number;
   label: string;
 }) {

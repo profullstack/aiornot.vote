@@ -43,8 +43,8 @@ export async function POST(
   switch (action) {
     case "approve":
       await sqlClient.execute({
-        sql: "UPDATE media SET status='approved', approved_at=COALESCE(approved_at, CURRENT_TIMESTAMP), updated_at=CURRENT_TIMESTAMP WHERE id=?",
-        args: [id],
+        sql: "UPDATE media SET status='approved', approved_at=COALESCE(approved_at, ?), updated_at=CURRENT_TIMESTAMP WHERE id=?",
+        args: [new Date().toISOString(), id],
       });
       break;
     case "reject":

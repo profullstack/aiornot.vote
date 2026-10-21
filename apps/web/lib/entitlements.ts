@@ -94,8 +94,8 @@ export async function grantMembership(userId: string, db: SqlExecutor = sqlClien
 /** Grant the one-time play pass (idempotent — first grant wins the timestamp). */
 export async function grantPlayPass(userId: string, db: SqlExecutor = sqlClient): Promise<void> {
   await db.execute({
-    sql: "UPDATE users SET play_pass_at = COALESCE(play_pass_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-    args: [userId],
+    sql: "UPDATE users SET play_pass_at = COALESCE(play_pass_at, ?), updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    args: [new Date().toISOString(), userId],
   });
 }
 

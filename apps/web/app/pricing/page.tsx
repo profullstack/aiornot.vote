@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "AIorNot.vote is free to play. Optional submit access, lifetime membership, and one-off API access are available via crypto.",
+    "AIorNot.vote is free to play. Optional submit access, lifetime membership, one-off API access and a photo library pass are available via crypto.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -25,6 +25,7 @@ export default function PricingPage() {
               { "@type": "Offer", name: "Submit pass", price: String(env.pricePlayPassUsd), priceCurrency: "USD", url: `${env.appUrl}/membership` },
               { "@type": "Offer", name: "Lifetime membership", price: String(env.priceLifetimeUsd), priceCurrency: "USD", url: `${env.appUrl}/membership` },
               { "@type": "Offer", name: "API access", price: String(env.priceApiAccessUsd), priceCurrency: "USD", url: `${env.appUrl}/api` },
+              { "@type": "Offer", name: `Photo library pass (${env.libraryPassDays} days)`, price: String(env.priceLibraryPassUsd), priceCurrency: "USD", url: `${env.appUrl}/library` },
             ],
           }),
         }}
@@ -37,6 +38,7 @@ export default function PricingPage() {
         <div className="tile"><div className="val">${env.pricePlayPassUsd}</div><div className="lbl">Submit pass</div></div>
         <div className="tile"><div className="val">${env.priceLifetimeUsd}</div><div className="lbl">Lifetime membership</div></div>
         <div className="tile"><div className="val">${env.priceApiAccessUsd}</div><div className="lbl">API access (one-off)</div></div>
+        <div className="tile"><div className="val">${env.priceLibraryPassUsd}</div><div className="lbl">Photo library, {env.libraryPassDays} days</div></div>
       </div>
 
       <h2>What&apos;s included</h2>
@@ -45,6 +47,7 @@ export default function PricingPage() {
         <li><strong>Submit pass (${env.pricePlayPassUsd})</strong> — a one-time anti-spam pass for submitting new media and post links.</li>
         <li><strong>Lifetime membership (${env.priceLifetimeUsd})</strong> — members-only collection, a lifetime badge, and free API keys. Pay once, forever.</li>
         <li><strong>API access (${env.priceApiAccessUsd})</strong> — a one-off key for the <Link href="/api-docs">Crowd-detection API</Link> if you don&apos;t need membership.</li>
+        <li><strong>Photo library pass (${env.priceLibraryPassUsd} for {env.libraryPassDays} days)</strong> — full-resolution downloads from the <Link href="/library">photo library</Link> of human-made and public-domain photos, with a royalty-free commercial <Link href="/library/license">license</Link>. Pay once; buy again to add days.</li>
       </ul>
 
       <h2>How does payment work?</h2>

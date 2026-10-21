@@ -13,6 +13,7 @@ const PURPOSES: Record<string, { amount: () => number; label: string }> = {
   api_access: { amount: () => env.priceApiAccessUsd, label: "AIorNot.vote API access" },
   lifetime_membership: { amount: () => env.priceLifetimeUsd, label: "AIorNot.vote lifetime membership" },
   play_pass: { amount: () => env.pricePlayPassUsd, label: "AIorNot.vote play pass" },
+  library_pass: { amount: () => env.priceLibraryPassUsd, label: `AIorNot.vote photo library pass (${env.libraryPassDays} days)` },
 };
 
 export async function POST(req: Request) {
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
       app: "aiornot.vote",
     },
     successUrl: `${base}/checkout/${paymentId}?session={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${base}/pricing`,
+    cancelUrl: purpose === "library_pass" ? `${base}/library` : `${base}/pricing`,
     idempotencyKey: `aiornot-${paymentId}`,
   });
   if (!created.ok) {

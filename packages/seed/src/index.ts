@@ -11,6 +11,7 @@ export { seedPool } from "./pool";
 export { generateContinuousBatch } from "./continuous";
 export { generateTips } from "./tips";
 export { poolKey, POOL_DIR } from "./store-remote-image";
+export { storeImage } from "./store-image";
 
 function slugify(s: string): string {
   return (
@@ -295,3 +296,14 @@ export async function generateAiVariantsBatch(opts: {
 // Shared helpers reused by the pool orchestrator (pool.ts).
 export { startBatch, finishBatch, uniqueSlug, attachTags, slugify };
 export type { Client };
+export {
+  libraryOriginalsDir,
+  libraryOriginalPath,
+  storeLibraryFile,
+  writeLibraryOriginal,
+  publishLibraryFile,
+  insertLibraryPhoto,
+  importMetPhotos,
+  cleanMetTitle,
+} from "./library";
+export type { StoredLibraryFile } from "./library";

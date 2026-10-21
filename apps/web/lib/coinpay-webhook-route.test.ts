@@ -121,6 +121,20 @@ describe("POST /api/payments/coinpay/webhook", () => {
     expect(mocks.txClose).toHaveBeenCalled();
   });
 
+  it("grants a photo library pass from the webhook alone", async () => {
+    mocks.execute
+      .mockResolvedValueOnce({ rows: [{ id: "pay_3", user_id: "user-1", purpose: "library_pass", status: "pending", promo_code: null }] })
+      .mockResolvedValueOnce({ rowsAffected: 1 });
+    mocks.grantPaymentInTransaction.mockResolvedValue({});
+    const res = await POST(
+      signed(coinpayEvent("cp-lib", "payment.confirmed", "confirmed", { purpose: "library_pass", payment_ref: "pay_3", account_id: "user-1" })),
+    );
+    expect(await res.json()).toMatchObject({ handled: true, kind: "payment", paymentRef: "pay_3", granted: true });
+    expect(mocks.grantPaymentInTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentId: "pay_3", userId: "user-1", purpose: "library_pass" }),
+    );
+  });
+
   it("only confirms API access so the key is revealed on the buyer's status poll", async () => {
     mocks.execute
       .mockResolvedValueOnce({ rows: [{ id: "pay_2", user_id: "user-1", purpose: "api_access", status: "pending", promo_code: null }] })

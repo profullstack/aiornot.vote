@@ -22,7 +22,7 @@ async function createAction(formData: FormData) {
   await requireAdminPage();
   const code = String(formData.get("code") || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
   const percentOff = normalizePromoPercentOff(formData.get("percent_off"));
-  const appliesTo = ["any", "play_pass", "lifetime_membership"].includes(String(formData.get("applies_to")))
+  const appliesTo = ["any", "play_pass", "lifetime_membership", "library_pass"].includes(String(formData.get("applies_to")))
     ? String(formData.get("applies_to"))
     : "any";
   const maxUses = normalizePromoMaxUses(formData.get("max_uses"));
@@ -87,6 +87,7 @@ export default async function AdminPromos() {
             style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }}>
             <option value="any">any purchase</option>
             <option value="play_pass">play pass only</option>
+            <option value="library_pass">photo library pass only</option>
             <option value="lifetime_membership">membership only</option>
           </select>
           <input name="max_uses" type="number" min={1} placeholder="Max uses (blank = unlimited)"

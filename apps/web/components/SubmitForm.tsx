@@ -60,8 +60,18 @@ export function SubmitForm({ canSubmit }: { canSubmit: boolean }) {
           <option value="not_ai">Real (not AI)</option>
         </select>
       </div>
+      <div className="field">
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontWeight: 400 }}>
+          <input type="checkbox" name="library" value="1" style={{ width: "auto", marginTop: 4 }} />
+          <span>
+            License it for the <Link href="/library">photo library</Link>. I took this photo myself, it is
+            not AI, and I grant the <Link href="/library/license">library license</Link> (I keep my
+            copyright). Uploaded JPEG, PNG or WebP only, with &ldquo;Real (not AI)&rdquo; picked above.
+          </span>
+        </label>
+      </div>
       {err && <div className="form-error">{err}</div>}
-      {ok && <div className="form-ok">Submitted for review — thanks! Redirecting…</div>}
+      {ok &&<div className="form-ok">Submitted for review — thanks! Redirecting…</div>}
       <button className="btn btn-primary" type="submit" disabled={busy || !canSubmit}>
         {busy ? "Submitting…" : "Submit for review"}
       </button>

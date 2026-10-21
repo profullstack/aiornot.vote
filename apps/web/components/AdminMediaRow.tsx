@@ -14,6 +14,10 @@ export type AdminMedia = {
   thumbnailUrl: string | null;
   mediaUrl: string;
   provider: string | null;
+  /** The submitter licensed it for the photo library (an original is kept). */
+  libraryOptIn: boolean;
+  /** The listed library photo's slug, once it is in the library. */
+  librarySlug: string | null;
 };
 
 export function AdminMediaRow({ m }: { m: AdminMedia }) {
@@ -66,6 +70,26 @@ export function AdminMediaRow({ m }: { m: AdminMedia }) {
           {m.isScoreEligible ? "Exclude" : "Include"}
         </button>{" "}
         <button className="btn btn-sm" disabled={busy} onClick={() => act("lock")}>Lock</button>
+        {m.libraryOptIn && (
+          <>
+            {" "}
+            {m.librarySlug ? (
+              <>
+                <Link href={`/library/${m.librarySlug}`} className="btn btn-sm">In library</Link>{" "}
+                <button className="btn btn-sm" disabled={busy} onClick={() => act("remove-from-library")}>Unlist</button>
+              </>
+            ) : (
+              <button
+                className="btn btn-sm"
+                disabled={busy || m.status !== "approved" || m.truthLabel !== "not_ai"}
+                title="Approve it and set the label to not_ai first"
+                onClick={() => act("add-to-library")}
+              >
+                Add to library
+              </button>
+            )}
+          </>
+        )}
       </td>
     </tr>
   );

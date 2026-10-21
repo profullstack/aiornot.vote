@@ -81,6 +81,10 @@ export const env = {
   priceApiAccessUsd: usd(process.env.PRICE_API_ACCESS_USD, 1),
   priceLifetimeUsd: usd(process.env.PRICE_LIFETIME_USD, 2),
   pricePlayPassUsd: usd(process.env.PRICE_PLAY_PASS_USD, 1),
+  priceLibraryPassUsd: usd(process.env.PRICE_LIBRARY_PASS_USD, 9),
+  libraryPassDays: int(process.env.LIBRARY_PASS_DAYS, 30),
+  /** Licensed downloads one account may take per day: a pass is not a scraping licence. */
+  libraryDailyDownloads: int(process.env.LIBRARY_DAILY_DOWNLOADS, 100),
   cronSecret: process.env.CRON_SECRET || "",
 
   // The VAPID keys themselves are read at run time by

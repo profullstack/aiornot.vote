@@ -21,6 +21,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
         <Link href="/">Latest</Link>
         <Link href="/search?sort=trending">Trending</Link>
         <Link href="/play">Play</Link>
+        <Link href="/library">Photos</Link>
         <Link href="/tags">Tags</Link>
         <Link href="/leaderboard">Leaderboard</Link>
         <Link href="/rewards">Rewards</Link>

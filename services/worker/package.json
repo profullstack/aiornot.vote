@@ -11,7 +11,8 @@
     "seed:pool": "bun jobs/seed-pool.ts",
     "draw:prizes": "bun jobs/draw-prizes.ts",
     "gen:tips": "bun jobs/gen-tips.ts",
-    "daemon:generate-media": "bun jobs/generate-media-daemon.ts"
+    "daemon:generate-media": "bun jobs/generate-media-daemon.ts",
+    "seed:library": "bun jobs/import-library-met.ts"
   },
   "dependencies": {
     "@aiornot/db": "workspace:*",

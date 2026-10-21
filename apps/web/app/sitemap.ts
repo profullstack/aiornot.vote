@@ -15,6 +15,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/leaderboard/monthly",
     "/feeds",
     "/submit",
+    "/library",
+    "/library/license",
   ].map((p) => ({ url: `${base}${p}`, changeFrequency: "daily", priority: p === "" ? 1 : 0.6 }));
 
   const media = await sqlClient.execute(
@@ -42,5 +44,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.4,
   }));
 
-  return [...staticRoutes, ...tagRoutes, ...mediaRoutes];
+  const library = await sqlClient.execute(
+    "SELECT slug, created_at FROM library_photos WHERE status = 'listed' ORDER BY created_at DESC LIMIT 5000",
+  );
+  const libraryRoutes: MetadataRoute.Sitemap = library.rows.map((r) => ({
+    url: `${base}/library/${r.slug as string}`,
+    lastModified: dbDate(r.created_at as string),
+    changeFrequency: "monthly",
+    priority: 0.4,
+  }));
+
+  return [...staticRoutes, ...tagRoutes, ...mediaRoutes, ...libraryRoutes];
 }

@@ -10,6 +10,10 @@ import { storageConfigured, uploadObject } from "@/lib/storage";
 import { createMedia } from "@/lib/media-create";
 import { env } from "@/lib/env";
 import { readSubmissionForm } from "@/lib/submission-form";
+import { poolKey, storeImage, writeLibraryOriginal } from "@aiornot/seed";
+
+/** Photo formats the library takes (no GIF or video). */
+const LIBRARY_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export const runtime = "nodejs";
 
@@ -49,6 +53,7 @@ export async function POST(req: Request) {
   const claim = String(form.get("claim") || "unknown");
   const tagsRaw = String(form.get("tags") || "");
   const file = form.get("file");
+  const libraryOptIn = form.get("library") === "1";
   const submitterClaim = (["ai", "not_ai", "unknown"].includes(claim) ? claim : "unknown") as
     | "ai" | "not_ai" | "unknown";
   const tagSlugs = tagsRaw
@@ -63,6 +68,23 @@ export async function POST(req: Request) {
   let storageKey: string | null = null;
   let mediaType: "image" | "video" = "image";
   let originalUrl: string | null = null;
+  let libraryOriginalKey: string | null = null;
+  const hasFile = !!file && typeof file !== "string" && file.size > 0;
+
+  if (libraryOptIn) {
+    if (!hasFile || !LIBRARY_TYPES.has((file as File).type)) {
+      return NextResponse.json(
+        { ok: false, error: "The photo library takes uploaded JPEG, PNG or WebP photos, not links or video." },
+        { status: 400 },
+      );
+    }
+    if (submitterClaim !== "not_ai") {
+      return NextResponse.json(
+        { ok: false, error: "Only photos you took yourself (not AI) can go in the photo library." },
+        { status: 400 },
+      );
+    }
+  }
 
   if (file && typeof file !== "string" && file.size > 0) {
     const type = file.type;
@@ -79,18 +101,27 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    if (!storageConfigured()) {
+    const buf = Buffer.from(await file.arrayBuffer());
+    if (storageConfigured()) {
+      const hash = createHash("sha256").update(buf).digest("hex").slice(0, 16);
+      const key = `uploads/${user.id}/${hash}.${EXT[type] || "bin"}`;
+      const up = await uploadObject(key, buf, type);
+      mediaUrl = up.publicUrl;
+      storageKey = up.storageKey;
+    } else if (isImage) {
+      // No object storage: the game copy goes to the local media volume, in the
+      // same opaque pool as seeded images so the path says nothing about the answer.
+      mediaUrl = await storeImage(poolKey(), buf, type);
+      storageKey = mediaUrl.replace(/^\/media\//, "");
+    } else {
       return NextResponse.json(
-        { ok: false, error: "File uploads are not configured on this server. Submit an external media URL instead." },
+        { ok: false, error: "Video uploads are not configured on this server. Submit an external video URL instead." },
         { status: 400 },
       );
     }
-    const buf = Buffer.from(await file.arrayBuffer());
-    const hash = createHash("sha256").update(buf).digest("hex").slice(0, 16);
-    const key = `uploads/${user.id}/${hash}.${EXT[type] || "bin"}`;
-    const up = await uploadObject(key, buf, type);
-    mediaUrl = up.publicUrl;
-    storageKey = up.storageKey;
+    if (libraryOptIn) {
+      libraryOriginalKey = await writeLibraryOriginal(buf, type, `contrib/${user.id}`);
+    }
   } else if (externalUrl) {
     const v = validateExternalUrl(externalUrl);
     if (!v.ok) return NextResponse.json({ ok: false, error: v.error }, { status: 400 });
@@ -136,6 +167,13 @@ export async function POST(req: Request) {
     status: "pending",
     tagSlugs,
   });
+  if (libraryOriginalKey) {
+    // A moderator lists it from the admin queue once it is checked as human-made.
+    await sqlClient.execute({
+      sql: "UPDATE media SET library_original_key = ? WHERE id = ?",
+      args: [libraryOriginalKey, media.id],
+    });
+  }
 
-  return NextResponse.json({ ok: true, slug: media.slug });
+  return NextResponse.json({ ok: true, slug: media.slug, library: !!libraryOriginalKey });
 }

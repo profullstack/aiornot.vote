@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CopyButton } from "./CopyButton";
-import { COINPAY_BLOCKCHAINS, coinpayBlockchainLabel } from "@/lib/coinpay-blockchains";
 
 export function SponsorForm({ minUsd, loggedIn }: { minUsd: number; loggedIn: boolean }) {
   const router = useRouter();
@@ -32,13 +31,17 @@ export function SponsorForm({ minUsd, loggedIn }: { minUsd: number; loggedIn: bo
         prizeLabel: fd.get("prizeLabel"),
         message: fd.get("message"),
         amountUsd: Number(fd.get("amountUsd")),
-        blockchain: fd.get("blockchain"),
       }),
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
       setBusy(false);
       setErr(data.error || "Could not start checkout.");
+      return;
+    }
+    // CoinPay hosted checkout: any coin or PayPal, then back to the sponsor page.
+    if (data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
       return;
     }
     router.push(`/sponsor/checkout/${data.sponsorshipId}`);
@@ -67,16 +70,10 @@ export function SponsorForm({ minUsd, loggedIn }: { minUsd: number; loggedIn: bo
           <label htmlFor="amountUsd">Sponsorship (USD, min ${minUsd})</label>
           <input id="amountUsd" name="amountUsd" type="number" min={minUsd} step="1" defaultValue={minUsd} required />
         </div>
-        <div className="field" style={{ minWidth: 140 }}>
-          <label htmlFor="blockchain">Pay with</label>
-          <select id="blockchain" name="blockchain" defaultValue="SOL">
-            {COINPAY_BLOCKCHAINS.map((c) => <option key={c} value={c}>{coinpayBlockchainLabel(c)}</option>)}
-          </select>
-        </div>
       </div>
       {err && <div className="form-error">{err}</div>}
       <button className="btn btn-primary" type="submit" disabled={busy}>
-        {busy ? "Starting…" : "Sponsor this week →"}
+        {busy ? "Starting…" : "Sponsor this week (crypto or PayPal) →"}
       </button>
     </form>
   );
@@ -89,6 +86,7 @@ export function SponsorCheckoutPoller({
   address,
   cryptoAmount,
   prizeLabel,
+  checkoutUrl,
 }: {
   id: string;
   amountUsd: number;
@@ -96,6 +94,8 @@ export function SponsorCheckoutPoller({
   address: string;
   cryptoAmount: string;
   prizeLabel: string;
+  /** Set for a CoinPay hosted checkout session. */
+  checkoutUrl?: string | null;
 }) {
   const [status, setStatus] = useState("pending");
   useEffect(() => {
@@ -115,8 +115,18 @@ export function SponsorCheckoutPoller({
     return (
       <div className="form-card container-narrow">
         <h1>Sponsorship confirmed ✓</h1>
-        <div className="form-ok">Thank you! Your prize — <strong>{prizeLabel}</strong> — is now part of this week&apos;s pack, with your shout-out on the prizes page.</div>
+        <div className="form-ok">Thank you! Your prize, <strong>{prizeLabel}</strong>, is now part of this week&apos;s pack, with your shout-out on the prizes page.</div>
         <p style={{ marginTop: 16 }}><Link href="/prizes" className="btn btn-primary">See the prizes →</Link></p>
+      </div>
+    );
+  }
+  if (checkoutUrl) {
+    return (
+      <div className="form-card container-narrow">
+        <h1>Pay ${amountUsd} with crypto or PayPal</h1>
+        <p className="muted">Finish paying on CoinPay&apos;s checkout page. This page updates automatically once it confirms.</p>
+        <p><a href={checkoutUrl} className="btn btn-primary">Continue to CoinPay checkout</a></p>
+        <div className="notice"><span className="rss-title">Waiting for payment…</span><div className="muted-sm">Status: {status}.</div></div>
       </div>
     );
   }

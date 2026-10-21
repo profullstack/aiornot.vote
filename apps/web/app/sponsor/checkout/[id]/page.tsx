@@ -22,6 +22,7 @@ export default async function SponsorCheckoutPage({ params }: { params: Promise<
         address={s.paymentAddress || ""}
         cryptoAmount={s.cryptoAmount || ""}
         prizeLabel={s.prizeLabel}
+        checkoutUrl={s.checkoutUrl}
       />
     </div>
   );

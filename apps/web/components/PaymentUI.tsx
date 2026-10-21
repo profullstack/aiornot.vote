@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CopyButton } from "./CopyButton";
-import { COINPAY_BLOCKCHAINS, coinpayBlockchainLabel } from "@/lib/coinpay-blockchains";
 import { paymentSuccessContent } from "@/lib/payment-success";
 
 export function BuyButton({
@@ -16,7 +15,6 @@ export function BuyButton({
   label: string;
 }) {
   const router = useRouter();
-  const [coin, setCoin] = useState("SOL");
   const [promo, setPromo] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -29,7 +27,7 @@ export function BuyButton({
     const res = await fetch("/api/payments/create-checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ purpose, blockchain: coin, promoCode: promo.trim() || undefined }),
+      body: JSON.stringify({ purpose, promoCode: promo.trim() || undefined }),
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
@@ -39,8 +37,13 @@ export function BuyButton({
     }
     // 100%-off comp: granted instantly, no payment.
     if (data.granted) {
-      setOk("Unlocked — thank you! 🎉");
+      setOk("Unlocked, thank you! 🎉");
       setTimeout(() => router.refresh(), 800);
+      return;
+    }
+    // CoinPay hosted checkout: any coin or PayPal, then back to /checkout/<id>.
+    if (data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
       return;
     }
     router.push(`/checkout/${data.paymentId}`);
@@ -49,10 +52,6 @@ export function BuyButton({
   return (
     <div style={{ display: "grid", gap: 10 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-        <select value={coin} onChange={(e) => setCoin(e.target.value)} disabled={busy}
-          style={{ background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 10, padding: "10px 12px", color: "var(--text)" }}>
-          {COINPAY_BLOCKCHAINS.map((c) => <option key={c} value={c}>{coinpayBlockchainLabel(c)}</option>)}
-        </select>
         <input
           value={promo}
           onChange={(e) => setPromo(e.target.value.toUpperCase())}
@@ -63,7 +62,7 @@ export function BuyButton({
       </div>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         <button className="btn btn-primary" onClick={buy} disabled={busy}>
-          {busy ? "Starting…" : `${label} — $${priceUsd} in crypto`}
+          {busy ? "Starting…" : `${label}: $${priceUsd}, crypto or PayPal`}
         </button>
         {promo.trim() && <span className="muted-sm">a valid code discounts this at checkout</span>}
       </div>
@@ -80,6 +79,7 @@ export function CheckoutPoller({
   blockchain,
   address,
   cryptoAmount,
+  checkoutUrl,
 }: {
   paymentId: string;
   purpose: string;
@@ -87,6 +87,8 @@ export function CheckoutPoller({
   blockchain: string;
   address: string;
   cryptoAmount: string;
+  /** Set for a CoinPay hosted checkout session: the buyer pays there, not to an address. */
+  checkoutUrl?: string | null;
 }) {
   const [status, setStatus] = useState("pending");
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -112,7 +114,7 @@ export function CheckoutPoller({
         <h1>Payment confirmed ✓</h1>
         {purpose === "api_access" && apiKey ? (
           <>
-            <div className="form-ok">API access granted. Here&apos;s your API key — copy it now, it won&apos;t be shown again:</div>
+            <div className="form-ok">API access granted. Here&apos;s your API key. Copy it now, it won&apos;t be shown again:</div>
             <div className="field">
               <input readOnly value={apiKey} style={{ fontFamily: "monospace" }} />
             </div>
@@ -125,6 +127,20 @@ export function CheckoutPoller({
           <Link href={success.primaryHref} className="btn btn-primary">{success.primaryLabel}</Link>
           {success.showApiDocs && <> · <Link href="/api-docs">API docs</Link></>}
         </p>
+      </div>
+    );
+  }
+
+  if (checkoutUrl) {
+    return (
+      <div className="form-card container-narrow">
+        <h1>Pay ${amountUsd} with crypto or PayPal</h1>
+        <p className="muted">Finish paying on CoinPay&apos;s checkout page. This page updates automatically once the payment confirms.</p>
+        <p><a href={checkoutUrl} className="btn btn-primary">Continue to CoinPay checkout</a></p>
+        <div className="notice">
+          <span className="rss-title">Waiting for payment…</span>
+          <div className="muted-sm">Status: {status}. It can take a minute after you pay.</div>
+        </div>
       </div>
     );
   }
@@ -149,7 +165,7 @@ export function CheckoutPoller({
       </div>
       <div className="notice">
         <span className="rss-title">Waiting for payment…</span>
-        <div className="muted-sm">Status: {status}. Keep this tab open — it can take a minute after you send.</div>
+        <div className="muted-sm">Status: {status}. Keep this tab open, it can take a minute after you send.</div>
       </div>
     </div>
   );
@@ -200,7 +216,7 @@ export function ApiKeysManager({
       </div>
       {fresh && (
         <div className="notice warn">
-          <div className="rss-title">New key — copy it now, it won&apos;t be shown again:</div>
+          <div className="rss-title">New key. Copy it now, it won&apos;t be shown again:</div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <input readOnly value={fresh} style={{ fontFamily: "monospace", flex: 1, background: "var(--panel-alt)", border: "1px solid var(--border-3)", borderRadius: 8, padding: "8px 10px", color: "var(--text)" }} />
             <CopyButton text={fresh} label="Copy" />
@@ -216,7 +232,7 @@ export function ApiKeysManager({
             {keys.map((k) => (
               <tr key={k.id}>
                 <td style={{ fontFamily: "monospace" }}>{k.prefix}…{!k.isActive && " (revoked)"}</td>
-                <td>{k.label || "—"}</td>
+                <td>{k.label || "-"}</td>
                 <td>{k.requestCount}</td>
                 <td>{k.isActive && <button className="btn btn-sm" onClick={() => revoke(k.id)}>Revoke</button>}</td>
               </tr>

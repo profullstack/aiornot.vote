@@ -2,7 +2,7 @@ import "server-only";
 import { sqlClient } from "./db";
 import { newId } from "@aiornot/db";
 import { env } from "./env";
-import { createCoinpayPayment, getCoinpayPayment, isPaymentPaid } from "./coinpay";
+import { CHECKOUT_BLOCKCHAIN, checkoutSessionUrl, createCoinpayCheckoutSession, getCoinpayReferenceStatus, isCheckoutSessionId } from "./coinpay";
 import { currentWeekStart } from "./prizes";
 import { sendEmail } from "./email";
 import { escapeHtml } from "./html";
@@ -23,6 +23,8 @@ export type Sponsorship = {
   cryptoAmount: string | null;
   status: string;
   periodStart: string;
+  /** CoinPay hosted checkout page, for sponsorships opened as a session. */
+  checkoutUrl: string | null;
 };
 
 function rowToSponsorship(r: Record<string, unknown>): Sponsorship {
@@ -38,24 +40,24 @@ function rowToSponsorship(r: Record<string, unknown>): Sponsorship {
     cryptoAmount: (r.crypto_amount as string) ?? null,
     status: r.status as string,
     periodStart: r.period_start as string,
+    checkoutUrl: isCheckoutSessionId(r.coinpay_payment_id) ? checkoutSessionUrl(r.coinpay_payment_id) : null,
   };
 }
 
 export type CreateSponsorInput = {
   userId: string | null;
-  /** Buyer email, echoed to CoinPay in metadata so a paid webhook names the account. */
+  /** Buyer email: the CoinPay checkout customer. */
   email?: string | null;
   sponsorName: string;
   sponsorUrl?: string | null;
   prizeLabel: string;
   message?: string | null;
   amountUsd: unknown;
-  blockchain: string;
 };
 
 export async function createSponsorship(
   input: CreateSponsorInput,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; id: string; checkoutUrl: string } | { ok: false; error: string }> {
   if (!env.coinpayConfigured) return { ok: false, error: "Payments are not configured." };
   const name = input.sponsorName.trim().slice(0, 60);
   const prize = input.prizeLabel.trim().slice(0, 120);
@@ -67,36 +69,39 @@ export async function createSponsorship(
   if (!sponsorAmount.ok) return sponsorAmount;
   const amount = sponsorAmount.amount;
 
+  if (!input.userId || !input.email) return { ok: false, error: "Sign in with an email address to sponsor a prize." };
+
   const id = newId("spo");
   const period = currentWeekStart();
-  const created = await createCoinpayPayment({
+  const base = env.appUrl.replace(/\/+$/, "");
+  const created = await createCoinpayCheckoutSession({
     amountUsd: amount,
-    blockchain: input.blockchain,
-    description: `AIorNot.vote weekly prize sponsorship — ${name}`,
+    description: `AIorNot.vote weekly prize sponsorship: ${name}`,
+    customerEmail: input.email,
+    accountId: input.userId,
     metadata: {
       purpose: "prize_sponsorship",
       sponsorship_id: id,
-      app: "aiornot.vote",
-      property: "aiornot.vote",
-      account_id: input.userId,
       user_id: input.userId,
-      email: input.email ?? null,
+      app: "aiornot.vote",
     },
+    successUrl: `${base}/sponsor/checkout/${id}?session={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${base}/prizes`,
+    idempotencyKey: `aiornot-${id}`,
   });
   if (!created.ok) return { ok: false, error: created.error };
-  const p = created.payment;
 
   await sqlClient.execute({
     sql: `INSERT INTO prize_sponsorships
       (id, user_id, sponsor_name, sponsor_url, prize_label, message, amount_usd, blockchain,
        coinpay_payment_id, payment_address, crypto_amount, status, period_start)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 'pending', ?)`,
     args: [
       id, input.userId, name, sponsorUrl.url, prize, input.message?.trim()?.slice(0, 200) || null,
-      amount, input.blockchain, p.id, p.payment_address ?? null, p.crypto_amount ?? null, period,
+      amount, CHECKOUT_BLOCKCHAIN, created.session.id, period,
     ],
   });
-  return { ok: true, id };
+  return { ok: true, id, checkoutUrl: created.session.url };
 }
 
 export async function getSponsorship(id: string, userId?: string): Promise<Sponsorship | null> {
@@ -121,8 +126,8 @@ export async function checkSponsorship(id: string, userId?: string): Promise<{ s
   if (!row) return null;
   if (row.status === "active" || row.status === "fulfilled") return { status: "active" };
 
-  const cp = await getCoinpayPayment(row.coinpay_payment_id as string);
-  if (!cp || !isPaymentPaid(cp.status)) return { status: cp?.status || "pending" };
+  const cp = await getCoinpayReferenceStatus(row.coinpay_payment_id as string);
+  if (!cp || !cp.paid) return { status: cp?.status || "pending" };
 
   await activateSponsorship(id, row.coinpay_payment_id as string);
   return { status: "active" };

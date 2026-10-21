@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   getCoinpayPayment: vi.fn(),
   isPaymentPaid: vi.fn(),
+  getCoinpayReferenceStatus: vi.fn(),
   grantPaymentInTransaction: vi.fn(),
   recordPromoRedemption: vi.fn(),
   txClose: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock("@/lib/session", () => ({
 vi.mock("@/lib/coinpay", () => ({
   getCoinpayPayment: mocks.getCoinpayPayment,
   isPaymentPaid: mocks.isPaymentPaid,
+  getCoinpayReferenceStatus: mocks.getCoinpayReferenceStatus,
 }));
 
 vi.mock("@/lib/entitlements", () => ({
@@ -128,5 +130,35 @@ describe("GET /api/payments/status", () => {
 
     expect(response.status).toBe(200);
     expect(mocks.recordPromoRedemption).toHaveBeenCalledWith("LAUNCH50", "user-1");
+  });
+});
+
+describe("GET /api/payments/status with a checkout session", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
+    mocks.transaction.mockResolvedValue({ close: mocks.txClose });
+  });
+
+  const sessionPayment = { ...confirmedPayment, status: "pending", purpose: "lifetime_membership", coinpay_payment_id: "cs_abc" };
+
+  it("stays pending while the session is open", async () => {
+    mocks.execute.mockResolvedValueOnce({ rows: [sessionPayment] }).mockResolvedValueOnce({ rowsAffected: 0 });
+    mocks.getCoinpayReferenceStatus.mockResolvedValue({ paid: false, status: "pending" });
+    const res = await GET(new Request("https://aiornot.vote/api/payments/status?id=payment-1"));
+    expect(await res.json()).toMatchObject({ ok: true, status: "pending" });
+    expect(mocks.getCoinpayReferenceStatus).toHaveBeenCalledWith("cs_abc");
+    expect(mocks.grantPaymentInTransaction).not.toHaveBeenCalled();
+  });
+
+  it("grants once CoinPay reports the session paid", async () => {
+    mocks.execute.mockResolvedValueOnce({ rows: [sessionPayment] });
+    mocks.getCoinpayReferenceStatus.mockResolvedValue({ paid: true, status: "paid" });
+    mocks.grantPaymentInTransaction.mockResolvedValue({});
+    const res = await GET(new Request("https://aiornot.vote/api/payments/status?id=payment-1"));
+    expect(await res.json()).toMatchObject({ ok: true, status: "granted" });
+    expect(mocks.grantPaymentInTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentId: "payment-1", userId: "user-1", purpose: "lifetime_membership" }),
+    );
   });
 });

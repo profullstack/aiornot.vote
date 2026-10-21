@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import { verifyCoinPayWebhook } from "@profullstack/stack/coinpay";
-import { sqlClient } from "@/lib/db";
-import { isPaymentPaid } from "@/lib/coinpay";
 import { env } from "@/lib/env";
+import { settleCoinpayWebhook, type CoinpayWebhookEvent } from "@/lib/coinpay-webhook";
 
 export const runtime = "nodejs";
 
 /**
- * CoinPay webhook. Verifies the X-CoinPay-Signature and, on a paid event, marks
- * the matching payment 'confirmed' so the next status poll grants it quickly.
- * The actual entitlement (API key reveal / membership) is granted in the status
- * route, which has the user's session. Configure COINPAY_WEBHOOK_SECRET +
- * webhook URL in the CoinPay dashboard to enable this fast path (polling works
- * regardless).
+ * CoinPay webhook. Verifies `X-CoinPay-Signature: t=<unix>,v1=<hex>` (HMAC-SHA256
+ * of `${t}.${rawBody}`, 300s tolerance) over the raw body, then settles the
+ * nested payload: prize sponsorships are activated, membership / play pass are
+ * granted, API access is confirmed for its one-time reveal on the status poll.
+ * Unknown or non-paid events answer 200 so CoinPay stops retrying.
  */
 export async function POST(req: Request) {
   const raw = await req.text();
@@ -23,23 +21,18 @@ export async function POST(req: Request) {
   })) {
     return NextResponse.json({ ok: false, error: "Invalid signature." }, { status: 401 });
   }
-  let evt: { type?: string; data?: { id?: string; status?: string; metadata?: Record<string, unknown> } };
+  let evt: CoinpayWebhookEvent;
   try {
     evt = JSON.parse(raw);
   } catch {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
-  const data = evt.data || {};
-  const paid = isPaymentPaid(data.status) || evt.type === "payment.confirmed" || evt.type === "payment.forwarded";
-  const ref = (data.metadata?.payment_ref as string) || null;
-  const coinpayId = data.id || null;
-
-  if (paid && (ref || coinpayId)) {
-    await sqlClient.execute({
-      sql: `UPDATE payments SET status = 'confirmed', updated_at = CURRENT_TIMESTAMP
-            WHERE (id = ? OR coinpay_payment_id = ?) AND status = 'pending'`,
-      args: [ref, coinpayId],
-    });
+  try {
+    const outcome = await settleCoinpayWebhook(evt);
+    return NextResponse.json({ ok: true, ...outcome });
+  } catch (error) {
+    // A 5xx makes CoinPay retry, which is what we want for a transient DB error.
+    console.error("[coinpay webhook] settle failed", error);
+    return NextResponse.json({ ok: false, error: "settle failed" }, { status: 500 });
   }
-  return NextResponse.json({ ok: true });
 }

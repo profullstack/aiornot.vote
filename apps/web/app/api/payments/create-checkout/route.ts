@@ -80,7 +80,15 @@ export async function POST(req: Request) {
     amountUsd: finalUsd,
     blockchain,
     description: percentOff > 0 ? `${spec.label} (${percentOff}% off)` : spec.label,
-    metadata: { user_id: user.id, purpose, payment_ref: paymentId, app: "aiornot.vote" },
+    metadata: {
+      user_id: user.id,
+      account_id: user.id,
+      email: user.email,
+      purpose,
+      payment_ref: paymentId,
+      app: "aiornot.vote",
+      property: "aiornot.vote",
+    },
   });
   if (!created.ok) {
     return NextResponse.json({ ok: false, error: created.error }, { status: 502 });

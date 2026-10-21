@@ -176,8 +176,8 @@ export async function verifyEmailToken(token: string): Promise<VerifyResult> {
   });
   // If already active (re-verify), still ensure verified timestamp set.
   await sqlClient.execute({
-    sql: `UPDATE users SET email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP) WHERE id = ?`,
-    args: [row.user_id],
+    sql: `UPDATE users SET email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?`,
+    args: [new Date().toISOString(), row.user_id],
   });
   // Email is now proven — pay out any pending referral for this user.
   await rewardReferralOnVerify(row.user_id as string).catch((err) => {
@@ -262,8 +262,8 @@ export async function resetPassword(token: string, newPassword: string): Promise
     const claim = await transaction.execute({
       sql: `UPDATE password_reset_tokens
             SET consumed_at = CURRENT_TIMESTAMP
-            WHERE id = ? AND consumed_at IS NULL AND expires_at >= CURRENT_TIMESTAMP`,
-      args: [row.id],
+            WHERE id = ? AND consumed_at IS NULL AND expires_at >= ?`,
+      args: [row.id, new Date().toISOString()],
     });
     if (claim.rowsAffected !== 1) {
       await transaction.rollback();
@@ -273,11 +273,11 @@ export async function resetPassword(token: string, newPassword: string): Promise
     await transaction.execute({
       sql: `UPDATE users
             SET password_hash = ?,
-                email_verified_at = COALESCE(email_verified_at, CURRENT_TIMESTAMP),
+                email_verified_at = COALESCE(email_verified_at, ?),
                 status = CASE WHEN status = 'pending_email_verification' THEN 'active' ELSE status END,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?`,
-      args: [pw, userId],
+      args: [pw, new Date().toISOString(), userId],
     });
     await transaction.execute({
       sql: "UPDATE password_reset_tokens SET consumed_at = CURRENT_TIMESTAMP WHERE user_id = ? AND consumed_at IS NULL",

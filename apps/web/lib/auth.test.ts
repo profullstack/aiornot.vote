@@ -128,7 +128,7 @@ describe("password reset token consumption", () => {
     expect(database.transactionExecute).toHaveBeenCalledTimes(1);
     expect(database.transactionExecute).toHaveBeenCalledWith({
       sql: expect.stringContaining("consumed_at IS NULL"),
-      args: ["reset-1"],
+      args: ["reset-1", expect.stringMatching(/^\d{4}-\d\d-\d\dT/)],
     });
     expect(database.rollback).toHaveBeenCalledOnce();
     expect(database.commit).not.toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe("password reset token consumption", () => {
     expect(database.transactionExecute).toHaveBeenCalledTimes(4);
     expect(database.transactionExecute).toHaveBeenNthCalledWith(2, {
       sql: expect.stringContaining("UPDATE users"),
-      args: ["password-hash", "user-1"],
+      args: ["password-hash", expect.stringMatching(/^\d{4}-\d\d-\d\dT/), "user-1"],
     });
     expect(database.transactionExecute).toHaveBeenNthCalledWith(4, {
       sql: "DELETE FROM sessions WHERE user_id = ?",

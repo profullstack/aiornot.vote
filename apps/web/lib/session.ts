@@ -82,9 +82,9 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const res = await sqlClient.execute({
     sql: `SELECT u.id, u.email, u.display_name, u.status, u.role, u.email_verified_at, u.is_lifetime_member, u.play_pass_at
           FROM sessions s JOIN users u ON u.id = s.user_id
-          WHERE s.session_token_hash = ? AND s.expires_at > CURRENT_TIMESTAMP
+          WHERE s.session_token_hash = ? AND s.expires_at > ?
           LIMIT 1`,
-    args: [hashSessionToken(token)],
+    args: [hashSessionToken(token), new Date().toISOString()],
   });
   const row = res.rows[0];
   if (!row) return null;

@@ -43,6 +43,8 @@ function rowToSponsorship(r: Record<string, unknown>): Sponsorship {
 
 export type CreateSponsorInput = {
   userId: string | null;
+  /** Buyer email, echoed to CoinPay in metadata so a paid webhook names the account. */
+  email?: string | null;
   sponsorName: string;
   sponsorUrl?: string | null;
   prizeLabel: string;
@@ -71,7 +73,15 @@ export async function createSponsorship(
     amountUsd: amount,
     blockchain: input.blockchain,
     description: `AIorNot.vote weekly prize sponsorship — ${name}`,
-    metadata: { purpose: "prize_sponsorship", sponsorship_id: id, app: "aiornot.vote" },
+    metadata: {
+      purpose: "prize_sponsorship",
+      sponsorship_id: id,
+      app: "aiornot.vote",
+      property: "aiornot.vote",
+      account_id: input.userId,
+      user_id: input.userId,
+      email: input.email ?? null,
+    },
   });
   if (!created.ok) return { ok: false, error: created.error };
   const p = created.payment;
@@ -114,23 +124,44 @@ export async function checkSponsorship(id: string, userId?: string): Promise<{ s
   const cp = await getCoinpayPayment(row.coinpay_payment_id as string);
   if (!cp || !isPaymentPaid(cp.status)) return { status: cp?.status || "pending" };
 
+  await activateSponsorship(id, row.coinpay_payment_id as string);
+  return { status: "active" };
+}
+
+/**
+ * Flip a pending sponsorship to active and tell the admins, exactly once.
+ * The UPDATE is the idempotency guard: a replayed webhook, or a webhook racing
+ * the status poll, affects zero rows and sends nothing. Matching on the
+ * CoinPay payment id as well as the sponsorship id means a webhook can only
+ * activate the sponsorship that payment was created for.
+ */
+export async function activateSponsorship(
+  sponsorshipId: string,
+  coinpayPaymentId: string,
+): Promise<{ activated: boolean }> {
   const flip = await sqlClient.execute({
-    sql: "UPDATE prize_sponsorships SET status = 'active', paid_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'pending'",
-    args: [id],
+    sql: "UPDATE prize_sponsorships SET status = 'active', paid_at = CURRENT_TIMESTAMP WHERE id = ? AND coinpay_payment_id = ? AND status = 'pending'",
+    args: [sponsorshipId, coinpayPaymentId],
   });
-  if (flip.rowsAffected > 0) {
+  if (flip.rowsAffected === 0) return { activated: false };
+  const r = await sqlClient.execute({
+    sql: "SELECT sponsor_name, prize_label, amount_usd FROM prize_sponsorships WHERE id = ? LIMIT 1",
+    args: [sponsorshipId],
+  });
+  const row = r.rows[0];
+  if (row) {
     const sponsorNameHtml = escapeHtml(row.sponsor_name);
     const prizeLabelHtml = escapeHtml(row.prize_label);
     for (const admin of env.adminEmails) {
       await sendEmail({
         to: admin,
-        subject: "New prize sponsorship — AIorNot.vote",
+        subject: "New prize sponsorship - AIorNot.vote",
         html: `<p><strong>${sponsorNameHtml}</strong> sponsored this week's prize: <strong>${prizeLabelHtml}</strong> ($${Number(row.amount_usd)}).</p>`,
         text: `${row.sponsor_name} sponsored: ${row.prize_label} ($${Number(row.amount_usd)}).`,
       }).catch(() => {});
     }
   }
-  return { status: "active" };
+  return { activated: true };
 }
 
 /** Active sponsorships for the current (being-played) week — shown on /prizes. */

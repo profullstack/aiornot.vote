@@ -21,6 +21,7 @@ export async function POST(req: Request) {
 
   const result = await createSponsorship({
     userId: user.id,
+    email: user.email,
     sponsorName: String(body.sponsorName || ""),
     sponsorUrl: body.sponsorUrl ? String(body.sponsorUrl) : null,
     prizeLabel: String(body.prizeLabel || ""),

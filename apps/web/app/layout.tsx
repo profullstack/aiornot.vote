@@ -110,8 +110,9 @@ export default async function RootLayout({
         <WinBanner prizes={claimable.map((p) => ({ id: p.id, rewardLabel: p.rewardLabel, claimDeadline: p.claimDeadline }))} />
         <TipBar tip={tip} />
         <main>
-          {/* The site's one ad unit sits at the top of the page content, never in the footer. */}
-          <AdSlot slot={CRAWLPROOF_AD_SLOT} format="banner_300x250" className="ad-slot-top" />
+          {/* The site's one ad unit sits at the top of the page content, never in the footer.
+              AdSlot renders nothing on the homepage. */}
+          <AdSlot slot={CRAWLPROOF_AD_SLOT} className="ad-slot-top" />
           {children}
         </main>
         <SiteFooter />

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { sqlClient } from "@/lib/db";
 import { CheckoutPoller } from "@/components/PaymentUI";
+import { checkoutSessionUrl, isCheckoutSessionId } from "@/lib/coinpay";
 
 export const metadata = { title: "Checkout", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export default async function CheckoutPage({
   if (!user) redirect("/login");
 
   const res = await sqlClient.execute({
-    sql: `SELECT id, user_id, purpose, amount_usd, blockchain, payment_address, crypto_amount
+    sql: `SELECT id, user_id, purpose, amount_usd, blockchain, coinpay_payment_id, payment_address, crypto_amount
           FROM payments WHERE id = ? LIMIT 1`,
     args: [id],
   });
@@ -32,6 +33,7 @@ export default async function CheckoutPage({
         blockchain={p.blockchain as string}
         address={(p.payment_address as string) || ""}
         cryptoAmount={(p.crypto_amount as string) || ""}
+        checkoutUrl={isCheckoutSessionId(p.coinpay_payment_id) ? checkoutSessionUrl(p.coinpay_payment_id) : null}
       />
     </div>
   );

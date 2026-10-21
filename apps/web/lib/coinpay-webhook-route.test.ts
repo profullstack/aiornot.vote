@@ -149,4 +149,55 @@ describe("POST /api/payments/coinpay/webhook", () => {
     expect(await res.json()).toMatchObject({ handled: false });
     expect(mocks.execute).not.toHaveBeenCalled();
   });
+
+  /** A session payment: CoinPay adds the session fields to data. */
+  function sessionEvent(type: string, status: string, metadata: Record<string, unknown>, account = "user-1") {
+    const e = coinpayEvent("cp-sess-pay", type, status, metadata);
+    return {
+      ...e,
+      data: { ...e.data, checkout_session_id: "cs_test123", account_id: account, customer_email: "a@example.com", property: "aiornot.vote" },
+    };
+  }
+
+  it("settles a checkout-session payment by checkout_session_id, not the payment id", async () => {
+    mocks.execute
+      .mockResolvedValueOnce({ rows: [{ id: "pay_s1", user_id: "user-1", purpose: "lifetime_membership", status: "pending", promo_code: null }] })
+      .mockResolvedValueOnce({ rowsAffected: 1 });
+    mocks.grantPaymentInTransaction.mockResolvedValue({});
+    const res = await POST(signed(sessionEvent("payment.confirmed", "confirmed", { purpose: "lifetime_membership", payment_ref: "pay_s1" })));
+    expect(await res.json()).toMatchObject({ handled: true, kind: "payment", paymentRef: "pay_s1", granted: true });
+    expect(mocks.execute.mock.calls[0][0].args).toEqual(["cs_test123"]);
+  });
+
+  it("a replayed or forwarded session event does not grant twice", async () => {
+    mocks.execute
+      .mockResolvedValueOnce({ rows: [{ id: "pay_s1", user_id: "user-1", purpose: "lifetime_membership", status: "granted", promo_code: "HALF" }] })
+      .mockResolvedValueOnce({ rowsAffected: 0 });
+    mocks.grantPaymentInTransaction.mockResolvedValue(null);
+    const res = await POST(signed(sessionEvent("payment.forwarded", "forwarded", { purpose: "lifetime_membership", payment_ref: "pay_s1" })));
+    expect(await res.json()).toMatchObject({ handled: true, granted: false });
+    expect(mocks.recordPromoRedemption).not.toHaveBeenCalled();
+  });
+
+  it("refuses a session event whose account_id is not the buyer", async () => {
+    mocks.execute.mockResolvedValueOnce({ rows: [{ id: "pay_s1", user_id: "user-1", purpose: "play_pass", status: "pending" }] });
+    const res = await POST(signed(sessionEvent("payment.confirmed", "confirmed", { purpose: "play_pass" }, "user-2")));
+    expect(await res.json()).toMatchObject({ handled: false, reason: "account mismatch" });
+  });
+
+  it("activates a session sponsorship matched on the session id", async () => {
+    mocks.execute
+      .mockResolvedValueOnce({ rowsAffected: 1 })
+      .mockResolvedValueOnce({ rows: [{ sponsor_name: "Acme", prize_label: "$50", amount_usd: 25 }] });
+    const res = await POST(signed(sessionEvent("payment.confirmed", "confirmed", { purpose: "prize_sponsorship", sponsorship_id: "spo_s" })));
+    expect(await res.json()).toMatchObject({ handled: true, kind: "sponsorship", sponsorshipId: "spo_s", activated: true });
+    expect(mocks.execute.mock.calls[0][0].args).toEqual(["spo_s", "cs_test123"]);
+  });
+
+  it("a pending session event settles nothing", async () => {
+    const res = await POST(signed(sessionEvent("payment.pending", "pending", { purpose: "lifetime_membership" })));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ handled: false });
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
 });

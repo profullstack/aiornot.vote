@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { sqlClient } from "@/lib/db";
-import { getCoinpayPayment, isPaymentPaid } from "@/lib/coinpay";
+import { getCoinpayReferenceStatus } from "@/lib/coinpay";
 import { recordPromoRedemption } from "@/lib/entitlements";
 import { grantPaymentInTransaction } from "@/lib/payment-grant";
 
@@ -27,11 +27,12 @@ export async function GET(req: Request) {
 
   const alreadyConfirmed = p.status === "confirmed";
   if (!alreadyConfirmed) {
-    const cp = await getCoinpayPayment(p.coinpay_payment_id as string);
+    // A checkout session (cs_...) or, for older rows, a single payment.
+    const cp = await getCoinpayReferenceStatus(p.coinpay_payment_id as string);
     if (!cp) {
       return NextResponse.json({ ok: true, status: "pending" });
     }
-    if (!isPaymentPaid(cp.status)) {
+    if (!cp.paid) {
       // Reflect intermediate CoinPay states without downgrading a webhook-confirmed payment.
       await sqlClient.execute({
         sql: "UPDATE payments SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'pending'",

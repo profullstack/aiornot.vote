@@ -2,6 +2,7 @@ import { gate } from "@/lib/crawl-gateway";
 import { meter } from "@/lib/throttle";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isInvitePath } from "@/lib/invite-code";
 
 /**
  * Canonical-host proxy: redirect www.* → apex (non-www) with a 308 so links,
@@ -11,13 +12,17 @@ export async function middleware(req: NextRequest) {
   // Crawl gateway first: AI training crawlers get 402 Payment Required (or the
   // sales page at /crawl) unless they present a paid pass. People, Googlebot
   // and retrieval crawlers fall through to everything below.
-  const answer = await gate(req);
-  if (answer) return answer;
+  // An invite link (/i/INV-...) is never priced or metered: whoever was handed
+  // one must land on it, whatever their client says it is.
+  if (!isInvitePath(req.nextUrl.pathname)) {
+    const answer = await gate(req);
+    if (answer) return answer;
 
-  // Then the site-wide allowance on page routes: 100 requests a minute per
-  // caller, and going over is answered 402 with the same offer (lib/throttle).
-  const overLimit = await meter(req);
-  if (overLimit) return overLimit;
+    // Then the site-wide allowance on page routes: 100 requests a minute per
+    // caller, and going over is answered 402 with the same offer (lib/throttle).
+    const overLimit = await meter(req);
+    if (overLimit) return overLimit;
+  }
 
   const host = req.headers.get("host") || "";
   if (host.startsWith("www.")) {

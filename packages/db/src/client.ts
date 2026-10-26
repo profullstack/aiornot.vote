@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import type { Client } from "@libsql/client";
-import { createClient as createPostgresClient } from "@profullstack/libsql-pg";
+import { createClient as createPostgresClient, connectionSettings } from "@profullstack/libsql-pg";
 import * as schema from "./schema";
 
 let _client: Client | null = null;
@@ -72,3 +72,15 @@ export function getClient(): Client {
 }
 
 export { schema };
+
+/**
+ * node-postgres Pool settings for DATABASE_URL (sslmode read the way the
+ * libsql-pg client reads it: `require` encrypts without verifying the dev2
+ * self-signed certificate). Null for a local `file:` database. For code that
+ * needs a raw Pool, such as the @profullstack/redeem-credits and
+ * @profullstack/affiliates stores.
+ */
+export function postgresPoolSettings(): { connectionString: string; ssl?: unknown } | null {
+  const url = resolveUrl();
+  return POSTGRES_URL.test(url) ? (connectionSettings(url) as { connectionString: string; ssl?: unknown }) : null;
+}

@@ -9,6 +9,8 @@ import { ApiKeysManager } from "@/components/PaymentUI";
 import { BadgeRow } from "@/components/RewardUI";
 import { ShareStats } from "@/components/ShareStats";
 import { env } from "@/lib/env";
+import { libraryPassDaysLeft } from "@/lib/library-pass";
+import { RedeemCodeForm } from "@/components/CreditUI";
 
 export const metadata = { title: "Your account" };
 export const dynamic = "force-dynamic";
@@ -29,6 +31,7 @@ export default async function AccountPage() {
         </h2>
         <div style={{ display: "flex", gap: 8 }}>
           <Link href="/refer" className="btn btn-sm">Refer &amp; earn</Link>
+          <Link href="/invites" className="btn btn-sm">Invites</Link>
           <Link href="/account/history" className="btn btn-sm">History</Link>
           <Link href="/account/settings" className="btn btn-sm">Settings</Link>
           <LogoutButton />
@@ -74,6 +77,19 @@ export default async function AccountPage() {
         <div className="tile"><div className="val">🤖 {balances.aiVerdicts}</div><div className="lbl">AI Verdicts</div></div>
       </div>
       <p className="muted-sm">These stack and persist. Open any image and spend a 💡 Hint <strong>before you guess</strong>; 🔍 Scans &amp; 🤖 Verdicts run an AI on the image. Earn more by extending your streak.</p>
+
+      <div className="divider" />
+      <div className="section-head"><h2 style={{ fontSize: 20 }}>Photo library pass</h2><Link href="/library" className="sub">Open the library →</Link></div>
+      <p className="muted-sm">
+        {libraryPassDaysLeft(user.libraryPassUntil) > 0
+          ? `Active: ${libraryPassDaysLeft(user.libraryPassUntil)} day${libraryPassDaysLeft(user.libraryPassUntil) === 1 ? "" : "s"} left (to ${new Date(user.libraryPassUntil as string).toUTCString().slice(5, 16)}).`
+          : `No pass yet. $${env.priceLibraryPassUsd} buys ${env.libraryPassDays} days on the library page.`}
+      </p>
+      <h3 id="redeem" style={{ fontSize: 16, margin: "12px 0 8px" }}>Have a code?</h3>
+      <RedeemCodeForm />
+      <p className="muted-sm" style={{ marginTop: 8 }}>
+        A credit code adds days to your library pass. Know someone who&apos;d like it here? <Link href="/invites">Send an invite</Link>.
+      </p>
 
       <div className="divider" />
       <ApiKeysManager

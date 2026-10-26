@@ -32,6 +32,7 @@ export default async function AdminHome() {
         <Link href="/admin/tags" className="tile"><div className="val">{tags}</div><div className="lbl">Tags</div></Link>
         <Link href="/admin/seed-batches" className="tile"><div className="val">{batches}</div><div className="lbl">Seed batches</div></Link>
         <Link href="/admin/promos" className="tile"><div className="val">%</div><div className="lbl">Promo codes</div></Link>
+        <Link href="/admin/credits" className="tile"><div className="val">CR</div><div className="lbl">Credit codes</div></Link>
         <Link href="/admin/newsletter" className="tile"><div className="val">✉️</div><div className="lbl">Newsletter</div></Link>
         <Link href="/admin/notifications" className="tile"><div className="val">🔔</div><div className="lbl">Push</div></Link>
       </div>
@@ -43,6 +44,7 @@ export default async function AdminHome() {
         <Link href="/admin/seed-batches">Seed</Link>
         <Link href="/admin/prizes">Prizes</Link>
         <Link href="/admin/promos">Promos</Link>
+        <Link href="/admin/credits">Credit codes</Link>
         <Link href="/admin/newsletter">Newsletter</Link>
       </div>
     </div>

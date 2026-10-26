@@ -135,6 +135,22 @@ Only the first 2MB is fetched (via a `Range` request); provenance metadata
 lives at the front of every container. Rate limit: 60 requests/min per key.
 `502` if the file could not be fetched.
 
+### Credit codes and invites
+
+A credit code (`CR-XXXX-XXXX-XXXX-XXXX`) adds days to the photo library pass.
+An invite (`INV-XXXX-XXXX-XXXX`) is scarce: a few per account, one new person
+each. These take the session cookie or `Authorization: Bearer <aion_live_…>`.
+
+- `POST /api/credits/redeem` `{ "code": "CR-…" }` → `{ ok, unit: "library_days", days, libraryPassUntil }`;
+  400 `{ ok: false, reason }` with reason `invalid | expired | used_up | already_redeemed | revoked`.
+- `GET /api/invites` → `{ quota: { total, used, left }, invites: [...], bonusDays }` (codes are never shown again).
+- `POST /api/invites` `{ "note"?: "for Sam" }` → `{ ok, invite: { code, url, … } }`, the link once.
+- `POST /api/invites/:id/revoke` withdraws an unused invite.
+- Admin: `GET|POST /api/admin/credits` `{ days, label?, maxRedemptions?, expiresInDays? }`, `POST /api/admin/credits/:id/revoke`.
+
+An invite link is `https://aiornot.vote/i/INV-…`. When a new account signs up on it
+and verifies its email, both people get library days (`INVITE_BONUS_DAYS`, 7 by default).
+
 ## Errors
 `401` invalid/missing key · `400` bad input · `402` payment required (create a
 key by buying access or becoming a member) · `429` rate limited.

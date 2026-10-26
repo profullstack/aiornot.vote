@@ -436,3 +436,6 @@ a:hover { color: var(--human); }
 }
 .nag-dialog h2 { font-family: var(--unbounded); font-weight: 700; font-size: 22px; }
 .nag-dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+
+/* Visually hidden, still read by screen readers (labels on one-line forms). */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

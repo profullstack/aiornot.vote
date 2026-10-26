@@ -56,8 +56,28 @@ describe("POST /api/auth/signup", () => {
       "x".repeat(12),
       undefined,
       null,
+      null,
     );
     expect(mocks.createSession).toHaveBeenCalledWith("user-1");
+  });
+
+  it("passes an invite from the /i/<code> cookie to signup and clears the cookie", async () => {
+    const response = await POST(
+      signupRequest(
+        { email: "player@example.com", password: "x".repeat(12), ...NAMES },
+        { cookie: "aon_invite=INV-7K3M-QX9D-2F8H" },
+      ),
+    );
+    expect(response.status).toBe(200);
+    expect(mocks.signup).toHaveBeenCalledWith("player@example.com", "x".repeat(12), undefined, null, "INV-7K3M-QX9D-2F8H");
+    expect(response.headers.get("set-cookie")).toMatch(/aon_invite=;/);
+  });
+
+  it("prefers the invite in the form and ignores junk", async () => {
+    await POST(signupRequest({ email: "a@example.com", password: "x".repeat(12), ...NAMES, invite: "INV-AAAA-BBBB-CCCC" }));
+    expect(mocks.signup).toHaveBeenLastCalledWith("a@example.com", "x".repeat(12), undefined, null, "INV-AAAA-BBBB-CCCC");
+    await POST(signupRequest({ email: "b@example.com", password: "x".repeat(12), ...NAMES, invite: "<script>" }));
+    expect(mocks.signup).toHaveBeenLastCalledWith("b@example.com", "x".repeat(12), undefined, null, null);
   });
 
   it("stores the profile fields once the user exists", async () => {

@@ -6,6 +6,7 @@ import { randomToken, hmac } from "./crypto";
 import { env, isAdminEmail } from "./env";
 import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
 import { recordReferralOnSignup, rewardReferralOnVerify } from "./referrals";
+import { acceptPendingInvite, holdInviteOnSignup } from "./credits";
 import { normalizeDisplayName } from "./profile";
 
 export function normalizeEmail(email: string): string {
@@ -47,6 +48,7 @@ export async function signup(
   password: string,
   displayName?: unknown,
   referralCode?: string | null,
+  inviteCode?: string | null,
 ): Promise<SignupResult> {
   const email = emailRaw.trim();
   const normalized = normalizeEmail(email);
@@ -101,10 +103,22 @@ export async function signup(
     args: [userId],
   });
 
+  // An invite (from /i/<code>) is held on the account until the email is
+  // verified. A sign-up counts once: one that holds an invite is not also
+  // recorded as a /r/ referral.
+  const heldInvite = inviteCode
+    ? await holdInviteOnSignup(userId, inviteCode).catch((err) => {
+        console.error(`[invite] failed to hold for ${userId}:`, (err as Error).message);
+        return false;
+      })
+    : false;
+
   // Attribute the referral (if any). Reward is granted later, on email verify.
-  await recordReferralOnSignup(userId, normalized, referralCode).catch((err) => {
-    console.error(`[referral] failed to record for ${userId}:`, (err as Error).message);
-  });
+  if (!heldInvite) {
+    await recordReferralOnSignup(userId, normalized, referralCode).catch((err) => {
+      console.error(`[referral] failed to record for ${userId}:`, (err as Error).message);
+    });
+  }
 
   await issueVerification(userId, email);
   return { ok: true, userId };
@@ -169,7 +183,7 @@ export async function verifyEmailToken(token: string): Promise<VerifyResult> {
     sql: "UPDATE email_verification_tokens SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?",
     args: [row.id],
   });
-  await sqlClient.execute({
+  const firstVerify = await sqlClient.execute({
     sql: `UPDATE users SET email_verified_at = CURRENT_TIMESTAMP, status = 'active', updated_at = CURRENT_TIMESTAMP
           WHERE id = ? AND status = 'pending_email_verification'`,
     args: [row.user_id],
@@ -183,6 +197,13 @@ export async function verifyEmailToken(token: string): Promise<VerifyResult> {
   await rewardReferralOnVerify(row.user_id as string).catch((err) => {
     console.error(`[referral] failed to reward on verify for ${row.user_id}:`, (err as Error).message);
   });
+  // A NEW account just proved its inbox: accept the invite it signed up with
+  // (library days for both sides, after the abuse checks in lib/credits).
+  if (firstVerify?.rowsAffected === 1) {
+    await acceptPendingInvite(row.user_id as string).catch((err) => {
+      console.error(`[invite] failed to accept on verify for ${row.user_id}:`, (err as Error).message);
+    });
+  }
   return { ok: true, userId: row.user_id as string };
 }
 
@@ -292,5 +313,10 @@ export async function resetPassword(token: string, newPassword: string): Promise
     transaction.close();
   }
 
+  // A reset proves the inbox too, so an account first activated here still
+  // gets the invite it signed up with (a no-op unless one is held).
+  await acceptPendingInvite(userId).catch((err) => {
+    console.error(`[invite] failed to accept on reset for ${userId}:`, (err as Error).message);
+  });
   return { ok: true, userId };
 }

@@ -2,20 +2,26 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ProfileFields } from "@profullstack/profile/react";
 import { internalReturnPath } from "@/lib/internal-return-path";
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/profile";
+
+/** The shared profile fields beside the form's own email box (@profullstack/profile). */
+const SIGNUP_PROFILE_FIELDS = ["first_name", "last_name", "company_domain", "job_title", "linkedin_url"] as const;
 
 export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const ref = (searchParams.get("ref") || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 16);
   const [err, setErr] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setErr(null);
+    setFieldErrors({});
     const fd = new FormData(e.currentTarget);
     try {
       const res = await fetch("/api/auth/signup", {
@@ -25,12 +31,14 @@ export function SignupForm() {
           email: fd.get("email"),
           password: fd.get("password"),
           displayName: fd.get("displayName"),
+          ...Object.fromEntries(SIGNUP_PROFILE_FIELDS.map((name) => [name, fd.get(name)])),
           ref: ref || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
         setErr(data.error || "Could not create account.");
+        if (data.errors) setFieldErrors(data.errors);
         return;
       }
       router.push("/account?welcome=1");
@@ -69,6 +77,7 @@ export function SignupForm() {
           <label htmlFor="password">Password</label>
           <input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
         </div>
+        <ProfileFields fields={SIGNUP_PROFILE_FIELDS} errors={fieldErrors} />
         {err && <div className="form-error">{err}</div>}
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? "Creating…" : "Create account"}

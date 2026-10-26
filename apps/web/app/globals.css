@@ -216,6 +216,18 @@ a:hover { color: var(--human); }
   border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: var(--body); font-size: 15px;
 }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--ai); }
+/* The shared profile fields (@profullstack/profile): rows that read like .field. */
+.pfs-profile { border: 0; padding: 0; margin: 0; min-width: 0; }
+.pfs-profile__row { display: block; margin: 16px 0; }
+.pfs-profile__row label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.pfs-profile__row input {
+  width: 100%; background: var(--panel-alt); border: 1px solid var(--border-3);
+  border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: var(--body); font-size: 15px;
+}
+.pfs-profile__row input:focus { outline: none; border-color: var(--ai); }
+.pfs-profile__row input[aria-invalid="true"] { border-color: var(--wrong); }
+.pfs-profile__optional { color: var(--muted-2); }
+.pfs-profile__error { color: var(--wrong); font-size: 13px; margin: 6px 0 0; }
 .form-error { color: var(--wrong); font-size: 13px; margin: 8px 0; }
 .form-ok { color: var(--human); font-size: 13px; margin: 8px 0; }
 .muted { color: var(--muted-2); }

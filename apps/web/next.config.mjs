@@ -52,7 +52,8 @@ const nextConfig = {
     ],
   },
   async redirects() {
-    return [{ source: "/i/:slug", destination: "/m/:slug", permanent: true }];
+    // /i/<slug> is the old media URL; /i/INV-... is an invite link (app/i/[code]).
+    return [{ source: "/i/:slug((?![Ii][Nn][Vv]-).*)", destination: "/m/:slug", permanent: true }];
   },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];

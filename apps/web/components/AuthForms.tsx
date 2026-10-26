@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ProfileFields } from "@profullstack/profile/react";
 import { internalReturnPath } from "@/lib/internal-return-path";
 import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/profile";
+import { looksLikeInvite } from "@/lib/invite-code";
 
 /** The shared profile fields beside the form's own email box (@profullstack/profile). */
 const SIGNUP_PROFILE_FIELDS = ["first_name", "last_name", "company_domain", "job_title", "linkedin_url"] as const;
@@ -13,6 +14,10 @@ export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const ref = (searchParams.get("ref") || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 16);
+  // An invite from /i/<code>; also kept in a cookie, and held on the account
+  // server side so the verification link counts in any browser.
+  const rawInvite = (searchParams.get("invite") || "").slice(0, 24);
+  const invite = looksLikeInvite(rawInvite) ? rawInvite : "";
   const [err, setErr] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -33,6 +38,7 @@ export function SignupForm() {
           displayName: fd.get("displayName"),
           ...Object.fromEntries(SIGNUP_PROFILE_FIELDS.map((name) => [name, fd.get(name)])),
           ref: ref || undefined,
+          invite: invite || undefined,
         }),
       });
       const data = await res.json();
@@ -54,7 +60,12 @@ export function SignupForm() {
     <div className="form-card container-narrow">
       <h1>Create your account</h1>
       <p className="muted">Verify your email to guess, upload, and appear on the leaderboard.</p>
-      {ref && (
+      {invite && (
+        <div className="form-ok" style={{ marginBottom: 12 }}>
+          🎟️ You&apos;re signing up on an invite. Verify your email and you both get days of the photo library.
+        </div>
+      )}
+      {ref && !invite && (
         <div className="form-ok" style={{ marginBottom: 12 }}>
           🎁 A friend invited you! Verify your email after signing up and they&apos;ll earn a prize.
         </div>

@@ -5,6 +5,22 @@ import { createSession } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { hashIp } from "@/lib/crypto";
 import { profileStore } from "@/lib/user-profile";
+import { INVITE_COOKIE, looksLikeInvite } from "@/lib/invite-code";
+
+function readCookie(req: Request, name: string): string | null {
+  const raw = req.headers
+    .get("cookie")
+    ?.split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
+  if (!raw) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+}
 
 export const runtime = "nodejs";
 
@@ -23,6 +39,7 @@ export async function POST(req: Request) {
     password?: string;
     displayName?: unknown;
     ref?: string;
+    invite?: string;
     [field: string]: unknown;
   };
   try {
@@ -59,11 +76,17 @@ export async function POST(req: Request) {
     }
   }
 
+  // Invite code: from the form (?invite=), else the cookie /i/<code> set. It is
+  // held on the new account until the email is verified (lib/credits).
+  const cookieInvite = readCookie(req, INVITE_COOKIE);
+  const invite = [body.invite, cookieInvite].find(looksLikeInvite) ?? null;
+
   const result = await signup(
     String(body.email || ""),
     String(body.password || ""),
     body.displayName,
     ref,
+    invite,
   );
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
@@ -74,5 +97,7 @@ export async function POST(req: Request) {
     console.error("[signup] profile save failed:", err.message),
   );
   await createSession(result.userId);
-  return NextResponse.json({ ok: true, needsVerification: true });
+  const res = NextResponse.json({ ok: true, needsVerification: true });
+  if (cookieInvite) res.cookies.set(INVITE_COOKIE, "", { path: "/", maxAge: 0 });
+  return res;
 }

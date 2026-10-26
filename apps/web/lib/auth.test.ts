@@ -52,6 +52,10 @@ vi.mock("./email", () => ({
   sendVerificationEmail: vi.fn(),
   sendPasswordResetEmail: vi.fn(),
 }));
+vi.mock("./credits", () => ({
+  holdInviteOnSignup: vi.fn(async () => false),
+  acceptPendingInvite: vi.fn(async () => ({ ok: false, reason: "no invite" })),
+}));
 vi.mock("./referrals", () => ({
   recordReferralOnSignup: vi.fn(async () => undefined),
   rewardReferralOnVerify: vi.fn(async () => undefined),

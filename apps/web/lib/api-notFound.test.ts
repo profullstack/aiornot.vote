@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT } from "../app/api/route";
+import { DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT } from "../app/api/[[...slug]]/route";
 
-describe("/api root route handler (JSON 404)", () => {
+describe("/api optional catch-all route handler (JSON 404, covers /api itself)", () => {
   it("returns JSON 404 response for GET", async () => {
     const res = await GET();
     expect(res.status).toBe(404);

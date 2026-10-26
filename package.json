@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.2.4",
   "type": "module",
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.4",
   "scripts": {
     "dev": "bun --filter @aiornot/web dev",
     "build": "bun --filter @aiornot/web build",
@@ -23,8 +23,8 @@
     "typecheck": "bun --filter @aiornot/web typecheck"
   },
   "devDependencies": {
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   },
   "trustedDependencies": [
     "sharp",
@@ -37,6 +37,10 @@
     "services/*"
   ],
   "overrides": {
-    "tinypool": "^2.1.2"
+    "postcss": "^8.5.31",
+    "nanoid": "^3.3.20",
+    "source-map-js": "^1.2.2",
+    "js-yaml": "^4.3.2",
+    "vite": "^7.3.7"
   }
 }

@@ -6,7 +6,7 @@
 # (services/worker) in the background and the Next.js web app in front.
 # Bun runs the TypeScript CLIs directly (no tsx) and `next start` (bun --bun).
 
-FROM oven/bun:1.4.0-slim AS deps
+FROM oven/bun:1.4.4-slim AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/
@@ -21,7 +21,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production
 RUN bun run build && rm -rf apps/web/.next/cache
 
 # Runtime dependencies only (no vitest/eslint/typescript/@libsql/client).
-FROM oven/bun:1.4.0-slim AS prod-deps
+FROM oven/bun:1.4.4-slim AS prod-deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/
@@ -30,7 +30,7 @@ COPY packages/seed/package.json packages/seed/
 COPY services/worker/package.json services/worker/
 RUN bun install --frozen-lockfile --production
 
-FROM oven/bun:1.4.0-slim AS runtime
+FROM oven/bun:1.4.4-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
 # Bun 1.4 workspaces use the isolated linker (node_modules/.bun + per-package

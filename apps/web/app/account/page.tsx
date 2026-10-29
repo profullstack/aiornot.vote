@@ -11,6 +11,7 @@ import { ShareStats } from "@/components/ShareStats";
 import { env } from "@/lib/env";
 import { libraryPassDaysLeft } from "@/lib/library-pass";
 import { RedeemCodeForm } from "@/components/CreditUI";
+import { isPlaceholderEmail } from "@/lib/coinpay-signin";
 
 export const metadata = { title: "Your account" };
 export const dynamic = "force-dynamic";
@@ -38,7 +39,13 @@ export default async function AccountPage() {
         </div>
       </div>
 
-      {!user.emailVerified && (
+      {!user.emailVerified && isPlaceholderEmail(user.email) && (
+        <div className="notice warn">
+          <strong>Signed in with CoinPay.</strong> Guessing and leaderboards need a verified email, which an
+          account made with CoinPay does not have.
+        </div>
+      )}
+      {!user.emailVerified && !isPlaceholderEmail(user.email) && (
         <div className="notice warn">
           <strong>Verify your email</strong> to start guessing and appear on leaderboards.
           {" "}

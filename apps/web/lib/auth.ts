@@ -52,7 +52,9 @@ export async function signup(
 ): Promise<SignupResult> {
   const email = emailRaw.trim();
   const normalized = normalizeEmail(email);
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
+  // .invalid (RFC 2606) is refused too: accounts made by Sign in with CoinPay
+  // hold a placeholder there, and signup would otherwise claim a passwordless one.
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized) || normalized.endsWith(".invalid")) {
     return { ok: false, error: "Enter a valid email address." };
   }
   if (password.length < 8) {

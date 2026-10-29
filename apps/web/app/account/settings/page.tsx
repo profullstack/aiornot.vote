@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { LogoutButton, ResendVerification } from "@/components/AuthForms";
+import { CoinPaySettings, LogoutButton, ResendVerification } from "@/components/AuthForms";
+import { sqlClient } from "@/lib/db";
+import { coinpayEnabled, coinpayLinkFor, coinpayOAuthConfig, isPlaceholderEmail } from "@/lib/coinpay-signin";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { ContactSettings } from "@/components/ContactSettings";
@@ -15,13 +17,19 @@ export default async function SettingsPage() {
   const contact = await profileStore()
     .get(user.id)
     .catch(() => null);
+  const coinpay = await coinpayLinkFor(sqlClient, user.id).catch(() => ({ linked: false, hasPassword: true }));
+  // An account made by Sign in with CoinPay has a placeholder address, not an inbox.
+  const coinpayOnly = isPlaceholderEmail(user.email);
   return (
     <div className="form-card container-narrow">
       <h1>Settings</h1>
       <div className="field">
         <label>Email</label>
-        <input value={user.email} readOnly />
+        <input value={coinpayOnly ? "None: this account signs in with CoinPay" : user.email} readOnly />
       </div>
+      {(coinpay.linked || coinpayEnabled(coinpayOAuthConfig())) && (
+        <CoinPaySettings linked={coinpay.linked} hasPassword={coinpay.hasPassword} />
+      )}
       <ProfileSettings initialDisplayName={user.displayName} />
       <div className="divider" />
       <ContactSettings
@@ -48,7 +56,7 @@ export default async function SettingsPage() {
       )}
 
       <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-        {!user.emailVerified && <ResendVerification />}
+        {!user.emailVerified && !coinpayOnly && <ResendVerification />}
         <LogoutButton />
       </div>
     </div>

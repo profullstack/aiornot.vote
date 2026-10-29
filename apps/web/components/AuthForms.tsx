@@ -10,7 +10,40 @@ import { looksLikeInvite } from "@/lib/invite-code";
 /** The shared profile fields beside the form's own email box (@profullstack/profile). */
 const SIGNUP_PROFILE_FIELDS = ["first_name", "last_name", "company_domain", "job_title", "linkedin_url"] as const;
 
-export function SignupForm() {
+/** What the CoinPay callback's ?coinpay_error= codes mean, said to a person. */
+export const COINPAY_ERRORS: Record<string, string> = {
+  not_configured: "Sign in with CoinPay is not available right now.",
+  rate_limited: "Too many attempts. Try again in a few minutes.",
+  sign_in_first: "Sign in to this account first, then connect CoinPay from Settings.",
+  bad_state: "That CoinPay sign-in expired or did not start here. Try again.",
+  denied: "CoinPay sign-in was cancelled.",
+  bad_request: "CoinPay sign-in failed. Try again.",
+  exchange_failed: "CoinPay sign-in failed. Try again.",
+  linked_elsewhere: "That CoinPay account is already connected to another AIorNot account.",
+  already_linked: "This account already has a CoinPay account connected. Disconnect it first.",
+  unavailable: "This account is not available.",
+};
+
+/**
+ * Sign in with CoinPay: first on sign-in and sign-up. One CoinPay account signs
+ * in across every Profullstack site; it binds to the CoinPay account itself,
+ * never to an email address.
+ */
+export function CoinPayButton() {
+  const searchParams = useSearchParams();
+  const code = searchParams.get("coinpay_error");
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <a className="btn btn-primary" href="/api/v1/coinpay/oauth/start" style={{ display: "block", textAlign: "center" }}>
+        Sign in with CoinPay
+      </a>
+      {code && <div className="form-error" style={{ marginTop: 8 }}>{COINPAY_ERRORS[code] ?? "CoinPay sign-in failed. Try again."}</div>}
+      <p className="muted-sm" style={{ textAlign: "center", margin: "12px 0 0" }}>or use your email</p>
+    </div>
+  );
+}
+
+export function SignupForm({ coinpay = false }: { coinpay?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const ref = (searchParams.get("ref") || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 16);
@@ -70,6 +103,7 @@ export function SignupForm() {
           🎁 A friend invited you! Verify your email after signing up and they&apos;ll earn a prize.
         </div>
       )}
+      {coinpay && <CoinPayButton />}
       <form onSubmit={onSubmit}>
         <div className="field">
           <label htmlFor="displayName">Display name</label>
@@ -101,7 +135,7 @@ export function SignupForm() {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ coinpay = false }: { coinpay?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = internalReturnPath(searchParams.get("next"));
@@ -136,6 +170,7 @@ export function LoginForm() {
   return (
     <div className="form-card container-narrow">
       <h1>Sign in</h1>
+      {coinpay && <CoinPayButton />}
       <form onSubmit={onSubmit}>
         <div className="field">
           <label htmlFor="email">Email</label>
@@ -292,6 +327,54 @@ export function LogoutButton() {
     >
       Sign out
     </button>
+  );
+}
+
+/** Settings: Connect / Disconnect CoinPay. */
+export function CoinPaySettings({ linked, hasPassword }: { linked: boolean; hasPassword: boolean }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const code = searchParams.get("coinpay_error");
+  const [err, setErr] = useState<string | null>(code ? (COINPAY_ERRORS[code] ?? "CoinPay failed. Try again.") : null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="field">
+      <label>CoinPay</label>
+      {searchParams.get("coinpay") === "linked" && (
+        <div className="form-ok" style={{ marginBottom: 8 }}>CoinPay connected. You can sign in with it from now on.</div>
+      )}
+      {linked ? (
+        hasPassword ? (
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span className="muted-sm">Connected: you can sign in here with CoinPay.</span>
+            <button
+              className="btn btn-sm"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setErr(null);
+                const res = await fetch("/api/v1/coinpay/disconnect", { method: "POST" });
+                const data = await res.json().catch(() => ({}));
+                setBusy(false);
+                if (!res.ok || !data.ok) setErr(data.error || "Could not disconnect.");
+                else router.refresh();
+              }}
+            >
+              Disconnect CoinPay
+            </button>
+          </div>
+        ) : (
+          <div className="muted-sm">
+            This account was made with CoinPay, which is its only way in, so it cannot be disconnected.
+          </div>
+        )
+      ) : (
+        <a className="btn btn-sm" href="/api/v1/coinpay/oauth/start?mode=link">
+          Connect CoinPay
+        </a>
+      )}
+      {err && <div className="form-error" style={{ marginTop: 8 }}>{err}</div>}
+    </div>
   );
 }
 

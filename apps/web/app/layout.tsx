@@ -1,3 +1,4 @@
+import PwaRegistration from './PwaRegistration';
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
@@ -11,6 +12,7 @@ import { getRandomTip } from "@/lib/tips";
 import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
+  manifest: '/manifest.webmanifest',
   metadataBase: new URL(env.appUrl),
   title: {
     default: "AIorNot.vote — Crowd-sourced AI image detection",
@@ -102,6 +104,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        <PwaRegistration />
         <SiteHeader user={user} />
         <WinBanner prizes={claimable.map((p) => ({ id: p.id, rewardLabel: p.rewardLabel, claimDeadline: p.claimDeadline }))} />
         <TipBar tip={tip} />

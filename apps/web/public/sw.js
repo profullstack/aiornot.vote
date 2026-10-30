@@ -33,3 +33,20 @@ self.addEventListener("notificationclick", (event) => {
     }),
   );
 });
+
+
+const PWA_CACHE = "aiornot-app-shell-v1";
+self.addEventListener("install", (event) => {
+  event.waitUntil((async () => {
+    try {
+      const response = await fetch("/", { credentials: "omit" });
+      if (response.ok) await (await caches.open(PWA_CACHE)).put("/", response);
+    } catch {}
+  })());
+});
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== "GET" || request.mode !== "navigate" || url.origin !== self.location.origin) return;
+  event.respondWith(fetch(request).catch(async () => (await caches.open(PWA_CACHE)).match("/") || Response.error()));
+});

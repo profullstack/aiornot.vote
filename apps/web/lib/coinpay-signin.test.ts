@@ -9,6 +9,8 @@ import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   coinpayLinkFor,
+  coinpayLoginChoices,
+  chooseCoinPayLoginAccount,
   disconnectCoinPay,
   finishCoinPay,
   isPlaceholderEmail,
@@ -77,9 +79,11 @@ beforeAll(async () => {
     status TEXT NOT NULL DEFAULT 'pending_email_verification', role TEXT NOT NULL DEFAULT 'user',
     last_login_at TEXT, updated_at TEXT)`);
   await db.execute(`CREATE TABLE user_stats (user_id TEXT PRIMARY KEY)`);
-  const sql = readFileSync(new URL("../../../packages/db/migrations/0020_coinpay_sign_in.sql", import.meta.url), "utf8");
-  for (const stmt of sql.split(/;\s*(?:\n|$)/).map((s) => s.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n").trim()).filter(Boolean)) {
-    await db.execute(stmt);
+  for (const migration of ["0020_coinpay_sign_in.sql", "0021_coinpay_multi_account.sql"]) {
+    const sql = readFileSync(new URL(`../../../packages/db/migrations/${migration}`, import.meta.url), "utf8");
+    for (const stmt of sql.split(/;\s*(?:\n|$)/).map((s) => s.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n").trim()).filter(Boolean)) {
+      await db.execute(stmt);
+    }
   }
 });
 
@@ -168,19 +172,32 @@ describe("Sign in with CoinPay", () => {
     });
     // Now CoinPay signs into that account.
     expect((await flow("login")).outcome).toEqual({ ok: true, kind: "signed_in", userId: "usr_linker" });
-    // A sub already bound elsewhere cannot be linked again.
+    // The same CoinPay identity can also be deliberately connected to another account.
     identity = { sub: "sub-new", email: "fresh@example.com", name: "Fresh" };
     await makeUser("usr_third", "third@example.com");
     expect((await flow("link", { startUserId: "usr_third", sessionUserId: "usr_third" })).outcome).toEqual({
-      ok: false,
-      error: "linked_elsewhere",
+      ok: true,
+      kind: "linked",
+      userId: "usr_third",
     });
+    const accounts = await db.execute({ sql: "SELECT user_id FROM coinpay_identities WHERE sub = 'sub-new'", args: [] });
+    expect(accounts.rows).toHaveLength(2);
+
+    // A future CoinPay sign-in must ask which linked account is intended.
+    const login = await flow("login");
+    expect(login.outcome.ok && login.outcome.kind).toBe("choose_account");
+    if (!login.outcome.ok || login.outcome.kind !== "choose_account") throw new Error("Expected a CoinPay account chooser");
+    const choices = await coinpayLoginChoices(db, login.outcome.choiceToken);
+    expect(choices).toHaveLength(2);
+    expect(await chooseCoinPayLoginAccount(db, login.outcome.choiceToken, "usr_victim")).toBeNull();
+    expect(await chooseCoinPayLoginAccount(db, login.outcome.choiceToken, "usr_third")).toBe("usr_third");
+    expect(await chooseCoinPayLoginAccount(db, login.outcome.choiceToken, "usr_third")).toBeNull();
   });
 
   it("disconnect is refused when CoinPay is the only way in, allowed otherwise", async () => {
     expect(await coinpayLinkFor(db, "usr_linker")).toEqual({ linked: true, hasPassword: true });
     expect(await disconnectCoinPay(db, "usr_linker")).toBe("ok");
-    const only = (await db.execute({ sql: "SELECT user_id FROM coinpay_identities WHERE sub = 'sub-new'", args: [] })).rows[0]!;
+    const only = (await db.execute({ sql: "SELECT user_id FROM coinpay_identities WHERE sub = 'sub-new' AND user_id <> 'usr_third'", args: [] })).rows[0]!;
     expect(await disconnectCoinPay(db, String(only.user_id))).toBe("only_way_in");
   });
 });

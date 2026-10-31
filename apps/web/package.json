@@ -16,7 +16,7 @@
     "@aiornot/seed": "workspace:*",
     "@node-rs/argon2": "^2.2.2",
     "@profullstack/affiliates": "0.3.0",
-    "@profullstack/coinpay-onboard": "0.3.1",
+    "@profullstack/coinpay-onboard": "0.4.0",
     "@profullstack/footer": "latest",
     "@profullstack/notifications": "^0.1.4",
     "@profullstack/profile": "0.1.6",

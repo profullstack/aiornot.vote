@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ProfileFields } from "@profullstack/profile/react";
@@ -135,7 +135,57 @@ export function SignupForm({ coinpay = false }: { coinpay?: boolean }) {
   );
 }
 
-export function LoginForm({ coinpay = false }: { coinpay?: boolean }) {
+function CoinPayAccountChooser() {
+  const router = useRouter();
+  const [choices, setChoices] = useState<Array<{ userId: string; label: string }>>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/v1/coinpay/oauth/choices", { cache: "no-store" })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error("That account choice expired. Sign in with CoinPay again.");
+        setChoices(data.choices);
+      })
+      .catch((error) => setErr(error instanceof Error ? error.message : "Could not load your accounts."));
+  }, []);
+
+  async function choose(userId: string) {
+    setBusyId(userId);
+    setErr(null);
+    try {
+      const res = await fetch("/api/v1/coinpay/oauth/choices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error === "choice_expired" ? "That account choice expired. Sign in with CoinPay again." : "Could not sign in to that account.");
+      router.push("/account");
+      router.refresh();
+    } catch (error) {
+      setErr(error instanceof Error ? error.message : "Network error — please try again.");
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div>
+      <h1>Choose your account</h1>
+      <p className="muted">This CoinPay account is connected to more than one AIorNot account.</p>
+      {choices.map((choice) => (
+        <button key={choice.userId} className="btn btn-primary" type="button" onClick={() => choose(choice.userId)} disabled={busyId !== null} style={{ display: "block", width: "100%", marginTop: 10 }}>
+          {busyId === choice.userId ? "Signing in…" : choice.label}
+        </button>
+      ))}
+      {err && <div className="form-error" style={{ marginTop: 12 }}>{err}</div>}
+      <p className="muted-sm" style={{ marginTop: 16 }}><Link href="/login">Use email and password</Link></p>
+    </div>
+  );
+}
+
+export function LoginForm({ coinpay = false, coinpayChoose = false }: { coinpay?: boolean; coinpayChoose?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = internalReturnPath(searchParams.get("next"));
@@ -169,6 +219,7 @@ export function LoginForm({ coinpay = false }: { coinpay?: boolean }) {
 
   return (
     <div className="form-card container-narrow">
+      {coinpayChoose ? <CoinPayAccountChooser /> : <>
       <h1>Sign in</h1>
       {coinpay && <CoinPayButton />}
       <form onSubmit={onSubmit}>
@@ -190,6 +241,7 @@ export function LoginForm({ coinpay = false }: { coinpay?: boolean }) {
         {" · "}
         <Link href="/forgot-password">Forgot password?</Link>
       </p>
+      </>}
     </div>
   );
 }

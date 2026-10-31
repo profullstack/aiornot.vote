@@ -1,7 +1,8 @@
 # Managed by sh1pt Actions Fleet
 # pack: coinpay-invoice@1.0.0
 # install: sh1pt-actions-store
-# hash: sha256:34ad3313699d6a34845801f6d1c0963e36bee5d375678ffdd2a4bf0f46a17fa2
+# hash: sha256:08ebc3733fb45f2799dc5e75796ebfeb90db0edd8c1ddabeb7d7dd20ccd9e284
+
 name: CoinPayPortal invoice command
 
 on:
@@ -23,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: profullstack/coinpaybot@v0
+      - uses: profullstack/coinpaybot@f861282e490e1af349af6c0d9dd9f02aae14eb7c
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           coinpay-api-key: ${{ secrets.COINPAY_API_KEY }}

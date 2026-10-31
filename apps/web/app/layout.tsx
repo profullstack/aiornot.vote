@@ -3,7 +3,6 @@ import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PitFooter } from "@/components/PitFooter";
 import { AdSlot } from "@/components/AdSlot";
 import { WinBanner } from "@/components/PrizeUI";
 import { TipBar } from "@/components/TipBar";
@@ -121,7 +120,6 @@ export default async function RootLayout({
             sandboxed iframe and never blocks page load. */}
         <Script data-site="8ad2116a-ae39-434a-8e2e-216931f80f43" src="https://crawlproof.com/stats.js" strategy="afterInteractive" />
         <Script src="https://crawlproof.com/ad.js" strategy="afterInteractive" />
-        <PitFooter />
       </body>
     </html>
   );

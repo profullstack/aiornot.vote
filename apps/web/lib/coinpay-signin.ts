@@ -85,7 +85,7 @@ export async function startCoinPay(
 
 export type CallbackOutcome =
   | { ok: true; kind: "signed_in" | "welcome"; userId: string }
-  | { ok: true; kind: "linked"; userId: string }
+  | { ok: true; kind: "linked"; userId: string; openprofile_url?: string }
   | { ok: true; kind: "choose_account"; choiceToken: string }
   | {
       ok: false;
@@ -131,7 +131,7 @@ export async function finishCoinPay(
   if (input.params.get("error")) return { ok: false, error: "denied" };
   if (!code) return { ok: false, error: "bad_request" };
 
-  let identity: { sub: string; email: string | null; name: string | null };
+  let identity: Awaited<ReturnType<typeof finishSignIn>>;
   try {
     identity = await finishSignIn({
       code,
@@ -154,6 +154,7 @@ export async function finishCoinPay(
     if (!input.sessionUserId || input.sessionUserId !== String(row.user_id ?? "")) {
       return { ok: false, error: "sign_in_first" };
     }
+    const openProfile = typeof identity.userinfo.openprofile_url === "string" ? { openprofile_url: identity.userinfo.openprofile_url } : {};
     const relevant = await db.execute({
       sql: "SELECT sub, user_id FROM coinpay_identities WHERE sub = ? OR user_id = ?",
       args: [identity.sub, input.sessionUserId],
@@ -163,7 +164,7 @@ export async function finishCoinPay(
       sub: identity.sub,
       userId: input.sessionUserId,
     });
-    if (decision.kind === "already_linked") return { ok: true, kind: "linked", userId: input.sessionUserId };
+    if (decision.kind === "already_linked") return { ok: true, kind: "linked", userId: input.sessionUserId, ...openProfile };
     if (decision.kind === "account_has_other_identity") return { ok: false, error: "already_linked" };
     await db.execute({
       sql: `INSERT INTO coinpay_identities (sub, user_id, contact_email, name, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
@@ -171,7 +172,7 @@ export async function finishCoinPay(
     });
     const linked = await db.execute({ sql: "SELECT sub FROM coinpay_identities WHERE user_id = ?", args: [input.sessionUserId] });
     return String(linked.rows[0]?.sub ?? "") === identity.sub
-      ? { ok: true, kind: "linked", userId: input.sessionUserId }
+      ? { ok: true, kind: "linked", userId: input.sessionUserId, ...openProfile }
       : { ok: false, error: "already_linked" };
   }
 

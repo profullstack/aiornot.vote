@@ -41,7 +41,7 @@ export function ContactSettings({ initial }: { initial: Record<string, string | 
 
   return (
     <form onSubmit={save}>
-      <ProfileFields fields={FIELDS} defaultValues={initial} errors={errors} idPrefix="settings-" />
+      <ProfileFields fields={FIELDS} defaultValues={initial} errors={errors} idPrefix="settings-"  importOpenProfile/>
       <div className="muted-sm">Private to your account; never shown on leaderboards.</div>
       {error && <div className="form-error">{error}</div>}
       {saved && <div className="form-ok">Details saved.</div>}

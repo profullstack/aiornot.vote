@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { saveOpenProfileContact } from "@profullstack/profile";
+import { profileStore } from "@/lib/user-profile";
 import { NextResponse } from "next/server";
 import { sqlClient } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -33,7 +35,13 @@ export async function GET(req: Request) {
   if (!outcome.ok) {
     return to(sessionUser ? `/account/settings?coinpay_error=${outcome.error}` : `/login?coinpay_error=${outcome.error}`);
   }
-  if (outcome.kind === "linked") return to("/account/settings?coinpay=linked");
+  if (outcome.kind === "linked") {
+    if (outcome.openprofile_url) {
+      try { await saveOpenProfileContact(profileStore(), outcome.userId, outcome.openprofile_url); }
+      catch { console.warn("[coinpay] OpenProfile import skipped"); }
+    }
+    return to("/account/settings?coinpay=linked");
+  }
   if (outcome.kind === "choose_account") {
     jar.set(CHOICE_COOKIE, outcome.choiceToken, {
       httpOnly: true,

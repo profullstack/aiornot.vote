@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Magnifier } from "./Magnifier";
+import { VideoPlayer } from "./VideoPlayer";
 
 export type ClientTag = { slug: string; name: string; isAnswerSpoiler: boolean };
 export type ClientCard = {
@@ -91,7 +92,7 @@ export function MediaCard({
       ) : (
         <div className="card-media">
           {card.mediaType === "video" ? (
-            <video src={card.mediaUrl} poster={card.posterUrl || undefined} muted playsInline preload="metadata" />
+            <VideoPlayer src={card.mediaUrl} poster={card.posterUrl} mediaId={card.id} />
           ) : (
             <Magnifier src={poster} alt={card.title} fit="cover" fill zoom={2.4} lensSize={150} />
           )}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -12,6 +12,8 @@ import { getRandomTip } from "@/lib/tips";
 import { env } from "@/lib/env";
 
 const CRAWLPROOF_AD_SLOT = "38f34cb0-f9bd-4c68-a56f-9da6b7cc652f";
+
+export const viewport: Viewport = { themeColor: "#08080c" };
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.appUrl),

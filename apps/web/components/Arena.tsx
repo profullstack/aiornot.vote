@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { Magnifier } from "./Magnifier";
+import { VideoPlayer } from "./VideoPlayer";
 
 type PlayItem = {
   id: string;
@@ -157,7 +158,7 @@ export function Arena({ signedIn }: { signedIn: boolean }) {
           <div className="arena-card">
             <div className="arena-photo">
               {current.mediaType === "video" ? (
-                <video src={current.mediaUrl} poster={current.posterUrl || undefined} muted playsInline />
+                <VideoPlayer key={current.id} src={current.mediaUrl} poster={current.posterUrl} />
               ) : (
                 <Magnifier key={current.id} src={current.mediaUrl} alt={current.title} fit="cover" fill zoom={2.8} lensSize={190} />
               )}

@@ -9,6 +9,7 @@ import { DetailVote } from "@/components/DetailVote";
 import { MediaGrid } from "@/components/MediaGrid";
 import { RssBar } from "@/components/RssBar";
 import { Magnifier } from "@/components/Magnifier";
+import { VideoPlayer } from "@/components/VideoPlayer";
 import { PowerupBar } from "@/components/RewardUI";
 import { getMediaRewardState } from "@/lib/rewards";
 
@@ -129,7 +130,7 @@ export default async function MediaDetailPage({
               <p style={{ margin: 0, fontSize: 18, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{m.description || m.title}</p>
             </div>
           ) : m.mediaType === "video" ? (
-            <video src={m.mediaUrl} poster={m.posterUrl || undefined} controls playsInline />
+            <VideoPlayer src={m.mediaUrl} poster={m.posterUrl} mediaId={m.id} shareable />
           ) : (
             <Magnifier src={m.mediaUrl} alt={m.title} zoom={2.8} lensSize={220} />
           )}

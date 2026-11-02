@@ -133,6 +133,8 @@ a:hover { color: var(--human); }
 .card { background: var(--panel); border: 1px solid var(--border-2); border-radius: 18px; overflow: hidden; animation: riseIn 0.5s ease both; }
 .card-media { position: relative; aspect-ratio: 4/5; background: var(--panel-alt); overflow: hidden; }
 .card-media img, .card-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* House player: its own stacking context so badges and the arena reveal paint over its bar. */
+.card-media .pux-player, .arena-photo .pux-player, .detail-media .pux-player { isolation: isolate; }
 .badge-type {
   position: absolute; top: 12px; left: 12px; background: rgba(8,8,12,0.75);
   backdrop-filter: blur(6px); border: 1px solid var(--border-3); border-radius: 8px;

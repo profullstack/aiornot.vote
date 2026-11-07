@@ -27,6 +27,7 @@ import {
   SIGN_IN_SCOPES,
 } from "@profullstack/coinpay-onboard/oauth";
 import { resolveCoinPayAccountLink, resolveCoinPaySignIn } from "@profullstack/coinpay-onboard/identity";
+import type { CoinpayPass } from "@profullstack/coinpay-onboard/pass";
 
 export const STATE_COOKIE = "aon_coinpay_state";
 export const CHOICE_COOKIE = "aon_coinpay_choice";
@@ -84,8 +85,8 @@ export async function startCoinPay(
 }
 
 export type CallbackOutcome =
-  | { ok: true; kind: "signed_in" | "welcome"; userId: string }
-  | { ok: true; kind: "linked"; userId: string; openprofile_url?: string }
+  | { ok: true; kind: "signed_in" | "welcome"; userId: string; pass?: CoinpayPass }
+  | { ok: true; kind: "linked"; userId: string; openprofile_url?: string; pass?: CoinpayPass }
   | { ok: true; kind: "choose_account"; choiceToken: string }
   | {
       ok: false;
@@ -99,6 +100,11 @@ export type CallbackOutcome =
         | "already_linked"
         | "unavailable";
     };
+
+/** A Profullstack Pass rides on the outcome only while it is active. */
+function activePass(pass: CoinpayPass | undefined): { pass?: CoinpayPass } {
+  return pass?.active ? { pass } : {};
+}
 
 /** Finish a CoinPay authorization. The caller mints a session for signed_in/welcome. */
 export async function finishCoinPay(
@@ -164,7 +170,7 @@ export async function finishCoinPay(
       sub: identity.sub,
       userId: input.sessionUserId,
     });
-    if (decision.kind === "already_linked") return { ok: true, kind: "linked", userId: input.sessionUserId, ...openProfile };
+    if (decision.kind === "already_linked") return { ok: true, kind: "linked", userId: input.sessionUserId, ...openProfile, ...activePass(identity.pass) };
     if (decision.kind === "account_has_other_identity") return { ok: false, error: "already_linked" };
     await db.execute({
       sql: `INSERT INTO coinpay_identities (sub, user_id, contact_email, name, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
@@ -172,7 +178,7 @@ export async function finishCoinPay(
     });
     const linked = await db.execute({ sql: "SELECT sub FROM coinpay_identities WHERE user_id = ?", args: [input.sessionUserId] });
     return String(linked.rows[0]?.sub ?? "") === identity.sub
-      ? { ok: true, kind: "linked", userId: input.sessionUserId, ...openProfile }
+      ? { ok: true, kind: "linked", userId: input.sessionUserId, ...openProfile, ...activePass(identity.pass) }
       : { ok: false, error: "already_linked" };
   }
 
@@ -204,7 +210,7 @@ export async function finishCoinPay(
       args: [iso(now), identity.email, identity.name, identity.sub, existing],
     });
     await db.execute({ sql: "UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?", args: [existing] });
-    return { ok: true, kind: "signed_in", userId: existing };
+    return { ok: true, kind: "signed_in", userId: existing, ...activePass(identity.pass) };
   }
 
   const userId = `usr_${randomUUID().replace(/-/g, "")}`;
@@ -221,7 +227,7 @@ export async function finishCoinPay(
     sql: `INSERT INTO coinpay_identities (sub, user_id, contact_email, name, created_at, last_login_at) VALUES (?, ?, ?, ?, ?, ?)`,
     args: [identity.sub, userId, identity.email, identity.name, iso(now), iso(now)],
   });
-  return { ok: true, kind: "welcome", userId };
+  return { ok: true, kind: "welcome", userId, ...activePass(identity.pass) };
 }
 
 export type CoinPayLink = { linked: boolean; hasPassword: boolean };

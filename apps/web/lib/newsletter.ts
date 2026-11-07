@@ -1,48 +1,54 @@
 import "server-only";
 import { sqlClient } from "./db";
 import { sendEmail } from "./email";
+import { generateObject } from "@profullstack/ai-providers";
 
 export type GeneratedNewsletter = { subject: string; html: string };
 
-/** Ask OpenAI to draft a newsletter from an admin prompt. Returns subject + HTML body. */
+const NEWSLETTER_SYSTEM =
+  "You write email newsletters for AIorNot.vote — a game where people guess whether a photo/video/post is AI-generated or real. " +
+  "Voice: sharp, playful, a little irreverent, concise. Return ONLY a JSON object: " +
+  '{"subject": string (<=70 chars, no emoji spam), "html": string}. ' +
+  "The html is the EMAIL BODY ONLY (no <html>/<head>/<body> tags). Use simple inline-friendly tags: " +
+  "<h2>, <p>, <ul><li>, <a href>. Keep it short (120-220 words). Always end with a clear CTA linking to https://aiornot.vote/play .";
+
+/** Throws when the model left out a field, so the router repairs or moves on. */
+export function parseNewsletter(v: unknown): GeneratedNewsletter {
+  const o = (v ?? {}) as Record<string, unknown>;
+  if (typeof o.subject !== "string" || !o.subject.trim() || typeof o.html !== "string" || !o.html.trim()) {
+    throw new Error("Model omitted subject or html.");
+  }
+  return { subject: o.subject.slice(0, 120), html: o.html };
+}
+
+/**
+ * Draft a newsletter from an admin prompt. Returns subject + HTML body.
+ * c0mpute first (@profullstack/ai-providers), OpenAI/Anthropic as paid fallbacks.
+ */
 export async function generateNewsletter(prompt: string): Promise<GeneratedNewsletter> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
   const clean = prompt.trim().slice(0, 2000);
   if (!clean) throw new Error("Enter a prompt.");
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You write email newsletters for AIorNot.vote — a game where people guess whether a photo/video/post is AI-generated or real. " +
-            "Voice: sharp, playful, a little irreverent, concise. Return ONLY a JSON object: " +
-            '{"subject": string (<=70 chars, no emoji spam), "html": string}. ' +
-            "The html is the EMAIL BODY ONLY (no <html>/<head>/<body> tags). Use simple inline-friendly tags: " +
-            "<h2>, <p>, <ul><li>, <a href>. Keep it short (120-220 words). Always end with a clear CTA linking to https://aiornot.vote/play .",
-        },
-        { role: "user", content: clean },
-      ],
-    }),
-  });
-  if (!res.ok) throw new Error(`Newsletter generation failed (${res.status}): ${(await res.text()).slice(0, 160)}`);
-  const data = (await res.json()) as { choices: Array<{ message: { content: string } }> };
-  const raw = data.choices[0]?.message?.content ?? "{}";
-  let parsed: GeneratedNewsletter;
   try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("Model returned invalid JSON.");
+    const { object } = await generateObject({
+      feature: "aiornot.newsletter",
+      name: "Newsletter",
+      system: NEWSLETTER_SYSTEM,
+      user: clean,
+      temperature: 0.7,
+      maxTokens: 1500,
+      // Peer nodes write ~2 tokens/s; stay under the route's maxDuration.
+      timeoutMs: 170_000,
+      jsonSchema: {
+        type: "object",
+        properties: { subject: { type: "string" }, html: { type: "string" } },
+        required: ["subject", "html"],
+      },
+      schema: parseNewsletter,
+    });
+    return object;
+  } catch (err) {
+    throw new Error(`Newsletter generation failed: ${String((err as Error).message ?? err).slice(0, 200)}`);
   }
-  if (!parsed.subject || !parsed.html) throw new Error("Model omitted subject or html.");
-  return { subject: parsed.subject.slice(0, 120), html: parsed.html };
 }
 
 export async function countActiveRecipients(): Promise<number> {

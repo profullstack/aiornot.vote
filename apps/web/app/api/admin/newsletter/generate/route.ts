@@ -3,7 +3,8 @@ import { requireAdminApi } from "@/lib/admin";
 import { generateNewsletter, countActiveRecipients } from "@/lib/newsletter";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+// c0mpute peer nodes are slow (~2 tokens/s); give the draft room.
+export const maxDuration = 180;
 
 export async function POST(req: Request) {
   const auth = await requireAdminApi();

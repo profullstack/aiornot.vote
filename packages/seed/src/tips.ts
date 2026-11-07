@@ -1,5 +1,6 @@
 import { getClient, newId } from "@aiornot/db";
 import type { Client } from "@libsql/client";
+import { generateObject } from "@profullstack/ai-providers";
 
 const SYSTEM = [
   "You write short, punchy, concrete tips for a game where players guess whether a",
@@ -10,46 +11,42 @@ const SYSTEM = [
   "magnifier). Each tip < 140 chars, starts with a verb, no numbering, no quotes.",
 ].join(" ");
 
+/** The model's answer, as tip strings. Accepts {"tips": [...]} or a bare array. */
+export function parseTips(v: unknown): string[] {
+  const list = Array.isArray(v) ? v : (v as { tips?: unknown } | null)?.tips;
+  if (!Array.isArray(list) || list.length === 0) throw new Error("no tips in the answer");
+  return list.map((t) => String(t));
+}
+
 /**
- * Generate a batch of fresh game tips with OpenAI and insert them (dedup by
- * unique text). Meant to be run occasionally to top up the tip pool — never in
- * the hot request path. Requires OPENAI_API_KEY.
+ * Generate a batch of fresh game tips and insert them (dedup by unique text).
+ * Meant to be run occasionally to top up the tip pool — never in the hot
+ * request path. c0mpute first (@profullstack/ai-providers), OpenAI/Anthropic
+ * as paid fallbacks when their keys are set.
  */
 export async function generateTips(opts: { count?: number; client?: Client } = {}): Promise<{ added: number }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not set.");
   const client = opts.client ?? getClient();
   const count = Math.min(40, Math.max(1, opts.count ?? 20));
 
   const existing = await client.execute("SELECT text FROM tips LIMIT 200");
   const have = existing.rows.map((r) => r.text as string);
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: process.env.AI_TEXT_MODEL || "gpt-4o-mini",
-      temperature: 0.9,
-      messages: [
-        { role: "system", content: SYSTEM },
-        {
-          role: "user",
-          content: `Give ${count} NEW distinct tips as a JSON array of strings. Do not repeat any of these existing tips:\n${have.join("\n")}`,
-        },
-      ],
-    }),
+  const { object: tips } = await generateObject({
+    feature: "aiornot.tips",
+    name: "Tips",
+    system: SYSTEM,
+    user: `Give ${count} NEW distinct tips as {"tips": [string, ...]}. Do not repeat any of these existing tips:\n${have.join("\n")}`,
+    temperature: 0.9,
+    maxTokens: 2000,
+    timeoutMs: 240_000,
+    ...(process.env.AI_TEXT_MODEL ? { models: { openai: process.env.AI_TEXT_MODEL } } : {}),
+    jsonSchema: {
+      type: "object",
+      properties: { tips: { type: "array", items: { type: "string" } } },
+      required: ["tips"],
+    },
+    schema: parseTips,
   });
-  if (!res.ok) throw new Error(`OpenAI tips failed (${res.status}): ${(await res.text()).slice(0, 150)}`);
-  const data = (await res.json()) as { choices: Array<{ message: { content: string } }> };
-  let content = data.choices[0]?.message?.content?.trim() ?? "[]";
-  const m = content.match(/\[[\s\S]*\]/);
-  content = m ? m[0] : content;
-  let tips: string[] = [];
-  try {
-    tips = JSON.parse(content);
-  } catch {
-    tips = [];
-  }
 
   let added = 0;
   for (const raw of tips) {

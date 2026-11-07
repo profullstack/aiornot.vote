@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
+import { PASS_URL } from "@/lib/coinpay-pass";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -49,6 +50,9 @@ export default function PricingPage() {
         <li><strong>API access (${env.priceApiAccessUsd})</strong> — a one-off key for the <Link href="/api-docs">Crowd-detection API</Link> if you don&apos;t need membership.</li>
         <li><strong>Photo library pass (${env.priceLibraryPassUsd} for {env.libraryPassDays} days)</strong> — full-resolution downloads from the <Link href="/library">photo library</Link> of human-made and public-domain photos, with a royalty-free commercial <Link href="/library/license">license</Link>. Pay once; buy again to add days.</li>
       </ul>
+      <p>
+        Deposit $99 in your CoinPay wallet and get a free month: <a href={PASS_URL}>CoinPay Pass</a>
+      </p>
 
       <h2>How does payment work?</h2>
       <p>

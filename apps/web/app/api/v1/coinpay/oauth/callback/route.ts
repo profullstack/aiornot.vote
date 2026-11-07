@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { sqlClient } from "@/lib/db";
 import { env } from "@/lib/env";
 import { createSession, getCurrentUser } from "@/lib/session";
+import { applyCoinpayPass } from "@/lib/coinpay-pass";
 import { CHOICE_COOKIE, coinpayEnabled, coinpayOAuthConfig, finishCoinPay, STATE_COOKIE } from "@/lib/coinpay-signin";
 
 export const runtime = "nodejs";
@@ -34,6 +35,11 @@ export async function GET(req: Request) {
   });
   if (!outcome.ok) {
     return to(sessionUser ? `/account/settings?coinpay_error=${outcome.error}` : `/login?coinpay_error=${outcome.error}`);
+  }
+  // Profullstack Pass: the photo library until the pass ends, on the sub-bound account.
+  if (outcome.kind !== "choose_account" && outcome.pass?.active) {
+    try { await applyCoinpayPass(sqlClient, outcome.userId, outcome.pass); }
+    catch (err) { console.error("[coinpay] pass:", (err as Error).message); }
   }
   if (outcome.kind === "linked") {
     if (outcome.openprofile_url) {

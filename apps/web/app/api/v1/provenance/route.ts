@@ -7,7 +7,7 @@ import { readProvenance, PROVENANCE_SCAN_BYTES } from "@/lib/provenance";
 export const runtime = "nodejs";
 
 const FETCH_TIMEOUT_MS = 10_000;
-const UA = "aiornot.vote-provenance/1.0 (+https://aiornot.vote/api)";
+const UA = "aiornot.vote-provenance/1.0 (+https://aiornot.pwa.pit.world/api)";
 
 function bearer(req: Request): string {
   return (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();

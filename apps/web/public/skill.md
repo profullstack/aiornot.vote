@@ -4,8 +4,8 @@ AIorNot.vote is a crowd-sourced AI-image-detection service. Verified humans vote
 photorealistic image, video, or post is AI-generated or real; the aggregated crowd verdict is
 available on the web, by RSS, and via a JSON API.
 
-Base URL: https://aiornot.vote
-API docs: https://aiornot.vote/api
+Base URL: https://aiornot.pwa.pit.world
+API docs: https://aiornot.pwa.pit.world/api
 Auth: Bearer API key (create one on your account page; membership includes free keys)
 
 ## What an agent can do
@@ -17,9 +17,9 @@ Auth: Bearer API key (create one on your account page; membership includes free 
 
 ## Feeds (no auth)
 
-- Latest: https://aiornot.vote/rss.xml
-- Trending: https://aiornot.vote/rss/trending.xml
-- Featured: https://aiornot.vote/rss/featured.xml
-- Leaderboard: https://aiornot.vote/rss/leaderboard.xml
+- Latest: https://aiornot.pwa.pit.world/rss.xml
+- Trending: https://aiornot.pwa.pit.world/rss/trending.xml
+- Featured: https://aiornot.pwa.pit.world/rss/featured.xml
+- Leaderboard: https://aiornot.pwa.pit.world/rss/leaderboard.xml
 
-See https://aiornot.vote/api for endpoints, parameters, and authentication.
+See https://aiornot.pwa.pit.world/api for endpoints, parameters, and authentication.

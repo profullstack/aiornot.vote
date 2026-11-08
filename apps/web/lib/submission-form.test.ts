@@ -3,7 +3,7 @@ import { readSubmissionForm } from "./submission-form";
 
 describe("readSubmissionForm", () => {
   it("rejects requests with an unsupported content type", async () => {
-    const request = new Request("https://aiornot.vote/api/submit", {
+    const request = new Request("https://aiornot.pwa.pit.world/api/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: "{}",
@@ -13,7 +13,7 @@ describe("readSubmissionForm", () => {
   });
 
   it("rejects malformed multipart bodies", async () => {
-    const request = new Request("https://aiornot.vote/api/submit", {
+    const request = new Request("https://aiornot.pwa.pit.world/api/submit", {
       method: "POST",
       headers: { "Content-Type": "multipart/form-data; boundary=missing" },
       body: "not-a-valid-multipart-body",
@@ -25,7 +25,7 @@ describe("readSubmissionForm", () => {
   it("returns valid form data", async () => {
     const body = new FormData();
     body.set("title", "Example submission");
-    const request = new Request("https://aiornot.vote/api/submit", {
+    const request = new Request("https://aiornot.pwa.pit.world/api/submit", {
       method: "POST",
       body,
     });

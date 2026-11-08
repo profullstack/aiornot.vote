@@ -45,7 +45,7 @@ vi.mock("./crypto", () => ({
   hmac: vi.fn(() => "token-hash"),
 }));
 vi.mock("./env", () => ({
-  env: { appUrl: "https://aiornot.vote", verificationTtlMinutes: 30 },
+  env: { appUrl: "https://aiornot.pwa.pit.world", verificationTtlMinutes: 30 },
   isAdminEmail: vi.fn(() => false),
 }));
 vi.mock("./email", () => ({

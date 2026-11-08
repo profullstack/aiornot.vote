@@ -7,7 +7,7 @@ import {
 } from "./profile";
 
 function request(body: string): Request {
-  return new Request("https://aiornot.vote/api/account/profile", {
+  return new Request("https://aiornot.pwa.pit.world/api/account/profile", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body,

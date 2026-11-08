@@ -129,7 +129,7 @@ describe("credit codes grant library pass days", () => {
 
 describe("invites", () => {
   async function inviteFrom(inviter: string) {
-    const r = await createInvite(inviter, "for a friend", "https://aiornot.vote", svc);
+    const r = await createInvite(inviter, "for a friend", "https://aiornot.pwa.pit.world", svc);
     if (!r.ok) throw new Error(r.error);
     return r.invite.code!;
   }
@@ -200,9 +200,9 @@ describe("invites", () => {
 
   it("a young account cannot hand out invites", async () => {
     await addUser("young", "young@example.com", { ageDays: 1 });
-    expect(await createInvite("young", "", "https://aiornot.vote", svc)).toMatchObject({ ok: false });
+    expect(await createInvite("young", "", "https://aiornot.pwa.pit.world", svc)).toMatchObject({ ok: false });
     await addUser("pending", "p@example.com", { verified: false, ageDays: 10 });
-    expect(await createInvite("pending", "", "https://aiornot.vote", svc)).toMatchObject({ ok: false });
+    expect(await createInvite("pending", "", "https://aiornot.pwa.pit.world", svc)).toMatchObject({ ok: false });
   });
 
   it("caps the inviter's bonuses per month, the invitee still gets theirs", async () => {

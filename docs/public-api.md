@@ -51,8 +51,8 @@ Response `201`:
 {
   "id": "med_…",
   "slug": "is-this-real",
-  "url": "https://aiornot.vote/m/is-this-real",
-  "results_url": "https://aiornot.vote/api/v1/opinions/med_…",
+  "url": "https://aiornot.pwa.pit.world/m/is-this-real",
+  "results_url": "https://aiornot.pwa.pit.world/api/v1/opinions/med_…",
   "status": "collecting"
 }
 ```
@@ -68,7 +68,7 @@ Response:
   "id": "med_…",
   "title": "Is this real?",
   "image_url": "https://example.com/photo.jpg",
-  "url": "https://aiornot.vote/m/is-this-real",
+  "url": "https://aiornot.pwa.pit.world/m/is-this-real",
   "votes": { "ai": 42, "not_ai": 21, "total": 63 },
   "ai_percent": 67,
   "verdict": "likely_ai"
@@ -148,7 +148,7 @@ each. These take the session cookie or `Authorization: Bearer <aion_live_…>`.
 - `POST /api/invites/:id/revoke` withdraws an unused invite.
 - Admin: `GET|POST /api/admin/credits` `{ days, label?, maxRedemptions?, expiresInDays? }`, `POST /api/admin/credits/:id/revoke`.
 
-An invite link is `https://aiornot.vote/i/INV-…`. When a new account signs up on it
+An invite link is `https://aiornot.pwa.pit.world/i/INV-…`. When a new account signs up on it
 and verifies its email, both people get library days (`INVITE_BONUS_DAYS`, 7 by default).
 
 ## Errors

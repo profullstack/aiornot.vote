@@ -3,7 +3,7 @@ import { Footer as ProfullstackFooter } from "@profullstack/footer/react";
 export function SiteFooter() {
   return (
     <ProfullstackFooter
-      site="https://aiornot.vote/"
+      site="https://aiornot.pwa.pit.world/"
       links={[
         { label: "About", href: "/about" },
         { label: "RSS feeds", href: "/feeds" },

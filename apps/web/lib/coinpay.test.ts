@@ -109,8 +109,8 @@ describe("checkout sessions", () => {
       customerEmail: "a@example.com",
       accountId: "user-1",
       metadata: { payment_ref: "pay_1", purpose: "lifetime_membership" },
-      successUrl: "https://aiornot.vote/checkout/pay_1?session={CHECKOUT_SESSION_ID}",
-      cancelUrl: "https://aiornot.vote/pricing",
+      successUrl: "https://aiornot.pwa.pit.world/checkout/pay_1?session={CHECKOUT_SESSION_ID}",
+      cancelUrl: "https://aiornot.pwa.pit.world/pricing",
     });
     expect(body).toMatchObject({
       amount: 5,
@@ -130,7 +130,7 @@ describe("checkout sessions", () => {
     );
     const out = await createCoinpayCheckoutSession({
       amountUsd: 5, description: "d", customerEmail: "a@example.com", accountId: "user-1",
-      metadata: {}, successUrl: "https://aiornot.vote/x", cancelUrl: "https://aiornot.vote/y",
+      metadata: {}, successUrl: "https://aiornot.pwa.pit.world/x", cancelUrl: "https://aiornot.pwa.pit.world/y",
     });
     expect(out).toEqual({ ok: true, session: { id: "cs_1", url: "https://api.coinpay.test/checkout/cs_1", expires_at: undefined } });
     const [url, init] = spy.mock.calls[0] as [string, RequestInit];

@@ -12,7 +12,7 @@ import { POST } from "../app/api/v1/provenance/route";
 
 /** Builds a request the way a caller would. */
 function request(body: unknown, key = "aion_live_test"): Request {
-  return new Request("https://aiornot.vote/api/v1/provenance", {
+  return new Request("https://aiornot.pwa.pit.world/api/v1/provenance", {
     method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
     body: JSON.stringify(body),

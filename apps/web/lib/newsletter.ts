@@ -26,7 +26,7 @@ export async function generateNewsletter(prompt: string): Promise<GeneratedNewsl
             "Voice: sharp, playful, a little irreverent, concise. Return ONLY a JSON object: " +
             '{"subject": string (<=70 chars, no emoji spam), "html": string}. ' +
             "The html is the EMAIL BODY ONLY (no <html>/<head>/<body> tags). Use simple inline-friendly tags: " +
-            "<h2>, <p>, <ul><li>, <a href>. Keep it short (120-220 words). Always end with a clear CTA linking to https://aiornot.vote/play .",
+            "<h2>, <p>, <ul><li>, <a href>. Keep it short (120-220 words). Always end with a clear CTA linking to https://aiornot.pwa.pit.world/play .",
         },
         { role: "user", content: clean },
       ],
@@ -55,7 +55,7 @@ export async function countActiveRecipients(): Promise<number> {
 const FOOTER =
   '<hr style="margin:24px 0;border:none;border-top:1px solid #333"><p style="font-size:12px;color:#888">' +
   'You\'re getting this because you have a verified AIorNot.vote account. ' +
-  '<a href="https://aiornot.vote">aiornot.vote</a> · © Profullstack, Inc.</p>';
+  '<a href="https://aiornot.pwa.pit.world">aiornot.vote</a> · © Profullstack, Inc.</p>';
 
 /**
  * Send the newsletter to every active, verified user. Best-effort with small

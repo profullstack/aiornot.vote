@@ -56,7 +56,7 @@ function signed(body: unknown, secret = SECRET) {
   const raw = JSON.stringify(body);
   const t = Math.floor(Date.now() / 1000);
   const v1 = createHmac("sha256", secret).update(`${t}.${raw}`).digest("hex");
-  return new Request("https://aiornot.vote/api/payments/coinpay/webhook", {
+  return new Request("https://aiornot.pwa.pit.world/api/payments/coinpay/webhook", {
     method: "POST",
     headers: { "content-type": "application/json", "x-coinpay-signature": `t=${t},v1=${v1}` },
     body: raw,

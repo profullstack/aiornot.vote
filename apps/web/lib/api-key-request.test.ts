@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readApiKeyRequest } from "./api-key-request";
 
 function request(body: string): Request {
-  return new Request("https://aiornot.vote/api/account/api-keys", {
+  return new Request("https://aiornot.pwa.pit.world/api/account/api-keys", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body,

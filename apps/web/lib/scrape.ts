@@ -11,7 +11,7 @@ export type ScrapedPost = {
   sourceDomain: string | null;
 };
 
-const UA = "Mozilla/5.0 (compatible; AIorNotBot/1.0; +https://aiornot.vote)";
+const UA = "Mozilla/5.0 (compatible; AIorNotBot/1.0; +https://aiornot.pwa.pit.world)";
 const MAX_BYTES = 600_000;
 const TIMEOUT_MS = 9000;
 const MAX_REDIRECTS = 5;

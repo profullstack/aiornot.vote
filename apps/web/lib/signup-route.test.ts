@@ -23,7 +23,7 @@ import { POST } from "../app/api/auth/signup/route";
 const NAMES = { first_name: "Ada", last_name: "Lovelace" };
 
 function signupRequest(body: Record<string, unknown>, headers: Record<string, string> = {}) {
-  return new Request("https://aiornot.vote/api/auth/signup", {
+  return new Request("https://aiornot.pwa.pit.world/api/auth/signup", {
     method: "POST",
     headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(body),

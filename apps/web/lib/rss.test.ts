@@ -5,13 +5,13 @@ import type { MediaCard } from "./queries";
 describe("buildRss", () => {
   const xml = buildRss({
     title: "AIorNot & <friends>",
-    link: "https://aiornot.vote",
-    feedUrl: "https://aiornot.vote/rss.xml",
+    link: "https://aiornot.pwa.pit.world",
+    feedUrl: "https://aiornot.pwa.pit.world/rss.xml",
     description: "Latest media",
     items: [
       {
         title: "Is this <b>real</b>?",
-        link: "https://aiornot.vote/m/x",
+        link: "https://aiornot.pwa.pit.world/m/x",
         guid: "media:1",
         pubDate: "2026-01-01T00:00:00.000Z",
         descriptionHtml: "<p>hello]]></p>",
@@ -70,8 +70,8 @@ describe("mediaCardsToFeed", () => {
 
   const channel = {
     title: "Latest",
-    link: "https://aiornot.vote",
-    feedUrl: "https://aiornot.vote/rss.xml",
+    link: "https://aiornot.pwa.pit.world",
+    feedUrl: "https://aiornot.pwa.pit.world/rss.xml",
     description: "Latest media",
   };
 

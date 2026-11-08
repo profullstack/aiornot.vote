@@ -57,7 +57,7 @@ describe("GET /api/payments/status", () => {
     mocks.grantPaymentInTransaction.mockRejectedValue(new Error("key insert failed"));
 
     const response = await GET(
-      new Request("https://aiornot.vote/api/payments/status?id=payment-1"),
+      new Request("https://aiornot.pwa.pit.world/api/payments/status?id=payment-1"),
     );
     const body = await response.json();
 
@@ -81,7 +81,7 @@ describe("GET /api/payments/status", () => {
     });
 
     const response = await GET(
-      new Request("https://aiornot.vote/api/payments/status?id=payment-1"),
+      new Request("https://aiornot.pwa.pit.world/api/payments/status?id=payment-1"),
     );
     const body = await response.json();
 
@@ -107,7 +107,7 @@ describe("GET /api/payments/status", () => {
     mocks.grantPaymentInTransaction.mockResolvedValue(null);
 
     const response = await GET(
-      new Request("https://aiornot.vote/api/payments/status?id=payment-1"),
+      new Request("https://aiornot.pwa.pit.world/api/payments/status?id=payment-1"),
     );
     const body = await response.json();
 
@@ -125,7 +125,7 @@ describe("GET /api/payments/status", () => {
     });
 
     const response = await GET(
-      new Request("https://aiornot.vote/api/payments/status?id=payment-1"),
+      new Request("https://aiornot.pwa.pit.world/api/payments/status?id=payment-1"),
     );
 
     expect(response.status).toBe(200);
@@ -145,7 +145,7 @@ describe("GET /api/payments/status with a checkout session", () => {
   it("stays pending while the session is open", async () => {
     mocks.execute.mockResolvedValueOnce({ rows: [sessionPayment] }).mockResolvedValueOnce({ rowsAffected: 0 });
     mocks.getCoinpayReferenceStatus.mockResolvedValue({ paid: false, status: "pending" });
-    const res = await GET(new Request("https://aiornot.vote/api/payments/status?id=payment-1"));
+    const res = await GET(new Request("https://aiornot.pwa.pit.world/api/payments/status?id=payment-1"));
     expect(await res.json()).toMatchObject({ ok: true, status: "pending" });
     expect(mocks.getCoinpayReferenceStatus).toHaveBeenCalledWith("cs_abc");
     expect(mocks.grantPaymentInTransaction).not.toHaveBeenCalled();
@@ -155,7 +155,7 @@ describe("GET /api/payments/status with a checkout session", () => {
     mocks.execute.mockResolvedValueOnce({ rows: [sessionPayment] });
     mocks.getCoinpayReferenceStatus.mockResolvedValue({ paid: true, status: "paid" });
     mocks.grantPaymentInTransaction.mockResolvedValue({});
-    const res = await GET(new Request("https://aiornot.vote/api/payments/status?id=payment-1"));
+    const res = await GET(new Request("https://aiornot.pwa.pit.world/api/payments/status?id=payment-1"));
     expect(await res.json()).toMatchObject({ ok: true, status: "granted" });
     expect(mocks.grantPaymentInTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ paymentId: "payment-1", userId: "user-1", purpose: "lifetime_membership" }),

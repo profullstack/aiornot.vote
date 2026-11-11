@@ -63,7 +63,7 @@ export default async function SearchPage({
         <span className="sub">{total} items</span>
       </div>
 
-      <form action="/search" method="get" className="hero-search" style={{ margin: "8px 0 12px", maxWidth: 520 }}>
+      <form action="/search" method="get" toolname="search_media" tooldescription="Open AI-or-not search results for media, tags or photographers." toolautosubmit="" className="hero-search" style={{ margin: "8px 0 12px", maxWidth: 520 }}>
         <input type="search" name="q" defaultValue={q} placeholder="Search media, tags, photographers…" />
         {tag && <input type="hidden" name="tag" value={tag} />}
         <button className="btn btn-primary" type="submit">Search</button>

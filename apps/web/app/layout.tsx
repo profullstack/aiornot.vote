@@ -105,6 +105,24 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {/* WebMCP (@profullstack/webmcp): site_info, open_page and search_site
+            for an AI agent in the visitor's browser. Voting stays a person. */}
+        <script
+          type="module"
+          data-webmcp=""
+          src="https://cdn.jsdelivr.net/npm/@profullstack/webmcp@0/src/embed.js"
+          data-search="/search?q={query}"
+          data-search-description="Search AI-or-not media by text, tag or photographer."
+          data-pages={JSON.stringify({
+            play: "/play",
+            leaderboard: "/leaderboard",
+            prizes: "/prizes",
+            library: "/library",
+            submit: "/submit",
+            pricing: "/pricing",
+            about: "/about",
+          })}
+        />
       </head>
       <body>
         <SiteHeader user={user} />

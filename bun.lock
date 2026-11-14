@@ -24,8 +24,8 @@
         "@profullstack/profile": "0.1.8",
         "@profullstack/redeem-credits": "0.2.0",
         "@profullstack/stack": "^0.5.0",
-        "@profullstack/throttle": "^0.4.0",
-        "@profullstack/x402-gateway": "^0.13.1",
+        "@profullstack/throttle": "^0.4.2",
+        "@profullstack/x402-gateway": "^0.18.1",
         "drizzle-orm": "^0.45.4",
         "next": "16.4.3",
         "pg": "^8",
@@ -414,9 +414,9 @@
 
     "@profullstack/stack": ["@profullstack/stack@0.5.0", "", { "dependencies": { "@profullstack/emailer": "^1.0.1", "@profullstack/form-guard": "^0.1.1", "@profullstack/referrals": "^0.1.0" }, "peerDependencies": { "@supabase/ssr": ">=0.5.0", "next": ">=13.0.0", "react": ">=18.0.0" }, "optionalPeers": ["@supabase/ssr", "next", "react"] }, "sha512-LbXovIhyzLEq+a+y3q8KWC+jN1tJjvSoUiFEhpiEBisQn5U+iutIGHDgg16Lul74kQaFZeFlbp7CMPAVJ8KL6g=="],
 
-    "@profullstack/throttle": ["@profullstack/throttle@0.4.0", "", { "dependencies": { "@profullstack/x402-gateway": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^0.14.0 || ^0.15.0" } }, "sha512-Lj+XHt51OxyaJ2FqosZDyr9Z5RFB8z+ARixpoUfrDu3YlvFlct5GbbZM/C0qLZkUgzeuFSDvtYt9f0NNfBkFqA=="],
+    "@profullstack/throttle": ["@profullstack/throttle@0.4.2", "", { "dependencies": { "@profullstack/x402-gateway": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^0.14.0 || ^0.15.0 || ^0.16.0 || ^0.17.0 || ^0.18.0" } }, "sha512-2ibd5rirK5HyqYtk+XsiORpcSLHWMVCgHX+ZdED7uPkIW7iMJi1mjth3Ly1cQcpJhHWE6uyDaIIirRaeTl7/sw=="],
 
-    "@profullstack/x402-gateway": ["@profullstack/x402-gateway@0.13.1", "", { "dependencies": { "@profullstack/keys": "^0.1.0" } }, "sha512-V7liSO0tShZRlp8dancuDuUSF/rqrr5YF3bzLoZy9wn6ixf1RIRPYTepe72s36JOdSVzi3wfuhaZFm9y0RpV4w=="],
+    "@profullstack/x402-gateway": ["@profullstack/x402-gateway@0.18.1", "", { "dependencies": { "@profullstack/keys": "^0.1.0" } }, "sha512-zc2JGLXMX8eCk7Mp4X91E175enOTNcWPZncKf3LXzoGE+XEhHDJHM1LRZkkY3x2pjLYX3AB11Vx/TP3cobSQ/g=="],
 
     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.62.2", "", { "os": "android", "cpu": "arm" }, "sha512-6o7ZLZK+BeenkZCFNDXqpbjw9bD6nuWonvS/lwQJp7NoVVxm6p3qE7qQ5jGuBjiFsgvqjD8mZAU5oWxTmbOeOg=="],
 

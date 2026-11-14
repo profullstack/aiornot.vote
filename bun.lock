@@ -25,7 +25,7 @@
         "@profullstack/redeem-credits": "0.2.0",
         "@profullstack/stack": "^0.5.0",
         "@profullstack/throttle": "^0.4.0",
-        "@profullstack/x402-gateway": "^0.13.1",
+        "@profullstack/x402-gateway": "^0.18.0",
         "drizzle-orm": "^0.45.4",
         "next": "16.4.3",
         "pg": "^8",
@@ -416,7 +416,7 @@
 
     "@profullstack/throttle": ["@profullstack/throttle@0.4.0", "", { "dependencies": { "@profullstack/x402-gateway": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^0.14.0 || ^0.15.0" } }, "sha512-Lj+XHt51OxyaJ2FqosZDyr9Z5RFB8z+ARixpoUfrDu3YlvFlct5GbbZM/C0qLZkUgzeuFSDvtYt9f0NNfBkFqA=="],
 
-    "@profullstack/x402-gateway": ["@profullstack/x402-gateway@0.13.1", "", { "dependencies": { "@profullstack/keys": "^0.1.0" } }, "sha512-V7liSO0tShZRlp8dancuDuUSF/rqrr5YF3bzLoZy9wn6ixf1RIRPYTepe72s36JOdSVzi3wfuhaZFm9y0RpV4w=="],
+    "@profullstack/x402-gateway": ["@profullstack/x402-gateway@0.18.0", "", { "dependencies": { "@profullstack/keys": "^0.1.0" } }, "sha512-+vORJd17QpLycouk0wrmyOlnyv+6Q9Ttxk+iglsMH2pZpejTUD2Ak3ysKxQsb94R4m1GLSEv8DHoCS49Nf4/0A=="],
 
     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.62.2", "", { "os": "android", "cpu": "arm" }, "sha512-6o7ZLZK+BeenkZCFNDXqpbjw9bD6nuWonvS/lwQJp7NoVVxm6p3qE7qQ5jGuBjiFsgvqjD8mZAU5oWxTmbOeOg=="],
 
@@ -1363,6 +1363,8 @@
     "@modelcontextprotocol/sdk/ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
 
     "@profullstack/libsql-pg/@libsql/client": ["@libsql/client@0.15.15", "", { "dependencies": { "@libsql/core": "0.15.15", "@libsql/hrana-client": "0.7.0", "js-base64": "3.8.0", "libsql": "0.5.29", "promise-limit": "2.7.0" } }, "sha512-twC0hQxPNHPKfeOv3sNT6u2pturQjLcI+CnpTM0SjRpocEGgfiZ7DWKXLNnsothjyJmDqEsBQJ5ztq9Wlu470w=="],
+
+    "@profullstack/throttle/@profullstack/x402-gateway": ["@profullstack/x402-gateway@0.13.1", "", { "dependencies": { "@profullstack/keys": "^0.1.0" } }, "sha512-V7liSO0tShZRlp8dancuDuUSF/rqrr5YF3bzLoZy9wn6ixf1RIRPYTepe72s36JOdSVzi3wfuhaZFm9y0RpV4w=="],
 
     "@types/ws/@types/node": ["@types/node@22.20.0", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-QWlFW2wf3nTjC13/DqRnBpR4ZO36VJH/JVBkA/vcnmbTBNQIlnObqyqZE1tUR7+Ni23Lda8R1BxMfbXRpCUx5g=="],
 

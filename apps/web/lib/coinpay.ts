@@ -1,6 +1,9 @@
 import "server-only";
 import { env } from "./env";
 
+/** Who CoinPay sees calling: every fleet app shares one host and one IP. */
+const COINPAY_UA = `aiornot.vote${process.env.npm_package_version ? `/${process.env.npm_package_version}` : ""} (+https://aiornot.vote)`;
+
 export type CoinpayPayment = {
   id: string;
   amount: number;
@@ -71,6 +74,7 @@ export async function createCoinpayCheckoutSession(
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.coinpay.apiKey}`,
+        "user-agent": COINPAY_UA,
         "Content-Type": "application/json",
         ...(args.idempotencyKey ? { "Idempotency-Key": args.idempotencyKey } : {}),
       },
@@ -101,7 +105,7 @@ export async function getCheckoutSessionStatus(sessionId: string): Promise<strin
   if (!env.coinpayConfigured) return null;
   try {
     const res = await fetch(`${env.coinpay.baseUrl}/checkout/sessions/${encodeURIComponent(sessionId)}`, {
-      headers: { Authorization: `Bearer ${env.coinpay.apiKey}` },
+      headers: { Authorization: `Bearer ${env.coinpay.apiKey}`, "user-agent": COINPAY_UA },
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -138,7 +142,7 @@ export async function getCoinpayPaymentDetailed(id: string): Promise<CoinpayFetc
   }
   try {
     const res = await fetch(`${env.coinpay.baseUrl}/payments/${id}`, {
-      headers: { Authorization: `Bearer ${env.coinpay.apiKey}` },
+      headers: { Authorization: `Bearer ${env.coinpay.apiKey}`, "user-agent": COINPAY_UA },
     });
     if (!res.ok) {
       const errText = `CoinPay status fetch failed for payment ${id}: HTTP ${res.status}`;
